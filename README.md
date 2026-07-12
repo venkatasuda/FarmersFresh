@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Farmers Fresh
 
-## Getting Started
+Livestock & meat management system for a multi-farm, multi-store operation.
+Built to last: multi-tenant from day one, PostgreSQL core, immutable event log, AI-ready.
 
-First, run the development server:
+**Stack:** Next.js (App Router, TypeScript strict) · Supabase (PostgreSQL, Auth, RLS) · Vercel · PWA
+**Domain:** farmersfresh.store
 
+---
+
+## Getting started
+
+### 1. Create the app base (known-good scaffold)
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx create-next-app@latest farmersfresh --typescript --app --eslint
+cd farmersfresh
+npm install @supabase/supabase-js @supabase/ssr
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Drop in the project files
+Copy the contents of this starter package into the project (keeping paths):
+```
+supabase/migrations/0001_init_phase1.sql
+lib/supabase/client.ts
+lib/supabase/server.ts
+lib/events.ts
+.env.example
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Set up Supabase
+- Create a Supabase project.
+- SQL Editor → run `supabase/migrations/0001_init_phase1.sql`.
+- Create your user in Authentication, then run the one-time bootstrap block
+  (Section 11 of the migration) to make yourself owner of your first farm + store.
+- Copy `.env.example` to `.env.local` and fill in your project URL + anon key.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run
+```bash
+npm run dev
+```
 
-## Learn More
+### 5. Create the GitHub repo and push
+```bash
+git init
+git add .
+git commit -m "commit 1: project scaffold, Supabase wiring, Phase-1 schema"
+# create the repo on github.com (or: gh repo create farmersfresh --private --source=. --remote=origin)
+git remote add origin git@github.com:<your-username>/farmersfresh.git
+git branch -M main
+git push -u origin main
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How we build (bit by bit)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Each bit is a small, working commit — ship it, use it, then the next.
 
-## Deploy on Vercel
+- **Bit 1 — Scaffold** *(this package)*: Next.js + Supabase wiring, Phase-1 schema, event-log helper.
+- **Bit 2 — Auth**: login page, session middleware, load profile + memberships, protected routes.
+- **Bit 3 — Record a Sale (POS)**: customer/anonymous, line items (cut → weight → price), take payment or mark credit; writes a `sale.created` event.
+- **Bit 4 — Credit Ledger**: `customer_balances` list ("who owes me most"), customer detail, record a payment.
+- **Bit 5 — Customers**: add/edit customers.
+- **Bit 6 — Stock (basic)**: current stock per cut, adjust, mark wasted.
+- **Bit 7 — Dashboard**: today's sales, collected vs credit, outstanding, expiring stock.
+- **Bit 8 — PWA polish**: manifest + service worker (installable, offline-first).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Then **Phase 2**: the living/breeding core (flock, heat & pregnancy, health + withdrawal guard, slaughter), with meat flowing farm → store on the same location model.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Project structure (target)
+```
+/app            routes: /login, /sales, /ledger, /customers, /stock, /dashboard
+/lib/supabase   client + server Supabase helpers
+/lib/events.ts  single helper to append to the immutable event log
+/components      POS form, customer picker, balance list, ...
+/supabase/migrations
+```
+
+## Conventions
+- Every action that changes money or records also appends to `events` — the audit
+  trail and the future-AI dataset. Use `logEvent()` everywhere.
+- Security is enforced by the database (RLS), not just the UI.
+- Money: `numeric(12,2)`. Weight: `numeric(12,3)`.
