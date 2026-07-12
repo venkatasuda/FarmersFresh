@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Farmers Fresh
 
 Livestock & meat management system for a multi-farm, multi-store operation.
@@ -83,3 +84,6 @@ Then **Phase 2**: the living/breeding core (flock, heat & pregnancy, health + wi
   trail and the future-AI dataset. Use `logEvent()` everywhere.
 - Security is enforced by the database (RLS), not just the UI.
 - Money: `numeric(12,2)`. Weight: `numeric(12,3)`.
+=======
+# FarmersFresh
+>>>>>>> 17dec309ed9ec5225d0d0fce6c0bc0da34822942
