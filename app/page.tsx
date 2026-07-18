@@ -1,65 +1,100 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ProductCard } from "@/app/(shop)/product-card";
+import { ShopShell } from "@/app/(shop)/shop-shell";
+import { getCatalogue } from "@/lib/shop";
 
-export default function Home() {
+export const metadata = {
+  title: "Farmers Fresh — fresh meat, delivered",
+};
+
+export default async function ShopHome() {
+  const products = await getCatalogue();
+
+  const categories = [...new Set(products.map((p) => p.category ?? "Other"))];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <ShopShell>
+      {/* Hero. No stock photo behind it — a coloured panel that loads instantly
+          beats a 2 MB image of someone else's meat. Replace with your own
+          farm photo when you have one. */}
+      <section className="mb-8 overflow-hidden rounded-3xl bg-brand-700 px-6 py-10 text-white sm:px-10 sm:py-14">
+        <p className="text-sm font-medium text-brand-200">
+          From our farms, this morning
+        </p>
+        <h1 className="mt-2 max-w-lg text-3xl font-semibold tracking-tight sm:text-4xl">
+          Fresh meat, cut to order, at your door.
+        </h1>
+        <p className="mt-3 max-w-md text-brand-100">
+          We raise it, we cut it, we deliver it. Pay when it reaches you — cash
+          or UPI.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3 text-sm">
+          <Badge>Free delivery over ₹500</Badge>
+          <Badge>Pay on delivery</Badge>
+          <Badge>Never frozen</Badge>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
+
+      {products.length === 0 ? (
+        <EmptyCatalogue />
+      ) : (
+        <>
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-xl font-semibold tracking-tight text-ink">
+              Today&apos;s cuts
+            </h2>
+            <p className="text-sm text-ink-soft">
+              {products.length} {products.length === 1 ? "item" : "items"}
+              {categories.length > 1 ? ` · ${categories.length} kinds` : null}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {products.map((p, i) => (
+              <ProductCard key={p.id} product={p} priority={i < 4} />
+            ))}
+          </div>
+        </>
+      )}
+    </ShopShell>
+  );
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full bg-brand-600/60 px-3 py-1 font-medium text-white ring-1 ring-brand-400/40 ring-inset">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Shown when the catalogue query returns nothing. This is the state you will
+ * see first, so it says what to actually do rather than "no products found".
+ */
+function EmptyCatalogue() {
+  return (
+    <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
+      <h2 className="text-lg font-medium text-ink">
+        The catalogue is empty
+      </h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-ink-soft">
+        Nothing is published yet. Run migration{" "}
+        <code className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-800">
+          0003_storefront.sql
+        </code>
+        , then follow the seed steps in{" "}
+        <code className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-800">
+          docs/STOREFRONT.md
+        </code>{" "}
+        to set prices and publish your cuts.
+      </p>
+      <Link
+        href="/login"
+        className="mt-5 inline-block rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+      >
+        Staff sign in
+      </Link>
     </div>
   );
 }
