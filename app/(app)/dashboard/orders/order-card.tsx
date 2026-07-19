@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { advanceOrder, cancelOrder } from "./actions";
+import { formatQty, formatRupees } from "@/lib/format";
 import {
   SLOT_LABELS,
   STATUS_LABELS,
   nextStatus,
   type StaffOrder,
-} from "@/lib/orders";
-import { formatQty, formatRupees } from "@/lib/shop";
+} from "@/lib/types";
 
 const STATUS_STYLES: Record<string, string> = {
   placed: "bg-brand-600 text-white",

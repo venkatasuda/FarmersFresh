@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { OrderStatus } from "@/lib/orders";
+import type { OrderStatus } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 

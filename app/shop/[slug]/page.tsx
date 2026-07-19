@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { AddToBasket } from "@/app/(shop)/add-to-basket";
 import { ProductImage } from "@/app/(shop)/product-image";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { formatRupees, getProductBySlug } from "@/lib/shop";
+import { formatRupees } from "@/lib/format";
+import { getProductBySlug } from "@/lib/shop";
+import { discountPercent, packLabel, unitPrice } from "@/lib/types";
 
 // Next.js 16: params is a Promise.
 type Props = { params: Promise<{ slug: string }> };
@@ -49,16 +51,42 @@ export default async function ProductPage({ params }: Props) {
               {product.category}
             </p>
           ) : null}
+          {/* The brand promise earns its place HERE, where someone is deciding,
+              rather than repeated on every card in the grid. */}
+          {product.brand ? (
+            <p className="mt-1 text-sm text-ink-soft">
+              <span className="font-medium text-ink">{product.brand}</span>
+              {product.brandTagline ? ` · ${product.brandTagline}` : null}
+            </p>
+          ) : null}
 
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
             {product.name}
           </h1>
 
-          <p className="mt-3 text-2xl font-semibold text-ink">
-            {formatRupees(product.salePrice)}
-            <span className="ml-1 text-base font-normal text-ink-soft">
-              / {product.unit}
+          {packLabel(product) ? (
+            <p className="mt-1 text-sm text-ink-soft">{packLabel(product)}</p>
+          ) : null}
+
+          <div className="mt-3 flex items-baseline gap-3">
+            <span className="text-2xl font-semibold text-ink">
+              {formatRupees(product.salePrice)}
             </span>
+            {product.compareAtPrice ? (
+              <>
+                <span className="text-base text-ink-soft line-through">
+                  {formatRupees(product.compareAtPrice)}
+                </span>
+                <span className="rounded-md bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">
+                  {discountPercent(product)}% off
+                </span>
+              </>
+            ) : null}
+          </div>
+          <p className="text-sm text-ink-soft">
+            {unitPrice(product)
+              ? `${formatRupees(unitPrice(product)!.value)} per ${unitPrice(product)!.per}`
+              : `per ${product.unit}`}
           </p>
 
           {product.description ? (
@@ -74,10 +102,18 @@ export default async function ProductPage({ params }: Props) {
               Free over ₹500, otherwise ₹40. Same day where we deliver.
             </Fact>
             <Fact label="Payment">Cash or UPI when it reaches you.</Fact>
-            <Fact label="Weight">
-              Cuts are weighed fresh, so the final weight may vary slightly from
-              what you order. You pay for what you receive.
-            </Fact>
+            {/* Only true for loose goods. A sealed 5 kg bag of atta weighs
+                5 kg — promising it "may vary" would be nonsense. */}
+            {packLabel(product) === null ? (
+              <Fact label="Weight">
+                Cuts are weighed fresh, so the final weight may vary slightly
+                from what you order. You pay for what you receive.
+              </Fact>
+            ) : (
+              <Fact label="Pack">
+                Sold as a sealed {packLabel(product)} pack.
+              </Fact>
+            )}
           </dl>
         </div>
       </div>

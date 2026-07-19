@@ -1,46 +1,10 @@
+/**
+ * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
+ * Client Components want `lib/types.ts` for the order shapes and labels.
+ */
 import { createClient } from "@/lib/supabase/server";
-
-export type OrderStatus =
-  | "placed"
-  | "confirmed"
-  | "packed"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled";
-
-export type OrderItem = {
-  id: string;
-  productName: string;
-  unit: string;
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-};
-
-export type StaffOrder = {
-  id: string;
-  orderNumber: string;
-  contactName: string;
-  contactPhone: string;
-  addressLine: string;
-  city: string | null;
-  pincode: string | null;
-  landmark: string | null;
-  deliverySlot: string | null;
-  notes: string | null;
-  status: OrderStatus;
-  subtotal: number;
-  deliveryFee: number;
-  total: number;
-  placedAt: string;
-  items: OrderItem[];
-};
-
-function num(v: number | string | null | undefined, fallback = 0): number {
-  if (v === null || v === undefined) return fallback;
-  const n = typeof v === "number" ? v : Number.parseFloat(v);
-  return Number.isFinite(n) ? n : fallback;
-}
+import { num } from "@/lib/format";
+import type { OrderStatus, StaffOrder } from "@/lib/types";
 
 type ItemRow = {
   id: string;
@@ -127,32 +91,4 @@ export async function getOrders(
       lineTotal: num(i.line_total),
     })),
   }));
-}
-
-export const SLOT_LABELS: Record<string, string> = {
-  today_evening: "Today, 4–8 pm",
-  tomorrow_morning: "Tomorrow, 7–11 am",
-  tomorrow_evening: "Tomorrow, 4–8 pm",
-};
-
-export const STATUS_LABELS: Record<OrderStatus, string> = {
-  placed: "New",
-  confirmed: "Confirmed",
-  packed: "Packed",
-  out_for_delivery: "Out for delivery",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
-/** The next step in the fulfilment chain, or null if there isn't one. */
-export function nextStatus(status: OrderStatus): OrderStatus | null {
-  const chain: OrderStatus[] = [
-    "placed",
-    "confirmed",
-    "packed",
-    "out_for_delivery",
-    "delivered",
-  ];
-  const i = chain.indexOf(status);
-  return i >= 0 && i < chain.length - 1 ? chain[i + 1] : null;
 }

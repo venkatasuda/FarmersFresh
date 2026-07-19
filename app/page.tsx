@@ -1,37 +1,44 @@
 import Link from "next/link";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getCatalogue } from "@/lib/shop";
+import { getCatalogue, getCategories } from "@/lib/shop";
+import { buildCategoryTree } from "@/lib/types";
 
 export const metadata = {
-  title: "Farmers Fresh — fresh meat, delivered",
+  title: "Farmers Fresh — Indian groceries & fresh meat, delivered",
 };
 
 export default async function ShopHome() {
-  const products = await getCatalogue();
+  const [products, categories] = await Promise.all([
+    getCatalogue(),
+    getCategories(),
+  ]);
 
-  const categories = [...new Set(products.map((p) => p.category ?? "Other"))];
+  const tree = buildCategoryTree(categories);
+  const byCategory = new Map(categories.map((c) => [c.slug, c]));
+
+  // Merchandising rows. With 35 products across 13 departments, one flat grid
+  // is a wall — a customer needs a reason to click something.
+  const deals = products.filter((p) => p.compareAtPrice !== null);
+  const meat = products.filter((p) => p.categorySlug === "mutton");
 
   return (
     <ShopShell>
-      {/* Hero. No stock photo behind it — a coloured panel that loads instantly
-          beats a 2 MB image of someone else's meat. Replace with your own
-          farm photo when you have one. */}
       <section className="mb-8 overflow-hidden rounded-3xl bg-brand-700 px-6 py-10 text-white sm:px-10 sm:py-14">
         <p className="text-sm font-medium text-brand-200">
-          From our farms, this morning
+          Groceries & fresh meat, one delivery
         </p>
-        <h1 className="mt-2 max-w-lg text-3xl font-semibold tracking-tight sm:text-4xl">
-          Fresh meat, cut to order, at your door.
+        <h1 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          Your rice, dal and today&apos;s cut — at your door.
         </h1>
         <p className="mt-3 max-w-md text-brand-100">
-          We raise it, we cut it, we deliver it. Pay when it reaches you — cash
-          or UPI.
+          Everyday Indian groceries, plus meat from our own farms. Pay when it
+          reaches you.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 text-sm">
           <Badge>Free delivery over ₹500</Badge>
           <Badge>Pay on delivery</Badge>
-          <Badge>Never frozen</Badge>
+          <Badge>Meat cut to order</Badge>
         </div>
       </section>
 
@@ -39,24 +46,150 @@ export default async function ShopHome() {
         <EmptyCatalogue />
       ) : (
         <>
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-xl font-semibold tracking-tight text-ink">
-              Today&apos;s cuts
-            </h2>
-            <p className="text-sm text-ink-soft">
-              {products.length} {products.length === 1 ? "item" : "items"}
-              {categories.length > 1 ? ` · ${categories.length} kinds` : null}
-            </p>
-          </div>
+          {/* Department tiles — the standard grocery entry point. */}
+          {tree.length > 0 ? (
+            <section className="mb-10">
+              <h2 className="mb-3 text-lg font-semibold tracking-tight text-ink">
+                Shop by department
+              </h2>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+                {tree.map(({ department }) => (
+                  <Link
+                    key={department.id}
+                    href={`/collections/${department.slug}`}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-brand-300 hover:bg-brand-50"
+                  >
+                    <span className="text-2xl" aria-hidden>
+                      {department.icon ?? "🛒"}
+                    </span>
+                    <span className="text-xs leading-tight font-medium text-ink">
+                      {department.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {products.map((p, i) => (
-              <ProductCard key={p.id} product={p} priority={i < 4} />
-            ))}
-          </div>
+          {meat.length > 0 ? (
+            <Row
+              title="Today's cuts"
+              subtitle="From our own farms, cut this morning"
+              href="/collections/meat-eggs"
+              products={meat}
+              priority
+            />
+          ) : null}
+
+          {deals.length > 0 ? (
+            <Row
+              title="Value deals"
+              subtitle="Reduced this week"
+              href="/collections/rice"
+              products={deals}
+            />
+          ) : null}
+
+          {/* Everything else, grouped by department so the page reads as a
+              shop rather than an undifferentiated grid. */}
+          {tree.map(({ department }) => {
+            const inDept = products.filter((p) => {
+              const cat = p.categorySlug ? byCategory.get(p.categorySlug) : null;
+              return cat?.parentId === department.id;
+            });
+            if (inDept.length === 0 || department.slug === "meat-eggs") return null;
+            return (
+              <Row
+                key={department.id}
+                title={department.name}
+                href={`/collections/${department.slug}`}
+                products={inDept.slice(0, 4)}
+              />
+            );
+          })}
+
+          <section className="mt-10 grid gap-4 rounded-2xl border border-line bg-surface p-6 sm:grid-cols-3">
+            <TrustPoint
+              title="Meat from our own farms"
+              body="We raise the animals we sell. No middleman, no mystery supplier."
+            />
+            <TrustPoint
+              title="Cut, not thawed"
+              body="Meat is cut the morning it goes out. Nothing frozen is sold as fresh."
+            />
+            <TrustPoint
+              title="You pay for what you get"
+              body="Cuts are weighed at packing. The final price follows the scale."
+            />
+          </section>
         </>
       )}
     </ShopShell>
+  );
+}
+
+function Row({
+  title,
+  subtitle,
+  href,
+  products,
+  priority = false,
+}: {
+  title: string;
+  subtitle?: string;
+  href: string;
+  products: Awaited<ReturnType<typeof getCatalogue>>;
+  priority?: boolean;
+}) {
+  return (
+    <section className="mb-10">
+      <div className="mb-3 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-ink">
+            {title}
+          </h2>
+          {subtitle ? (
+            <p className="text-sm text-ink-soft">{subtitle}</p>
+          ) : null}
+        </div>
+        <Link
+          href={href}
+          className="shrink-0 text-sm font-medium text-brand-700 hover:underline"
+        >
+          See all →
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {products.slice(0, 4).map((p, i) => (
+          <ProductCard key={p.id} product={p} priority={priority && i < 4} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// NOT named `Promise` — that would shadow the global inside this module and
+// quietly break the `Promise.all` above.
+function TrustPoint({ title, body }: { title: string; body: string }) {
+  return (
+    <div>
+      <h3 className="flex items-center gap-2 text-sm font-medium text-ink">
+        <span className="flex size-5 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+          <svg viewBox="0 0 24 24" fill="none" className="size-3" aria-hidden>
+            <path
+              d="m5 13 4 4L19 7"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        {title}
+      </h3>
+      <p className="mt-1.5 text-sm text-ink-soft">{body}</p>
+    </div>
   );
 }
 
@@ -68,26 +201,16 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Shown when the catalogue query returns nothing. This is the state you will
- * see first, so it says what to actually do rather than "no products found".
- */
 function EmptyCatalogue() {
   return (
     <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
-      <h2 className="text-lg font-medium text-ink">
-        The catalogue is empty
-      </h2>
+      <h2 className="text-lg font-medium text-ink">The catalogue is empty</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-ink-soft">
-        Nothing is published yet. Run migration{" "}
-        <code className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-800">
-          0003_storefront.sql
-        </code>
-        , then follow the seed steps in{" "}
+        Nothing is published yet. Follow the seed steps in{" "}
         <code className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-800">
           docs/STOREFRONT.md
-        </code>{" "}
-        to set prices and publish your cuts.
+        </code>
+        .
       </p>
       <Link
         href="/login"

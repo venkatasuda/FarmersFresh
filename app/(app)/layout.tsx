@@ -34,6 +34,28 @@ export default async function AppLayout({
                 Orders
               </Link>
               <Link
+                href="/dashboard/stock"
+                className="text-ink-soft transition-colors hover:text-brand-700"
+              >
+                Stock
+              </Link>
+              {session.isOwner ? (
+                <>
+                  <Link
+                    href="/dashboard/catalogue"
+                    className="text-ink-soft transition-colors hover:text-brand-700"
+                  >
+                    Catalogue
+                  </Link>
+                  <Link
+                    href="/dashboard/delivery"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Delivery
+                  </Link>
+                </>
+              ) : null}
+              <Link
                 href="/"
                 className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
               >

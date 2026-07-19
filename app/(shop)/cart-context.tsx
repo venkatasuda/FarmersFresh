@@ -18,6 +18,11 @@ export type CartLine = {
   price: number;
   imagePath: string | null;
   quantity: number;
+  /** "500 g", "5 kg", "1 L" — null for loose goods sold by weight. Cached so
+   *  the basket reads "2 × 500 g" without refetching the product. */
+  packLabel: string | null;
+  /** Loose goods step by 500 g; packs step by 1. */
+  step: number;
 };
 
 type CartState = {

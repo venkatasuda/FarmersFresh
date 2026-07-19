@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { formatRupees } from "@/lib/shop";
+import { formatRupees } from "@/lib/format";
 
 export const metadata = { title: "Order placed · Farmers Fresh" };
 

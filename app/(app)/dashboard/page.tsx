@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { getOrders } from "@/lib/orders";
-import { formatRupees } from "@/lib/shop";
+import { formatRupees } from "@/lib/format";
 
 export const metadata = {
   title: "Dashboard · Farmers Fresh",

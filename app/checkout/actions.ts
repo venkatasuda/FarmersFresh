@@ -9,6 +9,35 @@ export type PlaceOrderResult =
 export type SubmittedLine = { productId: string; quantity: number };
 
 /**
+ * Checks a PIN before the customer fills the whole form. The database enforces
+ * this again at place_order — this is only so a customer in an unserved area
+ * learns that up front, not after typing their address.
+ */
+export async function checkPincode(
+  pincode: string
+): Promise<{ served: boolean }> {
+  const clean = pincode.replace(/\s/g, "");
+  if (!/^\d{6}$/.test(clean)) return { served: false };
+
+  const supabase = await createClient();
+  const { data: orgId } = await supabase.rpc("storefront_org_id");
+  if (!orgId) return { served: true }; // no shop configured — don't block
+
+  // If no zones exist, the shop delivers everywhere (place_order won't block),
+  // so a PIN check would be misleading. Only judge when zones are set up.
+  const { data: areas } = await supabase.rpc("served_areas");
+  if (!areas || (areas as unknown[]).length === 0) return { served: true };
+
+  const { data, error } = await supabase.rpc("delivers_to", {
+    p_org: orgId,
+    p_pincode: clean,
+  });
+
+  if (error) return { served: true };
+  return { served: data === true };
+}
+
+/**
  * Places the order.
  *
  * Note what is NOT sent from the browser: prices. The client submits product

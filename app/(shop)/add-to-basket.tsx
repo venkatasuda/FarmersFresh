@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useCart } from "./cart-context";
-import type { ShopProduct } from "@/lib/shop";
-import { formatQty } from "@/lib/shop";
+import { formatLineQty } from "@/lib/format";
+import { isLoose, packLabel, type ShopProduct } from "@/lib/types";
 
 /**
  * Quantity stepper + add button.
@@ -23,8 +23,13 @@ export function AddToBasket({
   const [qty, setQty] = useState(product.minOrderQty);
   const [added, setAdded] = useState(false);
 
-  const step = product.stepQty > 0 ? product.stepQty : 0.5;
-  const min = product.minOrderQty > 0 ? product.minOrderQty : step;
+  // The fork that runs through the storefront: meat is cut to order and steps
+  // in 500 g; a packet of turmeric is one packet. Ordering "0.5" of a spice
+  // pack is nonsense, so packed goods always step by whole units.
+  const loose = isLoose(product);
+  const step = loose ? (product.stepQty > 0 ? product.stepQty : 0.5) : 1;
+  const min = loose ? (product.minOrderQty > 0 ? product.minOrderQty : step) : 1;
+  const label = packLabel(product);
 
   // Sold out is decided by the stock ledger, and the database refuses the
   // order anyway — this just avoids letting someone fill a basket they
@@ -60,6 +65,8 @@ export function AddToBasket({
         unit: product.unit,
         price: product.salePrice,
         imagePath: product.imagePath,
+        packLabel: label,
+        step,
       },
       qty
     );
@@ -84,7 +91,7 @@ export function AddToBasket({
           −
         </button>
         <span className="min-w-16 text-center text-sm font-medium text-ink tabular-nums">
-          {formatQty(qty, product.unit)}
+          {formatLineQty(qty, product.unit, label)}
         </span>
         <button
           type="button"
