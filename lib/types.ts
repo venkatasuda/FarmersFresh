@@ -131,6 +131,18 @@ export type AdminProduct = {
 /** The pack units a product can actually have (never null — that's "loose"). */
 export type PackUnit = "g" | "kg" | "ml" | "l" | "piece" | "dozen";
 
+/** A product as the counter till sees it. */
+export type PosProduct = {
+  id: string;
+  name: string;
+  unit: "kg" | "piece";
+  salePrice: number;
+  packSize: number | null;
+  packUnit: PackUnit | null;
+  category: string | null;
+  onHand: number;
+};
+
 export const PACK_UNITS: { value: PackUnit; label: string }[] = [
   { value: "g", label: "grams (g)" },
   { value: "kg", label: "kilograms (kg)" },

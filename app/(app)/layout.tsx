@@ -28,6 +28,12 @@ export default async function AppLayout({
                 Overview
               </Link>
               <Link
+                href="/dashboard/pos"
+                className="font-medium text-brand-700 transition-colors hover:text-brand-800"
+              >
+                Counter
+              </Link>
+              <Link
                 href="/dashboard/orders"
                 className="text-ink-soft transition-colors hover:text-brand-700"
               >
