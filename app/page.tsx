@@ -85,7 +85,6 @@ export default async function ShopHome() {
             <Row
               title="Value deals"
               subtitle="Reduced this week"
-              href="/collections/rice"
               products={deals}
             />
           ) : null}
@@ -137,7 +136,7 @@ function Row({
 }: {
   title: string;
   subtitle?: string;
-  href: string;
+  href?: string;
   products: Awaited<ReturnType<typeof getCatalogue>>;
   priority?: boolean;
 }) {
@@ -152,12 +151,19 @@ function Row({
             <p className="text-sm text-ink-soft">{subtitle}</p>
           ) : null}
         </div>
-        <Link
-          href={href}
-          className="shrink-0 text-sm font-medium text-brand-700 hover:underline"
-        >
-          See all →
-        </Link>
+        {/* Only show "See all" when the row maps to a real category page.
+            The curated deals row spans categories, so it has no single target. */}
+        {href ? (
+          <Link
+            href={href}
+            className="group shrink-0 text-sm font-medium text-brand-700"
+          >
+            See all{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

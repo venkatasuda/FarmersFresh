@@ -25,6 +25,8 @@ export type CartLine = {
   step: number;
 };
 
+export type CartNotice = { id: number; name: string } | null;
+
 type CartState = {
   lines: CartLine[];
   add: (line: Omit<CartLine, "quantity">, quantity: number) => void;
@@ -34,6 +36,13 @@ type CartState = {
   count: number;
   subtotal: number;
   ready: boolean;
+  /** Set briefly whenever something is added, so a toast can show. */
+  notice: CartNotice;
+  dismissNotice: () => void;
+  /** The slide-out basket drawer. */
+  drawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 };
 
 const CartContext = createContext<CartState | null>(null);
@@ -41,6 +50,8 @@ const STORAGE_KEY = "ff.cart.v1";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [notice, setNotice] = useState<CartNotice>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   // Nothing may read localStorage during render — the server has no such
   // object, and reading it in useState would break hydration. Load after mount
   // and use `ready` to avoid flashing an empty basket.
@@ -82,9 +93,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         return [...prev, { ...line, quantity: round3(quantity) }];
       });
+      // A monotonic id so re-adding the same item re-triggers the toast.
+      setNotice({ id: Date.now(), name: line.name });
     },
     []
   );
+
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const setQuantity = useCallback((productId: string, quantity: number) => {
     setLines((prev) =>
@@ -113,8 +130,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       count: lines.length,
       subtotal: Math.round(subtotal * 100) / 100,
       ready,
+      notice,
+      dismissNotice,
+      drawerOpen,
+      openDrawer,
+      closeDrawer,
     };
-  }, [lines, add, setQuantity, remove, clear, ready]);
+  }, [
+    lines,
+    add,
+    setQuantity,
+    remove,
+    clear,
+    ready,
+    notice,
+    dismissNotice,
+    drawerOpen,
+    openDrawer,
+    closeDrawer,
+  ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

@@ -54,7 +54,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
         {tree.length > 0 ? (
           <nav
             aria-label="Departments"
-            className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2"
+            className="scrollbar-thin mx-auto max-w-6xl overflow-x-auto px-4 pb-2"
           >
             <ul className="flex gap-1 whitespace-nowrap">
               <li>
@@ -131,16 +131,18 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
               <li>
                 <Link href="/" className="hover:text-brand-700">
-                  All cuts
+                  All departments
                 </Link>
               </li>
-              {categories.slice(0, 4).map((c) => (
-                <li key={c.slug}>
+              {/* Only departments that actually have stock — never link a
+                  customer to an empty shelf. */}
+              {tree.slice(0, 5).map(({ department }) => (
+                <li key={department.id}>
                   <Link
-                    href={`/collections/${c.slug}`}
+                    href={`/collections/${department.slug}`}
                     className="hover:text-brand-700"
                   >
-                    {c.name}
+                    {department.name}
                   </Link>
                 </li>
               ))}

@@ -106,7 +106,7 @@ export function AddToBasket({
       <button
         type="button"
         onClick={handleAdd}
-        className={`rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
+        className={`rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all active:scale-[0.97] ${
           added ? "bg-brand-700" : "bg-brand-600 hover:bg-brand-700"
         } ${size === "compact" ? "" : "w-full"}`}
       >

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToBasket } from "@/app/(shop)/add-to-basket";
+import { MobileBuyBar } from "@/app/(shop)/mobile-buy-bar";
 import { ProductImage } from "@/app/(shop)/product-image";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { formatRupees } from "@/lib/format";
@@ -32,6 +33,9 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <ShopShell>
+      {/* Room at the bottom on mobile so the fixed buy bar never covers the
+          last line of content. */}
+      <div className="pb-24 sm:pb-0">
       <nav className="mb-5 text-sm text-ink-soft">
         <Link href="/" className="hover:text-brand-700">
           Shop
@@ -117,6 +121,9 @@ export default async function ProductPage({ params }: Props) {
           </dl>
         </div>
       </div>
+      </div>
+
+      <MobileBuyBar product={product} />
     </ShopShell>
   );
 }

@@ -37,16 +37,76 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
+html {
+  /* Smooth in-page jumps, but never fight a user who prefers no motion. */
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
   /* The layout sets the Geist font variables; use them rather than
      hard-coding Arial, which silently overrode them before. */
   font-family: var(--font-sans);
+  /* Sharper type — the difference a veteran notices and a novice doesn't. */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Brand-tinted text selection instead of the browser's default blue. */
+::selection {
+  background: var(--color-brand-100);
+  color: var(--color-brand-900);
 }
 
 /* Keyboard focus should be obvious on a shared counter device. */
 :focus-visible {
   outline: 2px solid var(--color-brand-600);
   outline-offset: 2px;
+}
+
+/* A slim, on-brand scrollbar for the horizontal category rails. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 9999px;
+}
+
+/* Entrance animations. Kept tiny — polish, not a light show — and disabled
+   entirely for anyone who asked their OS to reduce motion. */
+@keyframes ff-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ff-rise {
+  animation: ff-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
