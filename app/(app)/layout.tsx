@@ -40,8 +40,14 @@ export default async function AppLayout({
                 Orders
               </Link>
               <Link
-                href="/dashboard/stock"
+                href="/dashboard/credit"
                 className="text-ink-soft transition-colors hover:text-brand-700"
+              >
+                Credit
+              </Link>
+              <Link
+                href="/dashboard/stock"
+                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
               >
                 Stock
               </Link>

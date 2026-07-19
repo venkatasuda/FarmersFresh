@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { getOrders } from "@/lib/orders";
+import { getDebtors } from "@/lib/credit";
 import { formatRupees } from "@/lib/format";
 
 export const metadata = {
@@ -11,7 +12,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  const openOrders = await getOrders(false);
+  const [openOrders, debtors] = await Promise.all([
+    getOrders(false),
+    getDebtors(),
+  ]);
+  const totalOwed = debtors.reduce((s, d) => s + d.outstanding, 0);
 
   const farms = session.memberships.filter((m) => m.locationType === "farm");
   const stores = session.memberships.filter((m) => m.locationType === "store");
@@ -61,6 +66,27 @@ export default async function DashboardPage() {
           </p>
         ) : null}
       </section>
+
+      {totalOwed > 0 ? (
+        <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-medium text-ink">On credit</h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                {formatRupees(totalOwed)} owed across{" "}
+                {debtors.filter((d) => d.outstanding > 0).length} customers —
+                earned, not yet collected.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/credit"
+              className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-sm text-ink-soft hover:border-brand-300 hover:text-brand-700"
+            >
+              Ledger
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <h2 className="text-sm font-medium text-ink">Your access</h2>

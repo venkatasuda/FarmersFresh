@@ -131,6 +131,23 @@ export type AdminProduct = {
 /** The pack units a product can actually have (never null — that's "loose"). */
 export type PackUnit = "g" | "kg" | "ml" | "l" | "piece" | "dozen";
 
+export type CustomerBalance = {
+  customerId: string;
+  name: string;
+  phone: string | null;
+  totalBilled: number;
+  totalPaid: number;
+  outstanding: number;
+};
+
+export type LedgerEntry = {
+  id: string;
+  kind: "charge" | "payment";
+  amount: number;
+  method: string | null;
+  at: string;
+};
+
 /** A product as the counter till sees it. */
 export type PosProduct = {
   id: string;
