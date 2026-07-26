@@ -131,6 +131,23 @@ export type AdminProduct = {
 /** The pack units a product can actually have (never null — that's "loose"). */
 export type PackUnit = "g" | "kg" | "ml" | "l" | "piece" | "dozen";
 
+export type Delivery = {
+  id: string;
+  orderNumber: string;
+  status: OrderStatus;
+  contactName: string;
+  contactPhone: string;
+  addressLine: string;
+  city: string | null;
+  pincode: string | null;
+  landmark: string | null;
+  total: number;
+  deliverySlot: string | null;
+  assignedTo: string | null;
+  assignedName: string | null;
+  placedAt: string;
+};
+
 export type CustomerBalance = {
   customerId: string;
   name: string;

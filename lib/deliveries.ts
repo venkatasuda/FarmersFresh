@@ -4,24 +4,9 @@
  */
 import { createClient } from "@/lib/supabase/server";
 import { num } from "@/lib/format";
-import type { OrderStatus } from "@/lib/types";
+import type { Delivery, OrderStatus } from "@/lib/types";
 
-export type Delivery = {
-  id: string;
-  orderNumber: string;
-  status: OrderStatus;
-  contactName: string;
-  contactPhone: string;
-  addressLine: string;
-  city: string | null;
-  pincode: string | null;
-  landmark: string | null;
-  total: number;
-  deliverySlot: string | null;
-  assignedTo: string | null;
-  assignedName: string | null;
-  placedAt: string;
-};
+export type { Delivery };
 
 /**
  * The delivery run: orders that are confirmed, packed, or out for delivery —
