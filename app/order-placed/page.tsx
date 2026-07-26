@@ -15,10 +15,11 @@ export const metadata = { title: "Order placed · Farmers Fresh" };
 export default async function OrderPlacedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ number?: string; total?: string }>;
+  searchParams: Promise<{ number?: string; total?: string; paid?: string }>;
 }) {
-  const { number, total } = await searchParams;
+  const { number, total, paid } = await searchParams;
   const amount = total ? Number(total) : null;
+  const isPaid = paid === "1";
 
   return (
     <ShopShell>
@@ -36,7 +37,7 @@ export default async function OrderPlacedPage({
         </span>
 
         <h1 className="mt-5 text-xl font-semibold tracking-tight text-ink">
-          Order placed
+          {isPaid ? "Payment received" : "Order placed"}
         </h1>
 
         {number ? (
@@ -47,14 +48,20 @@ export default async function OrderPlacedPage({
         ) : null}
 
         {amount !== null && Number.isFinite(amount) ? (
-          <p className="mt-4 text-2xl font-semibold text-ink">
-            {formatRupees(amount)}
-          </p>
+          <>
+            <p className="mt-4 text-2xl font-semibold text-ink">
+              {formatRupees(amount)}
+            </p>
+            {isPaid ? (
+              <p className="mt-1 text-xs font-medium text-brand-700">Paid online</p>
+            ) : null}
+          </>
         ) : null}
 
         <p className="mt-4 text-sm text-ink-soft">
-          We&apos;ll call you shortly to confirm the cut and the delivery time.
-          Please keep cash or UPI ready for the delivery.
+          {isPaid
+            ? "We've received your payment and started on your order. We'll call you shortly to confirm the cut and the delivery time."
+            : "We'll call you shortly to confirm the cut and the delivery time. Please keep cash or UPI ready for the delivery."}
         </p>
 
         <p className="mt-4 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">

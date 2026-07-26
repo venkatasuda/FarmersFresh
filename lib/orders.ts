@@ -55,6 +55,12 @@ export async function getOrders(
     .order("placed_at", { ascending: false })
     .limit(100);
 
+  // Never show orders still awaiting online payment on the staff board — an
+  // unpaid order isn't a real order yet. It appears only once payment lands
+  // (status flips to 'placed'). Even the "All" view hides these to avoid
+  // half-finished checkouts cluttering the queue.
+  query = query.neq("status", "pending_payment");
+
   if (!includeFinished) {
     query = query.not("status", "in", '("delivered","cancelled")');
   }

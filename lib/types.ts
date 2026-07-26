@@ -238,6 +238,7 @@ export function discountPercent(p: {
 // ---------- Orders ----------
 
 export type OrderStatus =
+  | "pending_payment"
   | "placed"
   | "confirmed"
   | "packed"
@@ -280,6 +281,7 @@ export const SLOT_LABELS: Record<string, string> = {
 };
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
+  pending_payment: "Awaiting payment",
   placed: "New",
   confirmed: "Confirmed",
   packed: "Packed",

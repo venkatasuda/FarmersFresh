@@ -3,8 +3,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { toQuantity } from "@/lib/guard";
 
+export type PaymentMethod = "cod" | "upi" | "card";
+
 export type PlaceOrderResult =
-  | { ok: true; orderNumber: string; total: number }
+  | {
+      ok: true;
+      orderId: string;
+      orderNumber: string;
+      total: number;
+      paymentMethod: PaymentMethod;
+    }
   | { ok: false; message: string };
 
 export type SubmittedLine = { productId: string; quantity: number };
@@ -177,6 +185,7 @@ export async function placeOrder(
     notes: string;
     coupon: string;
     useCredit: boolean;
+    paymentMethod: PaymentMethod;
   },
   lines: SubmittedLine[]
 ): Promise<PlaceOrderResult> {
@@ -210,6 +219,11 @@ export async function placeOrder(
     };
   }
 
+  const method: PaymentMethod =
+    form.paymentMethod === "upi" || form.paymentMethod === "card"
+      ? form.paymentMethod
+      : "cod";
+
   const { data, error } = await supabase.rpc("place_order", {
     p_org_id: orgId,
     p_contact_name: form.name,
@@ -224,6 +238,7 @@ export async function placeOrder(
     p_lines: cleanLines,
     p_coupon_code: form.coupon || null,
     p_use_credit: form.useCredit === true,
+    p_payment_method: method,
   });
 
   if (error) {
@@ -252,7 +267,9 @@ export async function placeOrder(
 
   return {
     ok: true,
+    orderId: String(row.order_id),
     orderNumber: String(row.order_number),
     total: Number(row.total),
+    paymentMethod: method,
   };
 }

@@ -31,21 +31,51 @@ export function RealtimeOrders() {
       refreshTimer.current = window.setTimeout(() => router.refresh(), 400);
     }
 
+    // A real, actionable order = one the shop should start on. That's a COD
+    // order the moment it's inserted, or an online order the moment it's paid
+    // (status flips pending_payment → placed). We must NOT chime when an online
+    // order is merely created and still awaiting payment.
+    const isHeld = (row: Record<string, unknown> | null) =>
+      !!row &&
+      (row.payment_method === "upi" || row.payment_method === "card") &&
+      row.is_paid !== true;
+
+    function announce() {
+      setNewCount((c) => c + 1);
+      chime();
+      scheduleRefresh();
+    }
+
     const channel = supabase
       .channel("orders-board")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders" },
-        () => {
-          setNewCount((c) => c + 1);
-          chime();
-          scheduleRefresh();
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          if (isHeld(row)) {
+            scheduleRefresh();
+            return;
+          }
+          announce();
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders" },
-        () => scheduleRefresh()
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          const prev = payload.old as Record<string, unknown>;
+          // Online order just got paid: it becomes a new order to work on.
+          if (
+            prev?.status === "pending_payment" &&
+            row?.status === "placed"
+          ) {
+            announce();
+            return;
+          }
+          scheduleRefresh();
+        }
       )
       .subscribe((status) => {
         setConnected(status === "SUBSCRIBED");

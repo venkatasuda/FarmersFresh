@@ -55,6 +55,20 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createClient(supabaseUrl, serviceRole);
+
+  // Cross-check: this payment must be for the Razorpay order we opened against
+  // THIS shop order. Without this, a valid signature from any cheap Razorpay
+  // order could be replayed to settle an expensive one.
+  const { data: order } = await admin
+    .from("orders")
+    .select("razorpay_order_id")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (!order || order.razorpay_order_id !== razorpay_order_id) {
+    return NextResponse.json({ error: "Payment does not match order." }, { status: 400 });
+  }
+
   const { error } = await admin.rpc("mark_order_paid", {
     p_order_id: orderId,
     p_razorpay_order: razorpay_order_id,

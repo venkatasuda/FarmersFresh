@@ -11,8 +11,10 @@ import {
   getMyAddresses,
   placeOrder,
   previewCoupon,
+  type PaymentMethod,
   type SavedAddress,
 } from "./actions";
+import { payForOrder, type PayResult } from "./razorpay";
 import { getMyWallet } from "@/app/account/wallet-actions";
 
 const SLOTS = [
@@ -20,6 +22,10 @@ const SLOTS = [
   { value: "tomorrow_morning", label: "Tomorrow, 7–11 am" },
   { value: "tomorrow_evening", label: "Tomorrow, 4–8 pm" },
 ];
+
+// Online payment only appears when a gateway key is configured, so there are
+// never dead buttons before the shop has connected one. COD always works.
+const ONLINE_ENABLED = Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
 
 /**
  * Checkout body. Split from the route so `ShopShell` (an async Server
@@ -39,6 +45,17 @@ export function CheckoutClient() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [useCredit, setUseCredit] = useState(false);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [payMethod, setPayMethod] = useState<PaymentMethod>(
+    ONLINE_ENABLED ? "upi" : "cod"
+  );
+  // Set once an online order has been created and is awaiting payment, so a
+  // dismissed Razorpay sheet lets the customer retry the SAME order instead of
+  // creating a duplicate.
+  const [held, setHeld] = useState<{
+    orderId: string;
+    orderNumber: string;
+    total: number;
+  } | null>(null);
 
   // Coupon: the applied code + the discount the server confirmed. Both are
   // re-validated by place_order at submit — this is only the friendly preview.
@@ -169,8 +186,52 @@ export function CheckoutClient() {
     );
   }
 
+  function readPrefill() {
+    const get = (n: string) =>
+      (document.querySelector(`[name="${n}"]`) as HTMLInputElement | null)?.value ??
+      "";
+    return { name: get("name"), email: get("email"), phone: get("phone") };
+  }
+
+  // Route the payment result: confirmed → success page; dismissed/failed →
+  // keep the held order so the customer can retry without a duplicate.
+  function handlePayResult(
+    r: PayResult,
+    orderNumber: string,
+    total: number
+  ) {
+    if (r.status === "paid") {
+      setHeld(null);
+      clear();
+      router.push(
+        `/order-placed?number=${encodeURIComponent(orderNumber)}&total=${total}&paid=1`
+      );
+    } else if (r.status === "dismissed") {
+      setError(
+        "Payment wasn't completed. We've held your order for 30 minutes — tap Complete payment to finish, or it will be cancelled."
+      );
+    } else {
+      setError(r.message);
+    }
+  }
+
   function handleSubmit(formData: FormData) {
     setError(null);
+
+    // Already have a held online order (a previous attempt was dismissed) —
+    // retry paying for it rather than placing a new one.
+    if (held) {
+      const method = payMethod === "card" ? "card" : "upi";
+      startTransition(async () => {
+        const r = await payForOrder({
+          orderId: held.orderId,
+          method,
+          prefill: readPrefill(),
+        });
+        handlePayResult(r, held.orderNumber, held.total);
+      });
+      return;
+    }
 
     const form = {
       name: String(formData.get("name") ?? ""),
@@ -184,6 +245,7 @@ export function CheckoutClient() {
       notes: String(formData.get("notes") ?? ""),
       coupon: coupon ?? "",
       useCredit,
+      paymentMethod: payMethod,
     };
 
     // Product ids and quantities only — never prices. The database re-prices.
@@ -200,10 +262,27 @@ export function CheckoutClient() {
         return;
       }
 
-      clear();
-      router.push(
-        `/order-placed?number=${encodeURIComponent(result.orderNumber)}&total=${result.total}`
-      );
+      // Cash on delivery: nothing to collect now — straight to confirmation.
+      if (result.paymentMethod === "cod") {
+        clear();
+        router.push(
+          `/order-placed?number=${encodeURIComponent(result.orderNumber)}&total=${result.total}`
+        );
+        return;
+      }
+
+      // UPI / Card: the order is created and held; collect the money now.
+      setHeld({
+        orderId: result.orderId,
+        orderNumber: result.orderNumber,
+        total: result.total,
+      });
+      const r = await payForOrder({
+        orderId: result.orderId,
+        method: result.paymentMethod,
+        prefill: readPrefill(),
+      });
+      handlePayResult(r, result.orderNumber, result.total);
     });
   }
 
@@ -371,6 +450,45 @@ export function CheckoutClient() {
               hint="Cutting preference, gate code, best time to call"
             />
           </div>
+
+          <fieldset className="rounded-2xl border border-line bg-surface p-5">
+            <legend className="px-1 text-sm font-medium text-ink">
+              How would you like to pay?
+            </legend>
+            <div className="mt-2 space-y-2">
+              {ONLINE_ENABLED ? (
+                <>
+                  <PayOption
+                    value="upi"
+                    selected={payMethod}
+                    onSelect={setPayMethod}
+                    title="UPI"
+                    subtitle="GPay, PhonePe, Paytm & any UPI app"
+                  />
+                  <PayOption
+                    value="card"
+                    selected={payMethod}
+                    onSelect={setPayMethod}
+                    title="Credit / Debit card"
+                    subtitle="Visa, Mastercard, RuPay"
+                  />
+                </>
+              ) : null}
+              <PayOption
+                value="cod"
+                selected={payMethod}
+                onSelect={setPayMethod}
+                title="Cash on delivery"
+                subtitle="Pay cash when your order arrives"
+              />
+            </div>
+            {payMethod !== "cod" ? (
+              <p className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
+                You&apos;ll pay securely now. We start preparing your order only
+                after the payment is received.
+              </p>
+            ) : null}
+          </fieldset>
         </div>
 
         <aside className="h-fit rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-36">
@@ -478,7 +596,9 @@ export function CheckoutClient() {
           </dl>
 
           <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
-            <span className="font-medium text-ink">Pay on delivery</span>
+            <span className="font-medium text-ink">
+              {payMethod === "cod" ? "Pay on delivery" : "To pay now"}
+            </span>
             <span className="text-xl font-semibold text-ink tabular-nums">
               {formatRupees(grandTotal)}
             </span>
@@ -490,18 +610,64 @@ export function CheckoutClient() {
             className="mt-5 w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
           >
             {pending
-              ? "Placing order…"
+              ? payMethod === "cod"
+                ? "Placing order…"
+                : "Opening payment…"
               : pinServed === false
                 ? "Out of delivery area"
-                : "Place order"}
+                : held
+                  ? `Complete payment · ${formatRupees(grandTotal)}`
+                  : payMethod === "cod"
+                    ? "Place order"
+                    : `Pay ${formatRupees(grandTotal)}`}
           </button>
 
           <p className="mt-3 text-center text-xs text-ink-soft">
-            Final price follows the weighed cut. We&apos;ll confirm by phone.
+            {payMethod === "cod"
+              ? "Final price follows the weighed cut. We'll confirm by phone."
+              : "Payments are processed securely. Card details never touch our servers."}
           </p>
         </aside>
       </form>
     </>
+  );
+}
+
+function PayOption({
+  value,
+  selected,
+  onSelect,
+  title,
+  subtitle,
+}: {
+  value: PaymentMethod;
+  selected: PaymentMethod;
+  onSelect: (v: PaymentMethod) => void;
+  title: string;
+  subtitle: string;
+}) {
+  const active = selected === value;
+  return (
+    <label
+      className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition-colors ${
+        active
+          ? "border-brand-500 bg-brand-50"
+          : "border-line hover:border-brand-300"
+      }`}
+    >
+      <input
+        type="radio"
+        name="paymentMethod"
+        value={value}
+        checked={active}
+        onChange={() => onSelect(value)}
+        className="mt-0.5 accent-brand-600"
+      />
+      <span>
+        <span className="block font-medium text-ink">{title}</span>
+        <span className="block text-xs text-ink-soft">{subtitle}</span>
+      </span>
+    </label>
   );
 }
 
