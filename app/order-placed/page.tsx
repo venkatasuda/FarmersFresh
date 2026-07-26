@@ -62,12 +62,22 @@ export default async function OrderPlacedPage({
           order.
         </p>
 
-        <Link
-          href="/"
-          className="mt-6 inline-block rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          Continue shopping
-        </Link>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          {number ? (
+            <Link
+              href={`/track?number=${encodeURIComponent(number)}`}
+              className="inline-block rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Track this order
+            </Link>
+          ) : null}
+          <Link
+            href="/"
+            className="text-sm text-ink-soft hover:text-brand-700"
+          >
+            Continue shopping
+          </Link>
+        </div>
       </div>
     </ShopShell>
   );

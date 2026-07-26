@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeError } from "@/lib/guard";
 
 export type ZoneResult = { ok: true } | { ok: false; message: string };
 
@@ -30,7 +31,7 @@ export async function addZone(
       ok: false,
       message: error.message.includes("duplicate")
         ? "That PIN code is already on the list."
-        : error.message,
+        : sanitizeError(error.message),
     };
   }
 
@@ -41,7 +42,7 @@ export async function addZone(
 export async function removeZone(id: string): Promise<ZoneResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("delivery_zones").delete().eq("id", id);
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/delivery");
   return { ok: true };
 }
@@ -67,7 +68,7 @@ export async function saveNotificationTargets(
     })
     .eq("id", orgId);
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/delivery");
   return { ok: true };
 }

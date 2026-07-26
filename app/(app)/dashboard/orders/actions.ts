@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeError } from "@/lib/guard";
 import type { OrderStatus } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -32,7 +33,7 @@ export async function advanceOrder(
     .update(patch)
     .eq("id", orderId);
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
 
   revalidatePath("/dashboard/orders");
   return { ok: true };
@@ -54,7 +55,7 @@ export async function cancelOrder(
     p_reason: reason || "Cancelled by staff",
   });
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
 
   revalidatePath("/dashboard/orders");
   return { ok: true };

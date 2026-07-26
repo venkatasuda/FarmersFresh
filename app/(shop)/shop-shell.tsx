@@ -48,6 +48,13 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             <SearchBox className="flex-1" />
           </Suspense>
 
+          <Link
+            href="/track"
+            className="hidden shrink-0 text-sm font-medium text-ink-soft transition-colors hover:text-brand-700 sm:inline"
+          >
+            Track
+          </Link>
+
           <CartButton />
         </div>
 
@@ -152,6 +159,11 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
           <div>
             <h3 className="text-sm font-medium text-ink">Help</h3>
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
+              <li>
+                <Link href="/track" className="hover:text-brand-700">
+                  Track my order
+                </Link>
+              </li>
               <li>
                 <Link href="/delivery-info" className="hover:text-brand-700">
                   Delivery

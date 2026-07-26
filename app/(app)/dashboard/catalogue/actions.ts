@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeError } from "@/lib/guard";
 
 export type SaveResult =
   | { ok: true; id: string }
@@ -64,7 +65,7 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
     p_sort_order: input.sortOrder,
   });
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
 
   revalidatePath("/dashboard/catalogue");
   revalidatePath("/dashboard/stock");
@@ -83,7 +84,7 @@ export async function retireProduct(
     p_reason: reason || "Line discontinued",
   });
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
 
   revalidatePath("/dashboard/catalogue");
   revalidatePath("/");
@@ -110,7 +111,7 @@ export async function togglePublished(
       ok: false,
       message: error.message.includes("products_publishable")
         ? "Add a price before putting this on the shop."
-        : error.message,
+        : sanitizeError(error.message),
     };
   }
 

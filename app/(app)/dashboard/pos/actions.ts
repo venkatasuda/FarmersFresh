@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeError, toAmount, toQuantity } from "@/lib/guard";
 
 export type SaleLine = {
   productId: string;
@@ -30,22 +31,38 @@ export async function recordSale(input: {
     return { ok: false, message: "Add something to the sale first." };
   }
 
+  // Coerce every number before it leaves the app. A NaN quantity or a hacked
+  // negative price would otherwise reach record_sale as junk.
+  const lines: { product_id: string; quantity: number; unit_price: number }[] =
+    [];
+  for (const l of input.lines) {
+    const quantity = toQuantity(l.quantity);
+    // Price may legitimately be 0 (a free item), so allow 0 but reject junk.
+    const price =
+      Number.isFinite(l.unitPrice) && l.unitPrice >= 0 && l.unitPrice <= 1_000_000
+        ? Math.round(l.unitPrice * 100) / 100
+        : null;
+    if (quantity === null || price === null || !l.productId) {
+      return { ok: false, message: "Check the quantity and price on each line." };
+    }
+    lines.push({ product_id: l.productId, quantity, unit_price: price });
+  }
+
+  const amountPaid =
+    input.amountPaid > 0 ? (toAmount(input.amountPaid) ?? 0) : 0;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("record_sale", {
     p_location: input.locationId,
     p_customer_id: input.customerId,
-    p_lines: input.lines.map((l) => ({
-      product_id: l.productId,
-      quantity: l.quantity,
-      unit_price: l.unitPrice,
-    })),
+    p_lines: lines,
     p_method: input.method,
-    p_amount_paid: input.amountPaid,
+    p_amount_paid: amountPaid,
     p_note: input.note || null,
   });
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
 
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return { ok: false, message: "The sale didn't record. Try again." };
@@ -76,6 +93,6 @@ export async function findOrCreateCustomer(
     p_phone: phone,
   });
 
-  if (error) return { ok: false, message: error.message };
+  if (error) return { ok: false, message: sanitizeError(error.message) };
   return { ok: true, id: String(data) };
 }

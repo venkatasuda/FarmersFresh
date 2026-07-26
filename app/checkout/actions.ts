@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { toQuantity } from "@/lib/guard";
 
 export type PlaceOrderResult =
   | { ok: true; orderNumber: string; total: number }
@@ -62,6 +63,19 @@ export async function placeOrder(
     return { ok: false, message: "Your basket is empty." };
   }
 
+  // The cart comes from the customer's own browser (localStorage), so treat it
+  // as untrusted: coerce quantities, drop anything malformed, cap the count.
+  // The database re-checks all of this too — this is the friendly first pass.
+  const cleanLines = lines
+    .filter((l) => l && typeof l.productId === "string")
+    .map((l) => ({ product_id: l.productId, quantity: toQuantity(l.quantity, 50) }))
+    .filter((l): l is { product_id: string; quantity: number } => l.quantity !== null)
+    .slice(0, 40);
+
+  if (cleanLines.length === 0) {
+    return { ok: false, message: "Your basket has nothing valid to order." };
+  }
+
   const supabase = await createClient();
 
   const { data: orgId, error: orgError } = await supabase.rpc(
@@ -71,8 +85,7 @@ export async function placeOrder(
   if (orgError || !orgId) {
     return {
       ok: false,
-      message:
-        "The shop isn't open yet. Run migration 0003 and enable the storefront.",
+      message: "The shop isn't taking orders right now. Please try again later.",
     };
   }
 
@@ -86,10 +99,7 @@ export async function placeOrder(
     p_landmark: form.landmark,
     p_delivery_slot: form.slot,
     p_notes: form.notes,
-    p_lines: lines.map((l) => ({
-      product_id: l.productId,
-      quantity: l.quantity,
-    })),
+    p_lines: cleanLines,
   });
 
   if (error) {

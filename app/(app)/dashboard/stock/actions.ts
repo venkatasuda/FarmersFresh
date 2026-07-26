@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeError } from "@/lib/guard";
 import { STOCK_REASONS } from "@/lib/types";
 
 export type StockResult = { ok: true } | { ok: false; message: string };
@@ -43,8 +44,8 @@ export async function recordStock(
 
   if (error) {
     // record_stock raises readable messages for the cases staff can fix
-    // (below zero, no access to that location).
-    return { ok: false, message: error.message };
+    // (below zero, no access to that location); sanitize anything unexpected.
+    return { ok: false, message: sanitizeError(error.message) };
   }
 
   revalidatePath("/dashboard/stock");
