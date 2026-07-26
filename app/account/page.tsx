@@ -7,6 +7,7 @@ import { BuyAgain } from "./buy-again";
 import { getMyWallet } from "./wallet-actions";
 import { Subscriptions } from "./subscriptions";
 import { WalletCard } from "./wallet-card";
+import { qrSvg } from "@/lib/qr";
 import { createClient } from "@/lib/supabase/server";
 import { formatRupees } from "@/lib/format";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/types";
@@ -65,7 +66,7 @@ export default async function AccountPage() {
 
         {wallet ? (
           <div className="mt-6">
-            <WalletCard wallet={wallet} />
+            <WalletCard wallet={wallet} qrSvg={await qrSvg(wallet.code)} />
           </div>
         ) : null}
 

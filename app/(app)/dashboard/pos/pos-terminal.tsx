@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { findOrCreateCustomer, recordSale, type SaleLine } from "./actions";
+import {
+  findOrCreateCustomer,
+  lookupLoyalty,
+  recordSale,
+  type LoyaltyMember,
+  type SaleLine,
+} from "./actions";
 import { formatRupees } from "@/lib/format";
 import { packLabel, type PosProduct } from "@/lib/types";
 
@@ -33,9 +39,23 @@ export function PosTerminal({
   const [custName, setCustName] = useState("");
   const [custPhone, setCustPhone] = useState("");
 
+  // Loyalty: the scanned member, plus how many points to spend on this sale.
+  const [loyaltyCode, setLoyaltyCode] = useState("");
+  const [member, setMember] = useState<
+    Extract<LoyaltyMember, { found: true }> | null
+  >(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [loyaltyMsg, setLoyaltyMsg] = useState<string | null>(null);
+  const [redeem, setRedeem] = useState("");
+
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ total: number; change: number } | null>(null);
+  const [done, setDone] = useState<{
+    total: number;
+    change: number;
+    redeemed: number;
+    earned: number;
+  } | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -95,9 +115,31 @@ export function PosTerminal({
     setCustName("");
     setCustPhone("");
     setMethod("cash");
+    setMember(null);
+    setLoyaltyCode("");
+    setRedeem("");
+    setLoyaltyMsg(null);
   }
 
-  function complete() {
+  function findMember() {
+    const code = loyaltyCode.trim();
+    if (!code) return;
+    setLoyaltyMsg(null);
+    setLookingUp(true);
+    lookupLoyalty(code)
+      .then((m) => {
+        if (m.found) {
+          setMember(m);
+          setLoyaltyMsg(null);
+        } else {
+          setMember(null);
+          setLoyaltyMsg("No loyalty card found for that code.");
+        }
+      })
+      .finally(() => setLookingUp(false));
+  }
+
+  function completeSale() {
     setError(null);
     setDone(null);
 
@@ -106,7 +148,7 @@ export function PosTerminal({
 
       // Credit or part-payment needs a customer to carry the balance.
       const paid = onCredit ? 0 : Number.parseFloat(tendered || "0");
-      if ((onCredit || paid < total) && (custName || custPhone)) {
+      if ((onCredit || paid < owed) && (custName || custPhone)) {
         const c = await findOrCreateCustomer(locationId, custName, custPhone);
         if (!c.ok) {
           setError(c.message);
@@ -126,6 +168,8 @@ export function PosTerminal({
         method,
         amountPaid: paid,
         note: "",
+        loyaltyUser: member?.userId ?? null,
+        pointsRedeem: redeemApplied,
       });
 
       if (!r.ok) {
@@ -133,15 +177,32 @@ export function PosTerminal({
         return;
       }
 
-      setDone({ total: r.total, change: r.change });
+      setDone({
+        total: r.total,
+        change: r.change,
+        redeemed: redeemApplied,
+        earned: member ? Math.floor(owed / 100) : 0,
+      });
       reset();
     });
   }
 
+  // Points spent on this sale (1 point = ₹1), capped at the balance and total.
+  const redeemApplied = member
+    ? Math.min(
+        Math.max(0, Math.floor(Number.parseFloat(redeem || "0")) || 0),
+        Math.floor(member.points),
+        Math.floor(total)
+      )
+    : 0;
+  // What the customer must still cover after points are applied.
+  const owed = Math.max(total - redeemApplied, 0);
+
   const paidNum = onCredit ? 0 : Number.parseFloat(tendered || "0");
-  const change = paidNum > total ? paidNum - total : 0;
-  const owed = paidNum < total ? total - paidNum : 0;
-  const needsCustomer = (onCredit || owed > 0) && total > 0;
+  const change = paidNum > owed ? paidNum - owed : 0;
+  const shortfall = paidNum < owed ? owed - paidNum : 0;
+  const needsCustomer = (onCredit || shortfall > 0) && owed > 0;
+  const earnPreview = member ? Math.floor(owed / 100) : 0;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
