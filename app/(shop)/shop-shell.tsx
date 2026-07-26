@@ -7,6 +7,7 @@ import { SearchBox } from "./search-box";
 import { AccountButton } from "./account-button";
 import { CategoryIcon } from "./category-icon";
 import { LocationPicker } from "./location-picker";
+import { WishlistHeaderButton } from "./wishlist-header-button";
 import { getCategories } from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
 
