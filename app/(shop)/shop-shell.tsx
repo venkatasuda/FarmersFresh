@@ -4,6 +4,7 @@ import { Leaf } from "@/app/brand";
 import { AnnouncementBar } from "./announcement-bar";
 import { CartButton } from "./cart-button";
 import { SearchBox } from "./search-box";
+import { AccountButton } from "./account-button";
 import { CategoryIcon } from "./category-icon";
 import { getCategories } from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
@@ -56,6 +57,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             Track
           </Link>
 
+          <AccountButton />
           <CartButton />
         </div>
 
