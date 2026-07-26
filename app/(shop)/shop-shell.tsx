@@ -4,6 +4,7 @@ import { Leaf } from "@/app/brand";
 import { AnnouncementBar } from "./announcement-bar";
 import { CartButton } from "./cart-button";
 import { SearchBox } from "./search-box";
+import { CategoryIcon } from "./category-icon";
 import { getCategories } from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
 
@@ -28,7 +29,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
       <AnnouncementBar />
 
       <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-[1700px] items-center gap-4 px-4 py-3">
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2"
@@ -61,7 +62,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
         {tree.length > 0 ? (
           <nav
             aria-label="Departments"
-            className="scrollbar-thin mx-auto max-w-6xl overflow-x-auto px-4 pb-2"
+            className="scrollbar-thin mx-auto max-w-[1700px] overflow-x-auto px-4 pb-2"
           >
             <ul className="flex gap-1 whitespace-nowrap">
               <li>
@@ -80,9 +81,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
                     href={`/collections/${department.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ink-soft transition-colors group-hover:bg-brand-50 group-hover:text-brand-800"
                   >
-                    {department.icon ? (
-                      <span aria-hidden>{department.icon}</span>
-                    ) : null}
+                    <CategoryIcon slug={department.slug} className="size-4" />
                     {department.name}
                   </Link>
 
@@ -112,12 +111,12 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
         ) : null}
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-[1700px] flex-1 px-4 py-6">
         {children}
       </main>
 
       <footer className="mt-8 border-t border-line bg-surface">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-[1700px] gap-8 px-4 py-10 sm:grid-cols-3">
           <div>
             <span className="flex items-center gap-2">
               <span className="flex size-8 items-center justify-center rounded-lg bg-brand-600 text-white">
@@ -189,7 +188,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="border-t border-line">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-ink-soft">
+          <div className="mx-auto flex max-w-[1700px] flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-ink-soft">
             <p>© {new Date().getFullYear()} Farmers Fresh</p>
             <nav className="flex gap-4">
               <Link href="/privacy" className="hover:text-brand-700">

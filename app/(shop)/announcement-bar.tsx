@@ -30,7 +30,7 @@ export function AnnouncementBar() {
 
   return (
     <div className="bg-brand-800 text-white">
-      <div className="mx-auto flex h-9 max-w-6xl items-center justify-center px-4">
+      <div className="mx-auto flex h-9 max-w-[1700px] items-center justify-center px-4">
         {/* Only the active line is visible, but all of them stay in the DOM so
             a screen reader and a crawler see the full set, not a flicker. */}
         <p key={i} className="animate-in fade-in text-center text-xs font-medium sm:text-sm">

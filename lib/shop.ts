@@ -189,6 +189,74 @@ export async function getCategories(): Promise<Category[]> {
   }));
 }
 
+/** Fetch specific products by id, preserving the given order. Used by the
+ *  recommendation surfaces, which get an ordered list of ids from the engine. */
+export async function getProductsByIds(
+  ids: string[]
+): Promise<ShopProduct[]> {
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+
+  const [{ data, error }, stock] = await Promise.all([
+    supabase.from("products").select(SELECT).in("id", ids),
+    getStockMap(),
+  ]);
+
+  if (error) return [];
+  const order = new Map(ids.map((id, i) => [id, i]));
+
+  return ((data ?? []) as ProductRow[])
+    .map((r) => toProduct(r, stock.get(r.id) ?? false))
+    .filter((p): p is ShopProduct => p !== null)
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+}
+
+/**
+ * A `setof uuid` RPC returns an array of scalar strings via PostgREST, but be
+ * defensive: some setups wrap each in an object. Extract a plain id list.
+ */
+function idsFromRpc(data: unknown): string[] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((row) =>
+      typeof row === "string"
+        ? row
+        : row && typeof row === "object"
+          ? String(Object.values(row as Record<string, unknown>)[0] ?? "")
+          : ""
+    )
+    .filter(Boolean);
+}
+
+/** "Frequently bought together" for a product. */
+export async function getFrequentlyBoughtTogether(
+  productId: string,
+  limit = 4
+): Promise<ShopProduct[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("frequently_bought_together", {
+    p_product: productId,
+    p_limit: limit,
+  });
+  if (error) return [];
+  return getProductsByIds(idsFromRpc(data));
+}
+
+/** Complements for a whole basket. */
+export async function getCartRecommendations(
+  productIds: string[],
+  limit = 6
+): Promise<ShopProduct[]> {
+  if (productIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cart_recommendations", {
+    p_products: productIds,
+    p_limit: limit,
+  });
+  if (error) return [];
+  return getProductsByIds(idsFromRpc(data));
+}
+
 export async function getProductBySlug(
   slug: string
 ): Promise<ShopProduct | null> {

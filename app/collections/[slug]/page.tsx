@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getCatalogueByCategory, getCategories } from "@/lib/shop";
@@ -66,8 +67,18 @@ export default async function CollectionPage({ params }: Props) {
       </nav>
 
       <div className="mb-5">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-ink">
-          {category.icon ? <span aria-hidden>{category.icon}</span> : null}
+        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ink">
+          <span
+            className="flex size-10 items-center justify-center rounded-xl"
+            style={{
+              // A subcategory borrows its parent department's tint for a
+              // consistent colour down the whole tree.
+              background: categoryTint(parent?.slug ?? category.slug).bg,
+              color: categoryTint(parent?.slug ?? category.slug).fg,
+            }}
+          >
+            <CategoryIcon slug={parent?.slug ?? category.slug} className="size-6" />
+          </span>
           {category.name}
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
@@ -109,7 +120,7 @@ export default async function CollectionPage({ params }: Props) {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {products.map((p, i) => (
             <ProductCard key={p.id} product={p} priority={i < 4} />
           ))}

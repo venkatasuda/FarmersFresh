@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import { AddToBasket } from "@/app/(shop)/add-to-basket";
 import { MobileBuyBar } from "@/app/(shop)/mobile-buy-bar";
 import { ProductImage } from "@/app/(shop)/product-image";
+import { ProductCard } from "@/app/(shop)/product-card";
+import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { ShopShell } from "@/app/(shop)/shop-shell";
+import { TrackView } from "@/app/(shop)/track-view";
 import { formatRupees } from "@/lib/format";
-import { getProductBySlug } from "@/lib/shop";
+import { getFrequentlyBoughtTogether, getProductBySlug } from "@/lib/shop";
 import { discountPercent, packLabel, unitPrice } from "@/lib/types";
 
 // Next.js 16: params is a Promise.
@@ -31,8 +34,12 @@ export default async function ProductPage({ params }: Props) {
   // unlisted item 404s to the public without any extra check here.
   if (!product) notFound();
 
+  const goesWith = await getFrequentlyBoughtTogether(product.id, 4);
+
   return (
     <ShopShell>
+      {/* Records this view for the recently-viewed feed (client-side only). */}
+      <TrackView productId={product.id} />
       {/* Room at the bottom on mobile so the fixed buy bar never covers the
           last line of content. */}
       <div className="pb-24 sm:pb-0">
@@ -120,6 +127,23 @@ export default async function ProductPage({ params }: Props) {
             )}
           </dl>
         </div>
+      </div>
+
+      {goesWith.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="mb-4 text-lg font-semibold tracking-tight text-ink">
+            Goes well with
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            {goesWith.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="mt-12">
+        <RecentlyViewed excludeId={product.id} />
       </div>
       </div>
 

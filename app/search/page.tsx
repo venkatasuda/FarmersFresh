@@ -56,7 +56,7 @@ export default async function SearchPage({
           </Link>
         </div>
       ) : (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {results.map((p, i) => (
             <ProductCard key={p.id} product={p} priority={i < 4} />
           ))}

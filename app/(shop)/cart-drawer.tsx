@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "./cart-context";
 import { ProductImage } from "./product-image";
+import { cartRecommendations, type MiniProduct } from "./recommend-actions";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { FREE_DELIVERY_OVER, deliveryFeeFor } from "@/lib/types";
 
@@ -19,11 +20,33 @@ export function CartDrawer() {
     lines,
     setQuantity,
     remove,
+    add,
     subtotal,
     drawerOpen,
     closeDrawer,
     ready,
   } = useCart();
+
+  // Complementary suggestions for what's in the basket ("complete your order").
+  // Loaded when the drawer opens and re-fetched when the item set changes —
+  // keyed on a stable signature so it doesn't refetch on every quantity tweak.
+  const [recs, setRecs] = useState<MiniProduct[]>([]);
+  const itemKey = lines.map((l) => l.productId).sort().join(",");
+
+  useEffect(() => {
+    if (!drawerOpen || lines.length === 0) {
+      setRecs([]);
+      return;
+    }
+    let cancelled = false;
+    cartRecommendations(lines.map((l) => l.productId)).then((r) => {
+      if (!cancelled) setRecs(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerOpen, itemKey]);
 
   // Close on Escape, and lock body scroll while open — the small correctnesses
   // that separate a real drawer from a div that slides.
@@ -187,6 +210,59 @@ export function CartDrawer() {
                   </div>
                 </div>
               ))}
+
+              {/* Complete your order — the recommendation engine's basket
+                  complements. One-tap add without leaving the drawer. */}
+              {recs.length > 0 ? (
+                <div className="pt-1">
+                  <p className="mb-2 px-1 text-xs font-medium tracking-wide text-ink-soft uppercase">
+                    Complete your order
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {recs.map((r) => (
+                      <div
+                        key={r.id}
+                        className="w-28 shrink-0 rounded-xl border border-line bg-surface p-2"
+                      >
+                        <Link
+                          href={`/shop/${r.slug}`}
+                          onClick={closeDrawer}
+                          className="relative block aspect-square overflow-hidden rounded-lg bg-brand-50"
+                        >
+                          <ProductImage src={r.imagePath} alt={r.name} />
+                        </Link>
+                        <p className="mt-1.5 line-clamp-2 text-xs text-ink">
+                          {r.name}
+                        </p>
+                        <p className="text-xs font-medium text-ink">
+                          {formatRupees(r.salePrice)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            add(
+                              {
+                                productId: r.id,
+                                slug: r.slug,
+                                name: r.name,
+                                unit: r.unit,
+                                price: r.salePrice,
+                                imagePath: r.imagePath,
+                                packLabel: r.packLabel,
+                                step: r.step,
+                              },
+                              r.minOrderQty
+                            )
+                          }
+                          className="mt-1 w-full rounded-lg border border-brand-300 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <footer className="border-t border-line bg-surface p-4">

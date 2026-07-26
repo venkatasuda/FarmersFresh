@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
 import { ProductCard } from "@/app/(shop)/product-card";
+import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getCatalogue, getCategories } from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
@@ -24,10 +26,25 @@ export default async function ShopHome() {
 
   return (
     <ShopShell>
-      <section className="mb-8 overflow-hidden rounded-3xl bg-brand-700 px-6 py-10 text-white sm:px-10 sm:py-14">
-        <p className="text-sm font-medium text-brand-200">
-          Groceries & fresh meat, one delivery
-        </p>
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-6 py-10 text-white sm:px-10 sm:py-14">
+        {/* Soft decorative glows + an oversized leaf watermark — depth without
+            a heavy background image. */}
+        <div className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-brand-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/3 size-56 rounded-full bg-brand-300/10 blur-3xl" />
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden
+          className="pointer-events-none absolute -right-6 -bottom-8 size-56 text-white/5"
+          fill="currentColor"
+        >
+          <path d="M21 3.5c.6 7-3 15-11 15.2C6 18.8 3 15.6 3 11.4 3 6.9 6.7 3.6 11.6 3.3c3.4-.2 6.6 0 9.4.2Z" />
+        </svg>
+
+        <div className="relative">
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-brand-50 ring-1 ring-white/15 ring-inset">
+            <span className="size-1.5 rounded-full bg-brand-200" />
+            Groceries & fresh meat, one delivery
+          </p>
         <h1 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
           Your rice, dal and today&apos;s cut — at your door.
         </h1>
@@ -35,10 +52,11 @@ export default async function ShopHome() {
           Everyday Indian groceries, plus meat from our own farms. Pay when it
           reaches you.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3 text-sm">
-          <Badge>Free delivery over ₹500</Badge>
-          <Badge>Pay on delivery</Badge>
-          <Badge>Meat cut to order</Badge>
+          <div className="mt-6 flex flex-wrap gap-3 text-sm">
+            <Badge>Free delivery over ₹500</Badge>
+            <Badge>Pay on delivery</Badge>
+            <Badge>Meat cut to order</Badge>
+          </div>
         </div>
       </section>
 
@@ -46,27 +64,37 @@ export default async function ShopHome() {
         <EmptyCatalogue />
       ) : (
         <>
+          {/* Personalized: what this visitor looked at last time. */}
+          <RecentlyViewed />
+
           {/* Department tiles — the standard grocery entry point. */}
           {tree.length > 0 ? (
             <section className="mb-10">
-              <h2 className="mb-3 text-lg font-semibold tracking-tight text-ink">
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">
+                <span className="h-5 w-1 rounded-full bg-brand-500" />
                 Shop by department
               </h2>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-                {tree.map(({ department }) => (
-                  <Link
-                    key={department.id}
-                    href={`/collections/${department.slug}`}
-                    className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-colors hover:border-brand-300 hover:bg-brand-50"
-                  >
-                    <span className="text-2xl" aria-hidden>
-                      {department.icon ?? "🛒"}
-                    </span>
-                    <span className="text-xs leading-tight font-medium text-ink">
-                      {department.name}
-                    </span>
-                  </Link>
-                ))}
+                {tree.map(({ department }) => {
+                  const tint = categoryTint(department.slug);
+                  return (
+                    <Link
+                      key={department.id}
+                      href={`/collections/${department.slug}`}
+                      className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+                    >
+                      <span
+                        className="flex size-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-105"
+                        style={{ background: tint.bg, color: tint.fg }}
+                      >
+                        <CategoryIcon slug={department.slug} className="size-6" />
+                      </span>
+                      <span className="text-xs leading-tight font-medium text-ink">
+                        {department.name}
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           ) : null}
@@ -144,11 +172,12 @@ function Row({
     <section className="mb-10">
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-ink">
+          <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">
+            <span className="h-5 w-1 rounded-full bg-brand-500" />
             {title}
           </h2>
           {subtitle ? (
-            <p className="text-sm text-ink-soft">{subtitle}</p>
+            <p className="ml-3 text-sm text-ink-soft">{subtitle}</p>
           ) : null}
         </div>
         {/* Only show "See all" when the row maps to a real category page.
@@ -166,7 +195,7 @@ function Row({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {products.slice(0, 4).map((p, i) => (
           <ProductCard key={p.id} product={p} priority={priority && i < 4} />
         ))}
