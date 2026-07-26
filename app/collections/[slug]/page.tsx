@@ -120,7 +120,7 @@ export default async function CollectionPage({ params }: Props) {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((p, i) => (
             <ProductCard key={p.id} product={p} priority={i < 4} />
           ))}

@@ -1,72 +1,49 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Customer login by phone OTP — the Indian standard (Swiggy/Zepto/BigBasket),
- * no password to remember. Two steps: enter mobile → enter the 6-digit code.
+ * Customer login — email + password, Amazon style. A signed-out visitor signs
+ * in here; if they don't have an account, the "Create account" button sits
+ * below (secondary, not competing with sign-in).
  *
- * Because the whole system already keys customers on phone, logging in simply
- * connects them to the orders they've already placed. Sending the code needs
- * Supabase Phone Auth enabled with an SMS provider (the same MSG91/Twilio you
- * set up for notifications) — until then this shows a clear message rather
- * than failing silently.
+ * Uses Supabase Auth email/password. Confirmation emails are sent by Supabase,
+ * so this works without any external provider.
  */
 export function LoginClient() {
   const router = useRouter();
-  const [step, setStep] = useState<"phone" | "code">("phone");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const params = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Supabase wants E.164; India is +91 + 10 digits.
-  const e164 = () => "+91" + phone.replace(/\D/g, "").slice(-10);
+  // Shown after a successful sign-up redirects here.
+  const justConfirmed = params.get("confirmed") === "1";
+  const justSignedUp = params.get("check") === "1";
 
-  async function sendCode() {
+  async function signIn() {
     setError(null);
-    const clean = phone.replace(/\D/g, "");
-    if (!/^[6-9]\d{9}$/.test(clean)) {
-      setError("Enter a valid 10-digit mobile number.");
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
       return;
     }
     setBusy(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({ phone: e164() });
-      if (error) {
-        setError(
-          error.message.toLowerCase().includes("provider") ||
-            error.message.toLowerCase().includes("phone")
-            ? "Phone login isn't switched on yet. Please order as a guest for now."
-            : error.message
-        );
-        return;
-      }
-      setStep("code");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verify() {
-    setError(null);
-    if (!/^\d{4,8}$/.test(code.trim())) {
-      setError("Enter the code we sent you.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.verifyOtp({
-        phone: e164(),
-        token: code.trim(),
-        type: "sms",
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
       });
       if (error) {
-        setError("That code didn't match. Check it and try again.");
+        setError(
+          error.message.toLowerCase().includes("confirm")
+            ? "Please confirm your email first — check your inbox for the link."
+            : "Wrong email or password."
+        );
         return;
       }
       router.push("/account");
@@ -78,14 +55,30 @@ export function LoginClient() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-semibold tracking-tight text-ink">
-        Log in
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-ink">Log in</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Sign in with your mobile number to see your orders and check out faster.
+        Sign in to see your orders and check out faster.
       </p>
 
-      <div className="mt-6 space-y-4 rounded-2xl border border-line bg-surface p-6">
+      {justConfirmed ? (
+        <p className="mt-4 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-800">
+          Email confirmed — you can log in now.
+        </p>
+      ) : null}
+      {justSignedUp ? (
+        <p className="mt-4 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-800">
+          Almost there — we&apos;ve emailed you a confirmation link. Click it,
+          then log in.
+        </p>
+      ) : null}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          signIn();
+        }}
+        className="mt-6 space-y-4 rounded-2xl border border-line bg-surface p-6"
+      >
         {error ? (
           <p
             role="alert"
@@ -95,68 +88,51 @@ export function LoginClient() {
           </p>
         ) : null}
 
-        {step === "phone" ? (
-          <>
-            <label className="block">
-              <span className="text-sm font-medium text-ink">Mobile number</span>
-              <div className="mt-1.5 flex items-center rounded-lg border border-line bg-surface focus-within:border-brand-500">
-                <span className="px-3 text-sm text-ink-soft">+91</span>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="10-digit number"
-                  className="w-full rounded-r-lg bg-transparent py-2.5 pr-3 text-sm text-ink outline-none"
-                  onKeyDown={(e) => e.key === "Enter" && sendCode()}
-                />
-              </div>
-            </label>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={sendCode}
-              className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-            >
-              {busy ? "Sending…" : "Send code"}
-            </button>
-          </>
-        ) : (
-          <>
-            <label className="block">
-              <span className="text-sm font-medium text-ink">
-                Enter the code sent to +91 {phone}
-              </span>
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                inputMode="numeric"
-                placeholder="6-digit code"
-                className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-center text-lg tracking-widest text-ink outline-none focus:border-brand-500"
-                onKeyDown={(e) => e.key === "Enter" && verify()}
-              />
-            </label>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={verify}
-              className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-            >
-              {busy ? "Checking…" : "Verify & log in"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStep("phone");
-                setCode("");
-                setError(null);
-              }}
-              className="w-full text-center text-sm text-ink-soft hover:text-ink"
-            >
-              Change number
-            </button>
-          </>
-        )}
+        <label className="block">
+          <span className="text-sm font-medium text-ink">Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className={inputClass}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-medium text-ink">Password</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            className={inputClass}
+          />
+        </label>
+
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+        >
+          {busy ? "Signing in…" : "Log in"}
+        </button>
+      </form>
+
+      {/* Sign-up, pushed below the fold like Amazon — a divider then a
+          secondary button, so it never competes with returning customers. */}
+      <div className="mt-6">
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-xs text-ink-soft">New to Farmers Fresh?</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+        <Link
+          href="/account/signup"
+          className="mt-3 block rounded-lg border border-line bg-surface px-4 py-2.5 text-center text-sm font-medium text-ink transition-colors hover:border-brand-300 hover:text-brand-700"
+        >
+          Create your account
+        </Link>
       </div>
 
       <p className="mt-4 text-center text-xs text-ink-soft">
@@ -165,3 +141,6 @@ export function LoginClient() {
     </div>
   );
 }
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none transition-colors focus:border-brand-500";

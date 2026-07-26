@@ -30,7 +30,10 @@ export default async function AccountPage() {
   const { data } = await supabase.rpc("my_orders");
   const orders = ((data ?? []) as unknown[]).map((o) => o as MyOrder);
 
-  const phone = user.phone ? `+${user.phone}` : "";
+  const who =
+    (user.user_metadata?.full_name as string | undefined) ||
+    user.email ||
+    (user.phone ? `+${user.phone}` : "");
 
   return (
     <ShopShell>
@@ -40,9 +43,7 @@ export default async function AccountPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-ink">
               My account
             </h1>
-            {phone ? (
-              <p className="mt-1 text-sm text-ink-soft">{phone}</p>
-            ) : null}
+            {who ? <p className="mt-1 text-sm text-ink-soft">{who}</p> : null}
           </div>
           <form action={signOutCustomer}>
             <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useCart } from "@/app/(shop)/cart-context";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/types";
@@ -68,6 +68,26 @@ export function CheckoutClient() {
     setCouponInput("");
     setCouponMsg(null);
   }
+
+  // Prefill the PIN from the header location the customer already set, and run
+  // the delivery check straight away — one less field to retype.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("ff.location.v1");
+      if (!raw) return;
+      const loc = JSON.parse(raw) as { pincode?: string };
+      const el = document.querySelector(
+        'input[name="pincode"]'
+      ) as HTMLInputElement | null;
+      if (el && loc.pincode && !el.value) {
+        el.value = loc.pincode;
+        void onPincodeBlur(loc.pincode);
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onPincodeBlur(value: string) {
     const clean = value.replace(/\s/g, "");
