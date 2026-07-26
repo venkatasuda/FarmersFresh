@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { getOrders } from "@/lib/orders";
 import { getDebtors } from "@/lib/credit";
+import { getBusinessOverview } from "@/lib/overview";
 import { formatRupees } from "@/lib/format";
 
 export const metadata = {
@@ -12,9 +13,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  const [openOrders, debtors] = await Promise.all([
+  const [openOrders, debtors, overview] = await Promise.all([
     getOrders(false),
     getDebtors(),
+    session.isOwner ? getBusinessOverview() : Promise.resolve(null),
   ]);
   const totalOwed = debtors.reduce((s, d) => s + d.outstanding, 0);
 
@@ -38,6 +40,9 @@ export default async function DashboardPage() {
           ) : null}
         </p>
       </div>
+
+      {/* Owner business snapshot. */}
+      {overview ? <Overview data={overview} /> : null}
 
       {/* Orders first — this is the thing that needs acting on today. */}
       <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
@@ -152,12 +157,115 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <p className="text-xs text-ink-soft">
-        Next up — Bit 3: the counter POS, so walk-in sales draw down the same
-        stock the shop sells from.
+    </div>
+  );
+}
+
+function Overview({ data }: { data: NonNullable<Awaited<ReturnType<typeof getBusinessOverview>>> }) {
+  return (
+    <section className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Metric label="Today's takings" value={formatRupees(data.revenueToday)} accent />
+        <Metric label="Orders today" value={String(data.ordersToday)} />
+        <Metric label="Open orders" value={String(data.openOrders)} />
+        <Metric label="Last 7 days" value={formatRupees(data.revenueWeek)} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Best sellers" subtitle="Last 30 days">
+          {data.topProducts.length === 0 ? (
+            <Empty>No sales yet.</Empty>
+          ) : (
+            <ul className="divide-y divide-line">
+              {data.topProducts.map((p) => (
+                <li key={p.name} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="truncate text-ink">{p.name}</span>
+                  <span className="shrink-0 tabular-nums text-ink-soft">
+                    {formatRupees(p.revenue)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Lowest stock" subtitle="Restock soon">
+          {data.lowStock.length === 0 ? (
+            <Empty>No products yet.</Empty>
+          ) : (
+            <ul className="divide-y divide-line">
+              {data.lowStock.map((s) => (
+                <li key={s.name} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="truncate text-ink">{s.name}</span>
+                  <span
+                    className={`shrink-0 tabular-nums ${
+                      s.onHand <= 3 ? "font-medium text-red-600" : "text-ink-soft"
+                    }`}
+                  >
+                    {s.onHand} {s.unit === "kg" ? "kg" : "left"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Metric label="Repeat customers" value={`${data.repeatCustomers}/${data.totalCustomers}`} />
+        <Metric label="Loyalty members" value={String(data.loyaltyMembers)} />
+        <Metric label="Points outstanding" value={String(Math.floor(data.pointsOutstanding))} />
+        <Metric label="Active subscriptions" value={String(data.activeSubscriptions)} />
+      </div>
+    </section>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
+      <p className="text-xs text-ink-soft">{label}</p>
+      <p
+        className={`mt-1 text-xl font-semibold tabular-nums ${
+          accent ? "text-brand-700" : "text-ink"
+        }`}
+      >
+        {value}
       </p>
     </div>
   );
+}
+
+function Panel({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="text-sm font-medium text-ink">{title}</h2>
+        {subtitle ? <span className="text-xs text-ink-soft">{subtitle}</span> : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="py-4 text-center text-sm text-ink-soft">{children}</p>;
 }
 
 function Stat({

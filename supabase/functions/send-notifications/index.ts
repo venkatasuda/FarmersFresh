@@ -97,6 +97,10 @@ function customerBody(template: string, p: Record<string, unknown>): string {
       return `Your Farmers Fresh order ${num} has been cancelled. If this is unexpected, please call us.`;
     case "stock.back.customer":
       return `Good news! ${p.product_name ?? "An item you wanted"} is back in stock at Farmers Fresh. Order now: ${SITE_URL}${p.slug ? "/shop/" + p.slug : ""}`;
+    case "cart.reminder.customer":
+      return `You left ${p.item_count ?? "some"} item(s) in your basket at Farmers Fresh${p.subtotal ? " (" + rupees(p.subtotal) + ")" : ""}. Complete your order: ${SITE_URL}/checkout`;
+    case "winback.customer":
+      return `We miss you at Farmers Fresh! Fresh groceries & farm meat, delivered to your door. See this week's deals: ${SITE_URL}/offers`;
     default:
       return `Update on your Farmers Fresh order ${num}.`;
   }
@@ -107,13 +111,18 @@ function subjectFor(template: string, p: Record<string, unknown>): string {
     return `Your Farmers Fresh receipt — order ${p.order_number}`;
   if (template === "stock.back.customer")
     return `${p.product_name ?? "An item you wanted"} is back in stock`;
+  if (template === "cart.reminder.customer") return "You left items in your basket";
+  if (template === "winback.customer") return "We miss you at Farmers Fresh";
   if (template.startsWith("order.placed"))
     return `New order ${p.order_number} - ${rupees(p.total)}`;
   return `Farmers Fresh order ${p.order_number}`;
 }
 
 // Where a push notification should take the customer when tapped.
-function targetUrl(p: Record<string, unknown>): string {
+function targetUrl(n: Notif): string {
+  if (n.template === "cart.reminder.customer") return `${SITE_URL}/checkout`;
+  if (n.template === "winback.customer") return `${SITE_URL}/offers`;
+  const p = n.payload;
   if (p.slug) return `${SITE_URL}/shop/${p.slug}`;
   if (p.order_number) return `${SITE_URL}/track`;
   return SITE_URL;
@@ -266,7 +275,7 @@ async function sendPush(n: Notif) {
   const payload = JSON.stringify({
     title: "Farmers Fresh",
     body: bodyFor(n),
-    url: targetUrl(n.payload),
+    url: targetUrl(n),
   });
 
   let anyOk = false, lastErr = "";

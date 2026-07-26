@@ -30,6 +30,12 @@ export type Receipt = {
   pointsEarned: number;
   pointsWillEarn: number;
   items: ReceiptItem[];
+  store: {
+    name: string;
+    gstin: string | null;
+    address: string | null;
+    supportPhone: string | null;
+  };
 };
 
 /**
@@ -50,6 +56,7 @@ export async function getReceipt(
 
   const d = data as Record<string, unknown>;
   const items = Array.isArray(d.items) ? (d.items as Record<string, unknown>[]) : [];
+  const store = (d.store ?? {}) as Record<string, unknown>;
   return {
     orderNumber: String(d.order_number ?? ""),
     placedAt: String(d.placed_at ?? ""),
@@ -76,5 +83,11 @@ export async function getReceipt(
       unit_price: Number(i.unit_price ?? 0),
       line_total: Number(i.line_total ?? 0),
     })),
+    store: {
+      name: (store.name as string) || "Farmers Fresh",
+      gstin: (store.gstin as string | null) ?? null,
+      address: (store.address as string | null) ?? null,
+      supportPhone: (store.support_phone as string | null) ?? null,
+    },
   };
 }

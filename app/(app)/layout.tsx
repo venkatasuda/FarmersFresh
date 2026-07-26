@@ -60,6 +60,12 @@ export default async function AppLayout({
                 Credit
               </Link>
               <Link
+                href="/dashboard/returns"
+                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
+              >
+                Returns
+              </Link>
+              <Link
                 href="/dashboard/stock"
                 className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
               >
@@ -90,6 +96,12 @@ export default async function AppLayout({
                     className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
                   >
                     Delivery
+                  </Link>
+                  <Link
+                    href="/dashboard/settings"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Settings
                   </Link>
                 </>
               ) : null}

@@ -56,6 +56,73 @@ export type PayResult =
   | { status: "dismissed" }
   | { status: "error"; message: string };
 
+/** Pay for a Farmers Fresh Pass (membership). Same verified flow as an order. */
+export async function payForMembership(params: {
+  membershipId: string;
+  prefill: { name: string; email: string; phone: string };
+}): Promise<PayResult> {
+  const ok = await loadScript();
+  if (!ok || !window.Razorpay) {
+    return { status: "error", message: "Couldn't load the payment window. Check your connection." };
+  }
+
+  let opened: { razorpayOrderId: string; amount: number; keyId: string };
+  try {
+    const res = await fetch("/api/razorpay/membership", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ membershipId: params.membershipId }),
+    });
+    if (!res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      return { status: "error", message: j.error ?? "Couldn't start the payment." };
+    }
+    opened = (await res.json()) as typeof opened;
+  } catch {
+    return { status: "error", message: "Couldn't reach the payment service." };
+  }
+
+  return new Promise<PayResult>((resolve) => {
+    const rzp = new window.Razorpay!({
+      key: opened.keyId,
+      order_id: opened.razorpayOrderId,
+      amount: opened.amount,
+      currency: "INR",
+      name: "Farmers Fresh",
+      description: "Farmers Fresh Pass",
+      prefill: {
+        name: params.prefill.name,
+        email: params.prefill.email,
+        contact: params.prefill.phone,
+      },
+      theme: { color: "#16733e" },
+      handler: async (r) => {
+        try {
+          const res = await fetch("/api/razorpay/membership/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              membershipId: params.membershipId,
+              razorpay_order_id: r.razorpay_order_id,
+              razorpay_payment_id: r.razorpay_payment_id,
+              razorpay_signature: r.razorpay_signature,
+            }),
+          });
+          if (res.ok) resolve({ status: "paid" });
+          else {
+            const j = (await res.json().catch(() => ({}))) as { error?: string };
+            resolve({ status: "error", message: j.error ?? "We couldn't confirm the payment." });
+          }
+        } catch {
+          resolve({ status: "error", message: "We couldn't confirm the payment." });
+        }
+      },
+      modal: { ondismiss: () => resolve({ status: "dismissed" }) },
+    });
+    rzp.open();
+  });
+}
+
 export async function payForOrder(params: {
   orderId: string;
   method: "upi" | "card";

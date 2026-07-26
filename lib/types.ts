@@ -359,7 +359,22 @@ export const DELIVERY_FEE = 40;
  * Indicative only. `place_order` recalculates this server-side, so a tampered
  * page can change what the customer SEES but not what they are CHARGED.
  */
-export function deliveryFeeFor(subtotal: number): number {
+export function deliveryFeeFor(
+  subtotal: number,
+  freeOver: number = FREE_DELIVERY_OVER,
+  fee: number = DELIVERY_FEE
+): number {
   if (subtotal <= 0) return 0;
-  return subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_FEE;
+  return subtotal >= freeOver ? 0 : fee;
 }
+
+/** Customer-facing store settings, mirrored from the DB (client-safe shape). */
+export type StoreSettings = {
+  name: string;
+  supportEmail: string | null;
+  supportPhone: string | null;
+  freeDeliveryThreshold: number;
+  deliveryFee: number;
+  gstin: string | null;
+  businessAddress: string | null;
+};

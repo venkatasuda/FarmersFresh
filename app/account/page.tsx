@@ -5,7 +5,9 @@ import { signOutCustomer } from "./actions";
 import { AddressBook } from "./address-book";
 import { BuyAgain } from "./buy-again";
 import { getMyWallet } from "./wallet-actions";
+import { getMyMembership } from "@/app/pass/actions";
 import { NotificationToggle } from "./notification-toggle";
+import { ReportIssue } from "./report-issue";
 import { Subscriptions } from "./subscriptions";
 import { WalletCard } from "./wallet-card";
 import { qrSvg } from "@/lib/qr";
@@ -34,9 +36,10 @@ export default async function AccountPage() {
   // Not logged in → the customer login (not the staff one).
   if (!user) redirect("/account/login");
 
-  const [{ data }, wallet] = await Promise.all([
+  const [{ data }, wallet, membership] = await Promise.all([
     supabase.rpc("my_orders"),
     getMyWallet(),
+    getMyMembership(),
   ]);
   const orders = ((data ?? []) as unknown[]).map((o) => o as MyOrder);
 
@@ -70,6 +73,23 @@ export default async function AccountPage() {
             <WalletCard wallet={wallet} qrSvg={await qrSvg(wallet.code)} />
           </div>
         ) : null}
+
+        <Link
+          href="/pass"
+          className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 transition-colors hover:bg-brand-100"
+        >
+          <div>
+            <p className="text-sm font-medium text-brand-900">Farmers Fresh Pass</p>
+            <p className="text-xs text-brand-700">
+              {membership
+                ? `Active until ${new Date(membership.expiresAt).toLocaleDateString("en-IN", { dateStyle: "medium" })} · free delivery + ${membership.discountPercent}% off`
+                : "Free delivery on every order + a member discount"}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white">
+            {membership ? "Member" : "Get the Pass"}
+          </span>
+        </Link>
 
         <NotificationToggle />
 
@@ -143,6 +163,9 @@ export default async function AccountPage() {
                       </Link>
                     </span>
                   </div>
+                  {o.status === "delivered" ? (
+                    <ReportIssue orderNumber={o.order_number} />
+                  ) : null}
                 </li>
               ))}
             </ul>

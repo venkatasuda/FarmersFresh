@@ -59,6 +59,12 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
           </Suspense>
 
           <Link
+            href="/pass"
+            className="hidden rounded-full border border-brand-300 px-3 py-1.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 sm:inline-block"
+          >
+            Pass
+          </Link>
+          <Link
             href="/track"
             className="hidden shrink-0 text-sm font-medium text-ink-soft transition-colors hover:text-brand-700 sm:inline"
           >

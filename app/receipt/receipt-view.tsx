@@ -146,9 +146,20 @@ export function ReceiptView({ receipt }: { receipt: Receipt }) {
             : `You'll earn ${receipt.pointsWillEarn} loyalty points when this order is delivered.`}
         </div>
 
+        {receipt.store.gstin || receipt.store.address || receipt.store.supportPhone ? (
+          <div className="mt-4 border-t border-line pt-3 text-center text-[11px] text-ink-soft">
+            <p className="font-medium text-ink">{receipt.store.name}</p>
+            {receipt.store.address ? <p>{receipt.store.address}</p> : null}
+            {receipt.store.gstin ? <p>GSTIN: {receipt.store.gstin}</p> : null}
+            {receipt.store.supportPhone ? (
+              <p>Support: {receipt.store.supportPhone}</p>
+            ) : null}
+          </div>
+        ) : null}
+
         <p className="mt-4 text-center text-xs text-ink-soft">
-          Thank you for shopping with Farmers Fresh. This is a computer-generated
-          receipt.
+          Thank you for shopping with {receipt.store.name}. This is a
+          computer-generated receipt.
         </p>
       </div>
     </main>

@@ -15,6 +15,7 @@ import {
   type SavedAddress,
 } from "./actions";
 import { payForOrder, type PayResult } from "./razorpay";
+import { clearCart, saveCart } from "./cart-sync-actions";
 import { getMyWallet } from "@/app/account/wallet-actions";
 
 const SLOTS = [
@@ -32,8 +33,17 @@ const ONLINE_ENABLED = Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
  * Component that loads categories) can wrap it — a Client Component cannot
  * render an async Server Component.
  */
-export function CheckoutClient() {
+export function CheckoutClient({
+  freeDeliveryThreshold,
+  deliveryFee,
+  memberDiscountPct,
+}: {
+  freeDeliveryThreshold: number;
+  deliveryFee: number;
+  memberDiscountPct: number;
+}) {
   const router = useRouter();
+  const isMember = memberDiscountPct > 0;
   const { lines, subtotal, clear, ready } = useCart();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +75,13 @@ export function CheckoutClient() {
   const [couponMsg, setCouponMsg] = useState<string | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  const fee = deliveryFeeFor(subtotal);
-  const afterDiscount = Math.max(subtotal - discount, 0);
+  // Pass members: free delivery + a % off the subtotal. The server recomputes
+  // both — this only keeps the on-screen total honest.
+  const memberDiscount = isMember ? Math.round((subtotal * memberDiscountPct) / 100) : 0;
+  const fee = isMember
+    ? 0
+    : deliveryFeeFor(subtotal, freeDeliveryThreshold, deliveryFee);
+  const afterDiscount = Math.max(subtotal - discount - memberDiscount, 0);
   // Wallet credit is applied against the amount due before delivery, capped at
   // the balance. The server recomputes this — the UI is a preview.
   const creditApplied = useCredit ? Math.min(walletBalance, afterDiscount) : 0;
@@ -156,6 +171,13 @@ export function CheckoutClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Reaching checkout with items is a strong signal — remember the basket so a
+  // logged-in customer who drifts off gets a reminder. Server no-ops for guests.
+  useEffect(() => {
+    if (ready && lines.length > 0) void saveCart(lines.length, subtotal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+
   async function onPincodeBlur(value: string) {
     const clean = value.replace(/\s/g, "");
     if (!/^\d{6}$/.test(clean)) {
@@ -202,6 +224,7 @@ export function CheckoutClient() {
   ) {
     if (r.status === "paid") {
       setHeld(null);
+      void clearCart();
       clear();
       router.push(
         `/order-placed?number=${encodeURIComponent(orderNumber)}&total=${total}&paid=1`
@@ -264,6 +287,7 @@ export function CheckoutClient() {
 
       // Cash on delivery: nothing to collect now — straight to confirmation.
       if (result.paymentMethod === "cod") {
+        void clearCart();
         clear();
         router.push(
           `/order-placed?number=${encodeURIComponent(result.orderNumber)}&total=${result.total}`
@@ -577,6 +601,14 @@ export function CheckoutClient() {
                 <dt className="text-brand-700">Discount</dt>
                 <dd className="font-medium text-brand-700 tabular-nums">
                   −{formatRupees(discount)}
+                </dd>
+              </div>
+            ) : null}
+            {memberDiscount > 0 ? (
+              <div className="flex justify-between">
+                <dt className="text-brand-700">Pass member ({memberDiscountPct}%)</dt>
+                <dd className="font-medium text-brand-700 tabular-nums">
+                  −{formatRupees(memberDiscount)}
                 </dd>
               </div>
             ) : null}
