@@ -39,6 +39,38 @@ export async function checkPincode(
 }
 
 /**
+ * Previews a coupon against the current basket subtotal, so the customer sees
+ * the discount before placing the order. The real discount is recomputed by
+ * place_order at submit time — this is a preview, never the source of truth.
+ */
+export async function previewCoupon(
+  code: string,
+  subtotal: number,
+  phone: string
+): Promise<{ ok: true; discount: number } | { ok: false; message: string }> {
+  if (!code.trim()) return { ok: false, message: "Enter a code." };
+
+  const supabase = await createClient();
+  const { data: orgId } = await supabase.rpc("storefront_org_id");
+  if (!orgId) return { ok: false, message: "The shop isn't open." };
+
+  const { data, error } = await supabase.rpc("preview_coupon", {
+    p_org: orgId,
+    p_code: code,
+    p_subtotal: subtotal,
+    p_phone: phone || "",
+  });
+
+  if (error || !data) {
+    return { ok: false, message: "Couldn't check that code. Try again." };
+  }
+
+  const d = data as { ok?: boolean; discount?: number; message?: string };
+  if (!d.ok) return { ok: false, message: d.message ?? "That code isn't valid." };
+  return { ok: true, discount: Number(d.discount ?? 0) };
+}
+
+/**
  * Places the order.
  *
  * Note what is NOT sent from the browser: prices. The client submits product
@@ -57,6 +89,7 @@ export async function placeOrder(
     landmark: string;
     slot: string;
     notes: string;
+    coupon: string;
   },
   lines: SubmittedLine[]
 ): Promise<PlaceOrderResult> {
@@ -102,6 +135,7 @@ export async function placeOrder(
     p_delivery_slot: form.slot,
     p_notes: form.notes,
     p_lines: cleanLines,
+    p_coupon_code: form.coupon || null,
   });
 
   if (error) {

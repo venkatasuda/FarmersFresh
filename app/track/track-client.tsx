@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { trackOrder, type TrackedOrder } from "./actions";
 import { formatQty, formatRupees } from "@/lib/format";
 
@@ -19,6 +19,8 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Keep the last successful credentials so we can quietly re-poll.
+  const creds = useRef<{ number: string; phone: string } | null>(null);
 
   function submit() {
     setError(null);
@@ -27,13 +29,32 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
       const r = await trackOrder(orderNumber, phone);
       if (!r.ok) {
         setError(r.message);
+        creds.current = null;
         return;
       }
       setOrder(r.order);
+      creds.current = { number: orderNumber, phone };
     });
   }
 
   const cancelled = order?.status === "cancelled";
+  const finished = order?.status === "delivered" || cancelled;
+
+  // Live updates without an account: the customer can't subscribe (anon has no
+  // read on orders), so poll the secure track_order() every 20s while an open
+  // order is on screen. Stops once the order is delivered or cancelled, and
+  // pauses when the tab is hidden — no wasted requests.
+  useEffect(() => {
+    if (!order || finished || !creds.current) return;
+
+    const id = window.setInterval(async () => {
+      if (document.hidden || !creds.current) return;
+      const r = await trackOrder(creds.current.number, creds.current.phone);
+      if (r.ok) setOrder(r.order);
+    }, 20000);
+
+    return () => window.clearInterval(id);
+  }, [order, finished]);
   const currentIndex = order
     ? STEPS.findIndex((s) => s.key === order.status)
     : -1;
@@ -113,7 +134,14 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
                 {order.cancelledReason ? ` — ${order.cancelledReason}` : ""}.
               </div>
             ) : (
-              <ol className="mt-5 space-y-0">
+              <>
+                {!finished ? (
+                  <p className="mt-3 flex items-center gap-1.5 text-xs text-brand-700">
+                    <span className="size-2 animate-pulse rounded-full bg-brand-500" />
+                    Live — this updates on its own as your order moves
+                  </p>
+                ) : null}
+                <ol className="mt-4 space-y-0">
                 {STEPS.map((step, i) => {
                   const reached = i <= currentIndex;
                   const isLast = i === STEPS.length - 1;
@@ -153,7 +181,8 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
                     </li>
                   );
                 })}
-              </ol>
+                </ol>
+              </>
             )}
           </div>
 

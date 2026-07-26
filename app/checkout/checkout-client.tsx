@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useCart } from "@/app/(shop)/cart-context";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/types";
-import { checkPincode, placeOrder } from "./actions";
+import { checkPincode, placeOrder, previewCoupon } from "./actions";
 
 const SLOTS = [
   { value: "today_evening", label: "Today, 4–8 pm" },
@@ -28,7 +28,46 @@ export function CheckoutClient() {
   const [pinServed, setPinServed] = useState<boolean | null>(null);
   const [checkingPin, setCheckingPin] = useState(false);
 
+  // Coupon: the applied code + the discount the server confirmed. Both are
+  // re-validated by place_order at submit — this is only the friendly preview.
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   const fee = deliveryFeeFor(subtotal);
+  const discounted = Math.max(subtotal - discount, 0);
+  const grandTotal = discounted + (deliveryFeeFor(subtotal) === 0 ? 0 : fee);
+
+  async function applyCoupon() {
+    setCouponMsg(null);
+    const phone =
+      (document.querySelector('input[name="phone"]') as HTMLInputElement | null)
+        ?.value ?? "";
+    setApplyingCoupon(true);
+    try {
+      const r = await previewCoupon(couponInput, subtotal, phone);
+      if (!r.ok) {
+        setCoupon(null);
+        setDiscount(0);
+        setCouponMsg(r.message);
+        return;
+      }
+      setCoupon(couponInput.trim().toUpperCase());
+      setDiscount(r.discount);
+      setCouponMsg(null);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setDiscount(0);
+    setCouponInput("");
+    setCouponMsg(null);
+  }
 
   async function onPincodeBlur(value: string) {
     const clean = value.replace(/\s/g, "");
@@ -73,6 +112,7 @@ export function CheckoutClient() {
       landmark: String(formData.get("landmark") ?? ""),
       slot: String(formData.get("slot") ?? ""),
       notes: String(formData.get("notes") ?? ""),
+      coupon: coupon ?? "",
     };
 
     // Product ids and quantities only — never prices. The database re-prices.
@@ -230,11 +270,57 @@ export function CheckoutClient() {
             ))}
           </ul>
 
+          {/* Coupon */}
+          <div className="mt-4 border-t border-line pt-4">
+            {coupon ? (
+              <div className="flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-sm">
+                <span className="font-medium text-brand-800">
+                  {coupon} applied
+                </span>
+                <button
+                  type="button"
+                  onClick={removeCoupon}
+                  className="text-xs text-ink-soft hover:text-red-600"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="Coupon code"
+                  className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm uppercase outline-none focus:border-brand-500"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={applyingCoupon || !couponInput.trim()}
+                  className="rounded-lg border border-brand-300 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                >
+                  {applyingCoupon ? "…" : "Apply"}
+                </button>
+              </div>
+            )}
+            {couponMsg ? (
+              <p className="mt-1.5 text-xs text-red-600">{couponMsg}</p>
+            ) : null}
+          </div>
+
           <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
             <div className="flex justify-between">
               <dt className="text-ink-soft">Subtotal</dt>
               <dd className="tabular-nums text-ink">{formatRupees(subtotal)}</dd>
             </div>
+            {discount > 0 ? (
+              <div className="flex justify-between">
+                <dt className="text-brand-700">Discount</dt>
+                <dd className="font-medium text-brand-700 tabular-nums">
+                  −{formatRupees(discount)}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt className="text-ink-soft">Delivery</dt>
               <dd className={fee === 0 ? "font-medium text-brand-700" : "text-ink"}>
@@ -246,7 +332,7 @@ export function CheckoutClient() {
           <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
             <span className="font-medium text-ink">Pay on delivery</span>
             <span className="text-xl font-semibold text-ink tabular-nums">
-              {formatRupees(subtotal + fee)}
+              {formatRupees(grandTotal)}
             </span>
           </div>
 

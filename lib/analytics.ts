@@ -29,6 +29,38 @@ export function methodLabel(m: string): string {
   return METHOD_LABELS[m] ?? m;
 }
 
+export type DemandInsights = {
+  byWeekday: { day: string; revenue: number }[];
+  reorder: { name: string; onHand: number; perDay: number; daysLeft: number | null }[];
+  thisWeek: number;
+  lastWeek: number;
+};
+
+export async function getDemandInsights(): Promise<DemandInsights | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("demand_insights");
+  if (error || !data) return null;
+
+  const d = data as Record<string, unknown>;
+  return {
+    byWeekday: ((d.by_weekday as unknown[]) ?? []).map((w) => {
+      const it = w as Record<string, unknown>;
+      return { day: String(it.day).trim(), revenue: num(it.revenue) };
+    }),
+    reorder: ((d.reorder as unknown[]) ?? []).map((rr) => {
+      const it = rr as Record<string, unknown>;
+      return {
+        name: String(it.name),
+        onHand: num(it.on_hand),
+        perDay: num(it.per_day),
+        daysLeft: it.days_left === null ? null : num(it.days_left),
+      };
+    }),
+    thisWeek: num(d.this_week),
+    lastWeek: num(d.last_week),
+  };
+}
+
 export async function getSalesSummary(): Promise<SalesSummary | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("sales_summary");

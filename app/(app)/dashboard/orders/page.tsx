@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OrderCard } from "./order-card";
+import { RealtimeOrders } from "./realtime-orders";
 import { getOrders } from "@/lib/orders";
 import { requireSession } from "@/lib/auth";
 
@@ -25,9 +26,12 @@ export default async function OrdersPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">
-            Orders
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">
+              Orders
+            </h1>
+            <RealtimeOrders />
+          </div>
           <p className="mt-1 text-sm text-ink-soft">
             {showAll
               ? "Everything, newest first"
@@ -89,9 +93,8 @@ export default async function OrdersPage({
         </div>
       )}
 
-      {/* No live push yet — say so rather than let staff assume it updates. */}
       <p className="text-center text-xs text-ink-soft">
-        This page does not refresh by itself yet. Reload to see new orders.
+        This board is live — new orders appear on their own, with a chime.
       </p>
     </div>
   );

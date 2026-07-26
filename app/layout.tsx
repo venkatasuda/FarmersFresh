@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/app/(shop)/cart-context";
 import { CartDrawer } from "@/app/(shop)/cart-drawer";
 import { CartToast } from "@/app/(shop)/cart-toast";
+import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +22,23 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "Fresh meat from our own farms, delivered to your door. Pay on delivery.",
+    "Fresh meat and everyday groceries from our own farms, delivered to your door. Pay on delivery.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Farmers Fresh",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+};
+
+// Theme colour tints the browser chrome on mobile — a small touch that makes
+// the site feel like an app.
+export const viewport: Viewport = {
+  themeColor: "#16a34a",
 };
 
 export default function RootLayout({
@@ -42,6 +59,7 @@ export default function RootLayout({
           <CartDrawer />
           <CartToast />
         </CartProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

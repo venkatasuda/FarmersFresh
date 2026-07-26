@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { formatRupees } from "@/lib/format";
-import { getSalesSummary, methodLabel } from "@/lib/analytics";
+import {
+  getDemandInsights,
+  getSalesSummary,
+  methodLabel,
+} from "@/lib/analytics";
 
 export const metadata = { title: "Sales · Farmers Fresh" };
 export const dynamic = "force-dynamic";
@@ -20,7 +24,10 @@ export default async function SalesPage() {
     );
   }
 
-  const s = await getSalesSummary();
+  const [s, insights] = await Promise.all([
+    getSalesSummary(),
+    getDemandInsights(),
+  ]);
   if (!s) {
     return (
       <div className="rounded-2xl border border-line bg-surface px-6 py-14 text-center">
@@ -144,6 +151,115 @@ export default async function SalesPage() {
           </ul>
         )}
       </section>
+
+      {/* ---- Demand insights ---- */}
+      {insights ? (
+        <section className="space-y-4 rounded-2xl border border-line bg-brand-50/40 p-5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-lg bg-brand-600 text-xs text-white">
+              ✦
+            </span>
+            <h2 className="text-sm font-medium text-ink">Insights</h2>
+          </div>
+
+          {/* Momentum */}
+          {insights.thisWeek > 0 || insights.lastWeek > 0 ? (
+            <p className="text-sm text-ink-soft">
+              This week{" "}
+              <span className="font-semibold text-ink">
+                {formatRupees(insights.thisWeek)}
+              </span>{" "}
+              vs {formatRupees(insights.lastWeek)} last week —{" "}
+              {insights.thisWeek >= insights.lastWeek ? (
+                <span className="font-medium text-brand-700">
+                  up{" "}
+                  {insights.lastWeek > 0
+                    ? Math.round(
+                        ((insights.thisWeek - insights.lastWeek) /
+                          insights.lastWeek) *
+                          100
+                      )
+                    : 100}
+                  %
+                </span>
+              ) : (
+                <span className="font-medium text-red-600">
+                  down{" "}
+                  {Math.round(
+                    ((insights.lastWeek - insights.thisWeek) /
+                      insights.lastWeek) *
+                      100
+                  )}
+                  %
+                </span>
+              )}
+            </p>
+          ) : null}
+
+          {/* Reorder guidance — the money feature for perishables */}
+          <div>
+            <h3 className="text-sm font-medium text-ink">Restock soon</h3>
+            {insights.reorder.length === 0 ? (
+              <p className="mt-1 text-sm text-ink-soft">
+                Nothing running down fast. Once you have a few days of sales,
+                reorder guidance appears here.
+              </p>
+            ) : (
+              <ul className="mt-2 space-y-1.5">
+                {insights.reorder.slice(0, 6).map((r) => (
+                  <li
+                    key={r.name}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-surface px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium text-ink">{r.name}</span>
+                    <span className="text-ink-soft">
+                      {r.onHand} left · ~{r.perDay}/day ·{" "}
+                      <span
+                        className={
+                          r.daysLeft !== null && r.daysLeft < 2
+                            ? "font-semibold text-red-600"
+                            : "font-medium text-amber-700"
+                        }
+                      >
+                        {r.daysLeft !== null ? `${r.daysLeft} days` : "—"}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Busy days */}
+          {insights.byWeekday.length > 0 ? (
+            <div>
+              <h3 className="text-sm font-medium text-ink">Busiest days</h3>
+              <div className="mt-2 flex items-end gap-1.5">
+                {insights.byWeekday.map((w) => {
+                  const max = Math.max(
+                    ...insights.byWeekday.map((x) => x.revenue),
+                    1
+                  );
+                  return (
+                    <div key={w.day} className="flex-1 text-center">
+                      <div
+                        className="mx-auto w-full rounded-t bg-brand-400"
+                        style={{
+                          height: `${Math.max(4, (w.revenue / max) * 60)}px`,
+                        }}
+                        title={formatRupees(w.revenue)}
+                      />
+                      <span className="mt-1 block text-[10px] text-ink-soft">
+                        {w.day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
