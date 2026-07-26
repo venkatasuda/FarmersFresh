@@ -5,7 +5,9 @@ import { MobileBuyBar } from "@/app/(shop)/mobile-buy-bar";
 import { ProductImage } from "@/app/(shop)/product-image";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
+import { Reviews } from "@/app/(shop)/reviews";
 import { ShopShell } from "@/app/(shop)/shop-shell";
+import { Stars } from "@/app/(shop)/stars";
 import { TrackView } from "@/app/(shop)/track-view";
 import { formatRupees } from "@/lib/format";
 import { getFrequentlyBoughtTogether, getProductBySlug } from "@/lib/shop";
@@ -75,6 +77,16 @@ export default async function ProductPage({ params }: Props) {
             {product.name}
           </h1>
 
+          {product.avgRating !== null ? (
+            <a href="#reviews" className="mt-1.5 inline-flex items-center gap-1.5">
+              <Stars rating={product.avgRating} className="size-4" />
+              <span className="text-sm text-ink-soft">
+                {product.avgRating} · {product.reviewCount}{" "}
+                {product.reviewCount === 1 ? "review" : "reviews"}
+              </span>
+            </a>
+          ) : null}
+
           {packLabel(product) ? (
             <p className="mt-1 text-sm text-ink-soft">{packLabel(product)}</p>
           ) : null}
@@ -128,6 +140,12 @@ export default async function ProductPage({ params }: Props) {
           </dl>
         </div>
       </div>
+
+      <Reviews
+        productId={product.id}
+        avgRating={product.avgRating}
+        reviewCount={product.reviewCount}
+      />
 
       {goesWith.length > 0 ? (
         <section className="mt-12">

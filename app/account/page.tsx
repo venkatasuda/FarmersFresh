@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { signOutCustomer } from "./actions";
+import { getMyWallet } from "./wallet-actions";
+import { WalletCard } from "./wallet-card";
 import { createClient } from "@/lib/supabase/server";
 import { formatRupees } from "@/lib/format";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/types";
@@ -27,7 +29,10 @@ export default async function AccountPage() {
   // Not logged in → the customer login (not the staff one).
   if (!user) redirect("/account/login");
 
-  const { data } = await supabase.rpc("my_orders");
+  const [{ data }, wallet] = await Promise.all([
+    supabase.rpc("my_orders"),
+    getMyWallet(),
+  ]);
   const orders = ((data ?? []) as unknown[]).map((o) => o as MyOrder);
 
   const who =
@@ -54,6 +59,12 @@ export default async function AccountPage() {
             </button>
           </form>
         </div>
+
+        {wallet ? (
+          <div className="mt-6">
+            <WalletCard wallet={wallet} />
+          </div>
+        ) : null}
 
         <section className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">

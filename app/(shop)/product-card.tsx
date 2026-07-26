@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AddToBasket } from "./add-to-basket";
 import { ProductImage } from "./product-image";
+import { Stars } from "./stars";
+import { WishlistButton } from "./wishlist-button";
 import { formatRupees } from "@/lib/format";
 import {
   discountPercent,
@@ -28,7 +30,8 @@ export function ProductCard({
   const per = unitPrice(product);
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md">
+      <WishlistButton productId={product.id} />
       <Link
         href={`/shop/${product.slug}`}
         className="relative aspect-square overflow-hidden bg-brand-50"
@@ -77,6 +80,14 @@ export function ProductCard({
               {product.name}
             </Link>
           </h3>
+          {product.avgRating !== null ? (
+            <span className="mt-1 inline-flex items-center gap-1">
+              <Stars rating={product.avgRating} />
+              <span className="text-xs text-ink-soft">
+                {product.avgRating} ({product.reviewCount})
+              </span>
+            </span>
+          ) : null}
           {pack ? (
             <p className="mt-0.5 text-xs text-ink-soft">{pack}</p>
           ) : product.description ? (

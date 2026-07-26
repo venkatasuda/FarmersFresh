@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/app/(shop)/cart-context";
 import { CartDrawer } from "@/app/(shop)/cart-drawer";
 import { CartToast } from "@/app/(shop)/cart-toast";
+import { WishlistProvider } from "@/app/(shop)/wishlist-context";
 import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
 import "./globals.css";
 
@@ -54,11 +55,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {/* The basket must survive navigation between product pages, so the
             provider sits above the router outlet. It is inert on staff pages. */}
-        <CartProvider>
-          {children}
-          <CartDrawer />
-          <CartToast />
-        </CartProvider>
+        <WishlistProvider>
+          <CartProvider>
+            {children}
+            <CartDrawer />
+            <CartToast />
+          </CartProvider>
+        </WishlistProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

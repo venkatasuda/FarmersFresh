@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
-import { ProductCard } from "@/app/(shop)/product-card";
+import { FilterableGrid } from "@/app/(shop)/filterable-grid";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getCatalogueByCategory, getCategories } from "@/lib/shop";
 
@@ -120,11 +120,7 @@ export default async function CollectionPage({ params }: Props) {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-          {products.map((p, i) => (
-            <ProductCard key={p.id} product={p} priority={i < 4} />
-          ))}
-        </div>
+        <FilterableGrid products={products} />
       )}
     </ShopShell>
   );

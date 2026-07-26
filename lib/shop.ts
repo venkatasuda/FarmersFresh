@@ -32,7 +32,32 @@ type ProductRow = {
   step_qty: number | string;
 };
 
-function toProduct(r: ProductRow, inStock: boolean): ShopProduct | null {
+type Rating = { avg: number; count: number };
+
+/** Average rating + count keyed by product id. */
+async function getRatingsMap(): Promise<Map<string, Rating>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("product_ratings");
+  if (error) return new Map();
+  return new Map(
+    (
+      (data ?? []) as {
+        product_id: string;
+        avg_rating: number | string;
+        review_count: number | string;
+      }[]
+    ).map((r) => [
+      r.product_id,
+      { avg: num(r.avg_rating), count: num(r.review_count) },
+    ])
+  );
+}
+
+function toProduct(
+  r: ProductRow,
+  inStock: boolean,
+  rating?: Rating
+): ShopProduct | null {
   if (!r.slug || r.sale_price === null) return null;
   // PostgREST returns an embedded row as an object or a one-element array
   // depending on how it infers the relationship. Handle both.
@@ -57,6 +82,8 @@ function toProduct(r: ProductRow, inStock: boolean): ShopProduct | null {
     minOrderQty: num(r.min_order_qty, 0.5),
     stepQty: num(r.step_qty, 0.5),
     inStock,
+    avgRating: rating && rating.count > 0 ? rating.avg : null,
+    reviewCount: rating?.count ?? 0,
   };
 }
 
@@ -96,13 +123,14 @@ async function getStockMap(): Promise<Map<string, boolean>> {
 export async function getCatalogue(): Promise<ShopProduct[]> {
   const supabase = await createClient();
 
-  const [{ data, error }, stock] = await Promise.all([
+  const [{ data, error }, stock, ratings] = await Promise.all([
     supabase
       .from("products")
       .select(SELECT)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
     getStockMap(),
+    getRatingsMap(),
   ]);
 
   if (error) {
@@ -111,7 +139,7 @@ export async function getCatalogue(): Promise<ShopProduct[]> {
   }
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false))
+    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null);
 }
 
@@ -142,9 +170,10 @@ export async function getCatalogueByCategory(
   );
   if (ids.length === 0) return [];
 
-  const [{ data, error }, stock] = await Promise.all([
+  const [{ data, error }, stock, ratings] = await Promise.all([
     supabase.from("products").select(SELECT).in("id", ids),
     getStockMap(),
+    getRatingsMap(),
   ]);
 
   if (error) {
@@ -155,7 +184,7 @@ export async function getCatalogueByCategory(
   const order = new Map(ids.map((id, i) => [id, i]));
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false))
+    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null)
     // `.in()` does not preserve order, so restore the ordering the SQL chose.
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
@@ -197,16 +226,17 @@ export async function getProductsByIds(
   if (ids.length === 0) return [];
   const supabase = await createClient();
 
-  const [{ data, error }, stock] = await Promise.all([
+  const [{ data, error }, stock, ratings] = await Promise.all([
     supabase.from("products").select(SELECT).in("id", ids),
     getStockMap(),
+    getRatingsMap(),
   ]);
 
   if (error) return [];
   const order = new Map(ids.map((id, i) => [id, i]));
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false))
+    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null)
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
@@ -262,12 +292,13 @@ export async function getProductBySlug(
 ): Promise<ShopProduct | null> {
   const supabase = await createClient();
 
-  const [{ data, error }, stock] = await Promise.all([
+  const [{ data, error }, stock, ratings] = await Promise.all([
     supabase.from("products").select(SELECT).eq("slug", slug).maybeSingle(),
     getStockMap(),
+    getRatingsMap(),
   ]);
 
   if (error || !data) return null;
   const row = data as ProductRow;
-  return toProduct(row, stock.get(row.id) ?? false);
+  return toProduct(row, stock.get(row.id) ?? false, ratings.get(row.id));
 }

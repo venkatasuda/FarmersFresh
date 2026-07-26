@@ -33,6 +33,8 @@ export type ShopProduct = {
   brand: string | null;
   brandSlug: string | null;
   brandTagline: string | null;
+  avgRating: number | null;
+  reviewCount: number;
   /**
    * Pack size, or null when the item is sold LOOSE BY WEIGHT.
    *
@@ -130,6 +132,17 @@ export type AdminProduct = {
 
 /** The pack units a product can actually have (never null — that's "loose"). */
 export type PackUnit = "g" | "kg" | "ml" | "l" | "piece" | "dozen";
+
+export type Banner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  ctaLabel: string | null;
+  href: string | null;
+  bgFrom: string;
+  bgTo: string;
+  imagePath: string | null;
+};
 
 export type Delivery = {
   id: string;

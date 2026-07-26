@@ -64,6 +64,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             Track
           </Link>
 
+          <WishlistHeaderButton />
           <AccountButton />
           <CartButton />
         </div>

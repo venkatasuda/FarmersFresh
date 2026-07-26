@@ -5,7 +5,13 @@ import { useEffect, useState, useTransition } from "react";
 import { useCart } from "@/app/(shop)/cart-context";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/types";
-import { checkPincode, placeOrder, previewCoupon } from "./actions";
+import {
+  checkPincode,
+  getCheckoutPrefill,
+  placeOrder,
+  previewCoupon,
+} from "./actions";
+import { getMyWallet } from "@/app/account/wallet-actions";
 
 const SLOTS = [
   { value: "today_evening", label: "Today, 4–8 pm" },
@@ -27,6 +33,9 @@ export function CheckoutClient() {
   // null = not checked yet, true/false = result of the last PIN check
   const [pinServed, setPinServed] = useState<boolean | null>(null);
   const [checkingPin, setCheckingPin] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useCredit, setUseCredit] = useState(false);
 
   // Coupon: the applied code + the discount the server confirmed. Both are
   // re-validated by place_order at submit — this is only the friendly preview.
@@ -37,8 +46,11 @@ export function CheckoutClient() {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const fee = deliveryFeeFor(subtotal);
-  const discounted = Math.max(subtotal - discount, 0);
-  const grandTotal = discounted + (deliveryFeeFor(subtotal) === 0 ? 0 : fee);
+  const afterDiscount = Math.max(subtotal - discount, 0);
+  // Wallet credit is applied against the amount due before delivery, capped at
+  // the balance. The server recomputes this — the UI is a preview.
+  const creditApplied = useCredit ? Math.min(walletBalance, afterDiscount) : 0;
+  const grandTotal = Math.max(afterDiscount - creditApplied, 0) + fee;
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -69,19 +81,52 @@ export function CheckoutClient() {
     setCouponMsg(null);
   }
 
-  // Prefill the PIN from the header location the customer already set, and run
-  // the delivery check straight away — one less field to retype.
+  // Prefill for a returning customer: their account + last order details fill
+  // the form, so checkout is almost one tap. Falls back to the saved header
+  // location for the PIN when they're a guest. Uncontrolled fields, so we set
+  // values on the DOM after mount.
   useEffect(() => {
+    function setField(name: string, value: string) {
+      if (!value) return;
+      const el = document.querySelector(
+        `[name="${name}"]`
+      ) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (el && !el.value) el.value = value;
+    }
+
+    // Wallet balance, for the "use credit" option (logged-in customers).
+    getMyWallet().then((w) => {
+      if (w) setWalletBalance(w.balance);
+    });
+
+    let done = false;
+    getCheckoutPrefill().then((p) => {
+      done = true;
+      if (p) {
+        setField("name", p.name);
+        setField("phone", p.phone);
+        setField("email", p.email);
+        setField("address", p.address);
+        setField("city", p.city);
+        setField("landmark", p.landmark);
+        setField("pincode", p.pincode);
+        if (p.pincode) void onPincodeBlur(p.pincode);
+        if (p.name || p.address) setPrefilled(true);
+      }
+    });
+
+    // Guest fallback: the header location PIN, if the prefill didn't cover it.
     try {
       const raw = window.localStorage.getItem("ff.location.v1");
-      if (!raw) return;
-      const loc = JSON.parse(raw) as { pincode?: string };
-      const el = document.querySelector(
-        'input[name="pincode"]'
-      ) as HTMLInputElement | null;
-      if (el && loc.pincode && !el.value) {
-        el.value = loc.pincode;
-        void onPincodeBlur(loc.pincode);
+      if (raw) {
+        const loc = JSON.parse(raw) as { pincode?: string };
+        const el = document.querySelector(
+          'input[name="pincode"]'
+        ) as HTMLInputElement | null;
+        if (!done && el && loc.pincode && !el.value) {
+          el.value = loc.pincode;
+          void onPincodeBlur(loc.pincode);
+        }
       }
     } catch {
       /* ignore */
@@ -133,6 +178,7 @@ export function CheckoutClient() {
       slot: String(formData.get("slot") ?? ""),
       notes: String(formData.get("notes") ?? ""),
       coupon: coupon ?? "",
+      useCredit,
     };
 
     // Product ids and quantities only — never prices. The database re-prices.
@@ -161,6 +207,13 @@ export function CheckoutClient() {
       <h1 className="mb-5 text-2xl font-semibold tracking-tight text-ink">
         Where should we deliver?
       </h1>
+
+      {prefilled ? (
+        <p className="mb-4 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-800">
+          Welcome back — we&apos;ve filled in your details. Just check them and
+          place your order.
+        </p>
+      ) : null}
 
       <form action={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -328,6 +381,24 @@ export function CheckoutClient() {
             ) : null}
           </div>
 
+          {/* Wallet credit */}
+          {walletBalance > 0 ? (
+            <label className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5">
+              <span className="text-sm text-brand-900">
+                Use wallet credit
+                <span className="block text-xs text-brand-700">
+                  {formatRupees(walletBalance)} available
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={useCredit}
+                onChange={(e) => setUseCredit(e.target.checked)}
+                className="size-4 accent-brand-600"
+              />
+            </label>
+          ) : null}
+
           <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
             <div className="flex justify-between">
               <dt className="text-ink-soft">Subtotal</dt>
@@ -338,6 +409,14 @@ export function CheckoutClient() {
                 <dt className="text-brand-700">Discount</dt>
                 <dd className="font-medium text-brand-700 tabular-nums">
                   −{formatRupees(discount)}
+                </dd>
+              </div>
+            ) : null}
+            {creditApplied > 0 ? (
+              <div className="flex justify-between">
+                <dt className="text-brand-700">Wallet credit</dt>
+                <dd className="font-medium text-brand-700 tabular-nums">
+                  −{formatRupees(creditApplied)}
                 </dd>
               </div>
             ) : null}

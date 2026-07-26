@@ -80,6 +80,12 @@ export default async function AppLayout({
                     Coupons
                   </Link>
                   <Link
+                    href="/dashboard/banners"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Banners
+                  </Link>
+                  <Link
                     href="/dashboard/delivery"
                     className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
                   >

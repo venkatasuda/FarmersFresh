@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { BannerCarousel } from "@/app/(shop)/banner-carousel";
 import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { ShopShell } from "@/app/(shop)/shop-shell";
+import { getActiveBanners } from "@/lib/banners";
 import { getCatalogue, getCategories } from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
 
@@ -11,9 +13,10 @@ export const metadata = {
 };
 
 export default async function ShopHome() {
-  const [products, categories] = await Promise.all([
+  const [products, categories, banners] = await Promise.all([
     getCatalogue(),
     getCategories(),
+    getActiveBanners(),
   ]);
 
   const tree = buildCategoryTree(categories);
@@ -26,7 +29,14 @@ export default async function ShopHome() {
 
   return (
     <ShopShell>
-      <section className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-6 py-10 text-white sm:px-10 sm:py-14">
+      {/* Owner-run promo carousel; falls back to the brand hero if none set. */}
+      {banners.length > 0 ? <BannerCarousel banners={banners} /> : null}
+
+      <section
+        className={`relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 px-6 py-10 text-white sm:px-10 sm:py-14 ${
+          banners.length > 0 ? "hidden" : ""
+        }`}
+      >
         {/* Soft decorative glows + an oversized leaf watermark — depth without
             a heavy background image. */}
         <div className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-brand-400/20 blur-3xl" />

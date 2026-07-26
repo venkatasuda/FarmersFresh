@@ -9,6 +9,42 @@ export type PlaceOrderResult =
 
 export type SubmittedLine = { productId: string; quantity: number };
 
+export type CheckoutPrefill = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+  landmark: string;
+};
+
+/**
+ * Returns the signed-in customer's details to pre-fill checkout, or null for a
+ * guest. The database function is scoped to the caller's own auth record.
+ */
+export async function getCheckoutPrefill(): Promise<CheckoutPrefill | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase.rpc("my_checkout_prefill");
+  if (!data) return null;
+
+  const d = data as Record<string, string>;
+  return {
+    name: d.name ?? "",
+    email: d.email ?? "",
+    phone: d.phone ?? "",
+    address: d.address ?? "",
+    city: d.city ?? "",
+    pincode: d.pincode ?? "",
+    landmark: d.landmark ?? "",
+  };
+}
+
 /**
  * Checks a PIN before the customer fills the whole form. The database enforces
  * this again at place_order — this is only so a customer in an unserved area
@@ -90,6 +126,7 @@ export async function placeOrder(
     slot: string;
     notes: string;
     coupon: string;
+    useCredit: boolean;
   },
   lines: SubmittedLine[]
 ): Promise<PlaceOrderResult> {
@@ -136,6 +173,7 @@ export async function placeOrder(
     p_notes: form.notes,
     p_lines: cleanLines,
     p_coupon_code: form.coupon || null,
+    p_use_credit: form.useCredit === true,
   });
 
   if (error) {
