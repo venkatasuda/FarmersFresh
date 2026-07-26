@@ -253,6 +253,16 @@ export function PosTerminal({
                 Change: {formatRupees(done.change)}
               </p>
             ) : null}
+            {done.redeemed > 0 ? (
+              <p className="mt-1 text-sm text-brand-800">
+                {done.redeemed} pts redeemed (−{formatRupees(done.redeemed)})
+              </p>
+            ) : null}
+            {done.earned > 0 ? (
+              <p className="mt-1 text-sm font-medium text-brand-700">
+                +{done.earned} points added to their card
+              </p>
+            ) : null}
             <button
               type="button"
               onClick={() => setDone(null)}
@@ -326,6 +336,102 @@ export function PosTerminal({
               </span>
             </div>
 
+            {/* Loyalty card — scan the customer's QR (or key the code) to earn
+                and spend points on this sale. */}
+            <div className="rounded-lg bg-canvas p-2.5">
+              {member ? (
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-ink">
+                        {member.name}
+                      </p>
+                      <p className="text-xs text-ink-soft">
+                        {Math.floor(member.points)} points available
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMember(null);
+                        setRedeem("");
+                        setLoyaltyCode("");
+                      }}
+                      className="text-xs text-ink-soft hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  {member.points >= 1 && total > 0 ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <label className="text-xs text-ink-soft">Redeem</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={redeem}
+                        onChange={(e) => setRedeem(e.target.value)}
+                        placeholder="0"
+                        className="w-20 rounded border border-line bg-surface px-2 py-1 text-sm tabular-nums"
+                        aria-label="Points to redeem"
+                      />
+                      <span className="text-xs text-ink-soft">pts</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRedeem(
+                            String(Math.min(Math.floor(member.points), Math.floor(total)))
+                          )
+                        }
+                        className="ml-auto text-xs font-medium text-brand-700 hover:underline"
+                      >
+                        Use max
+                      </button>
+                    </div>
+                  ) : null}
+                  {redeemApplied > 0 ? (
+                    <p className="mt-1 text-xs text-brand-700">
+                      −{formatRupees(redeemApplied)} from {redeemApplied} points
+                    </p>
+                  ) : null}
+                  {earnPreview > 0 ? (
+                    <p className="mt-0.5 text-xs text-ink-soft">
+                      Earns +{earnPreview} points on this sale
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      value={loyaltyCode}
+                      onChange={(e) => setLoyaltyCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          findMember();
+                        }
+                      }}
+                      placeholder="Scan / enter loyalty code"
+                      className="w-full rounded border border-line bg-surface px-2 py-1.5 text-sm uppercase outline-none focus:border-brand-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={findMember}
+                      disabled={lookingUp || !loyaltyCode.trim()}
+                      className="shrink-0 rounded-lg border border-brand-300 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                    >
+                      {lookingUp ? "…" : "Find"}
+                    </button>
+                  </div>
+                  {loyaltyMsg ? (
+                    <p className="mt-1 text-xs text-red-600">{loyaltyMsg}</p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
             {/* Payment */}
             <div className="space-y-2">
               <div className="flex gap-1.5">
@@ -365,7 +471,7 @@ export function PosTerminal({
                     inputMode="decimal"
                     value={tendered}
                     onChange={(e) => setTendered(e.target.value)}
-                    placeholder={total.toFixed(0)}
+                    placeholder={owed.toFixed(0)}
                     className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm tabular-nums outline-none focus:border-brand-500"
                   />
                   {change > 0 ? (
@@ -379,7 +485,7 @@ export function PosTerminal({
               {needsCustomer ? (
                 <div className="rounded-lg bg-amber-50 p-2.5">
                   <p className="text-xs font-medium text-amber-900">
-                    {onCredit ? "Credit sale" : `${formatRupees(owed)} on credit`} —
+                    {onCredit ? "Credit sale" : `${formatRupees(shortfall)} on credit`} —
                     who owes it?
                   </p>
                   <input
@@ -408,14 +514,16 @@ export function PosTerminal({
             <button
               type="button"
               disabled={pending || total <= 0}
-              onClick={complete}
+              onClick={completeSale}
               className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
             >
               {pending
                 ? "Recording…"
                 : onCredit
                   ? `Record ${formatRupees(total)} credit sale`
-                  : `Take ${formatRupees(total)}`}
+                  : owed <= 0
+                    ? "Complete sale (paid with points)"
+                    : `Take ${formatRupees(owed)}`}
             </button>
 
             <button

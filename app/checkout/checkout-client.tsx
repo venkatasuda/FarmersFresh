@@ -548,13 +548,14 @@ export function CheckoutClient() {
             ) : null}
           </div>
 
-          {/* Wallet credit */}
+          {/* Loyalty points (1 point = ₹1) */}
           {walletBalance > 0 ? (
             <label className="mt-4 flex items-center justify-between gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5">
               <span className="text-sm text-brand-900">
-                Use wallet credit
+                Redeem loyalty points
                 <span className="block text-xs text-brand-700">
-                  {formatRupees(walletBalance)} available
+                  {Math.floor(walletBalance)} points · worth{" "}
+                  {formatRupees(Math.floor(walletBalance))}
                 </span>
               </span>
               <input
@@ -581,7 +582,7 @@ export function CheckoutClient() {
             ) : null}
             {creditApplied > 0 ? (
               <div className="flex justify-between">
-                <dt className="text-brand-700">Wallet credit</dt>
+                <dt className="text-brand-700">Loyalty points</dt>
                 <dd className="font-medium text-brand-700 tabular-nums">
                   −{formatRupees(creditApplied)}
                 </dd>
