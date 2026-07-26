@@ -5,6 +5,7 @@ import { signOutCustomer } from "./actions";
 import { AddressBook } from "./address-book";
 import { BuyAgain } from "./buy-again";
 import { getMyWallet } from "./wallet-actions";
+import { NotificationToggle } from "./notification-toggle";
 import { Subscriptions } from "./subscriptions";
 import { WalletCard } from "./wallet-card";
 import { qrSvg } from "@/lib/qr";
@@ -69,6 +70,8 @@ export default async function AccountPage() {
             <WalletCard wallet={wallet} qrSvg={await qrSvg(wallet.code)} />
           </div>
         ) : null}
+
+        <NotificationToggle />
 
         <BuyAgain />
 

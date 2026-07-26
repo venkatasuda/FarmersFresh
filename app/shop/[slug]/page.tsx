@@ -7,6 +7,7 @@ import { ProductCard } from "@/app/(shop)/product-card";
 import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { Reviews } from "@/app/(shop)/reviews";
 import { ShopShell } from "@/app/(shop)/shop-shell";
+import { NotifyMe } from "@/app/(shop)/notify-me";
 import { Stars } from "@/app/(shop)/stars";
 import { SubscribeBox } from "@/app/(shop)/subscribe-box";
 import { TrackView } from "@/app/(shop)/track-view";
@@ -120,6 +121,14 @@ export default async function ProductPage({ params }: Props) {
           <div className="mt-6 max-w-xs">
             <AddToBasket product={product} />
           </div>
+
+          {/* Sold out — recover the sale by letting them ask to be told when
+              it's back, instead of just leaving. */}
+          {!product.inStock ? (
+            <div className="mt-4 max-w-sm">
+              <NotifyMe productId={product.id} />
+            </div>
+          ) : null}
 
           {/* Repeat-delivery: the retention lever grocery apps lean on. Only
               useful for logged-in customers, but the control gracefully points

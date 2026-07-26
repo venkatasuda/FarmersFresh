@@ -121,8 +121,9 @@ export default async function ShopHome() {
 
           {deals.length > 0 ? (
             <Row
-              title="Value deals"
-              subtitle="Reduced this week"
+              title="This week's deals"
+              subtitle="Reduced this week — see all our offers"
+              href="/offers"
               products={deals}
             />
           ) : null}

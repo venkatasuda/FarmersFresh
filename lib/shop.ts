@@ -287,6 +287,54 @@ export async function getCartRecommendations(
   return getProductsByIds(idsFromRpc(data));
 }
 
+/** Fraction off, 0 when a product isn't discounted. */
+function discountFraction(p: ShopProduct): number {
+  if (p.compareAtPrice === null || p.compareAtPrice <= p.salePrice) return 0;
+  return (p.compareAtPrice - p.salePrice) / p.compareAtPrice;
+}
+
+function isOnSale(p: ShopProduct): boolean {
+  return p.compareAtPrice !== null && p.compareAtPrice > p.salePrice;
+}
+
+/**
+ * This week's deals — every on-sale product, biggest markdown first. "On sale"
+ * simply means a compare-at price above the selling price, so the owner creates
+ * a deal by setting a strike-through price on the product; nothing else to
+ * manage. In-stock items are shown before sold-out ones at equal discount.
+ */
+export async function getOffers(): Promise<ShopProduct[]> {
+  const all = await getCatalogue();
+  return all
+    .filter(isOnSale)
+    .sort((a, b) => {
+      const d = discountFraction(b) - discountFraction(a);
+      if (d !== 0) return d;
+      return Number(b.inStock) - Number(a.inStock);
+    });
+}
+
+/**
+ * "Picked for you" — deals on things this customer has actually bought before.
+ * Reuses the buy-it-again history (my_reorder_products) and keeps only the ones
+ * currently on offer. Empty for guests or when none of their items are on sale,
+ * so the page can fall back to the general deals.
+ */
+export async function getPersonalOffers(limit = 8): Promise<ShopProduct[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase.rpc("my_reorder_products", { p_limit: 30 });
+  const ids = idsFromRpc(data);
+  if (ids.length === 0) return [];
+
+  const prods = await getProductsByIds(ids);
+  return prods.filter(isOnSale).slice(0, limit);
+}
+
 export async function getProductBySlug(
   slug: string
 ): Promise<ShopProduct | null> {

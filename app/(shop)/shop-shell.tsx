@@ -77,6 +77,20 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
           >
             <ul className="flex gap-1 whitespace-nowrap">
               <li>
+                {/* Deals get a coloured pill so they stand out in the rail —
+                    the one place in the nav we intentionally draw the eye. */}
+                <Link
+                  href="/offers"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden>
+                    <path d="M20.6 9.4 12.6 1.4a2 2 0 0 0-1.4-.6H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8 8a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                    <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" />
+                  </svg>
+                  Deals
+                </Link>
+              </li>
+              <li>
                 <Link
                   href="/"
                   className="inline-block rounded-full px-3 py-1.5 text-sm text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand-800"
