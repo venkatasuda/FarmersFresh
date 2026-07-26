@@ -9,6 +9,56 @@ export type PlaceOrderResult =
 
 export type SubmittedLine = { productId: string; quantity: number };
 
+export type SavedAddress = {
+  id: string;
+  label: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  addressLine: string;
+  city: string | null;
+  pincode: string | null;
+  landmark: string | null;
+  isDefault: boolean;
+};
+
+/** The logged-in customer's saved addresses for the checkout picker. */
+export async function getMyAddresses(): Promise<SavedAddress[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("customer_addresses")
+    .select("*")
+    .order("is_default", { ascending: false });
+
+  return (
+    (data ?? []) as {
+      id: string;
+      label: string | null;
+      contact_name: string | null;
+      contact_phone: string | null;
+      address_line: string;
+      city: string | null;
+      pincode: string | null;
+      landmark: string | null;
+      is_default: boolean;
+    }[]
+  ).map((a) => ({
+    id: a.id,
+    label: a.label,
+    contactName: a.contact_name,
+    contactPhone: a.contact_phone,
+    addressLine: a.address_line,
+    city: a.city,
+    pincode: a.pincode,
+    landmark: a.landmark,
+    isDefault: a.is_default,
+  }));
+}
+
 export type CheckoutPrefill = {
   name: string;
   email: string;

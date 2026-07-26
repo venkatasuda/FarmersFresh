@@ -8,8 +8,10 @@ import { deliveryFeeFor } from "@/lib/types";
 import {
   checkPincode,
   getCheckoutPrefill,
+  getMyAddresses,
   placeOrder,
   previewCoupon,
+  type SavedAddress,
 } from "./actions";
 import { getMyWallet } from "@/app/account/wallet-actions";
 
@@ -36,6 +38,7 @@ export function CheckoutClient() {
   const [prefilled, setPrefilled] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [useCredit, setUseCredit] = useState(false);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
 
   // Coupon: the applied code + the discount the server confirmed. Both are
   // re-validated by place_order at submit — this is only the friendly preview.
@@ -98,6 +101,8 @@ export function CheckoutClient() {
     getMyWallet().then((w) => {
       if (w) setWalletBalance(w.balance);
     });
+    // Saved addresses, for the picker.
+    getMyAddresses().then((a) => setAddresses(a));
 
     let done = false;
     getCheckoutPrefill().then((p) => {
@@ -224,6 +229,50 @@ export function CheckoutClient() {
             >
               {error}
             </p>
+          ) : null}
+
+          {/* Saved-address picker for logged-in customers. Tapping one fills
+              the form below. */}
+          {addresses.length > 0 ? (
+            <div className="rounded-2xl border border-line bg-surface p-4">
+              <p className="mb-2 text-sm font-medium text-ink">
+                Deliver to a saved address
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {addresses.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      const set = (name: string, v: string | null) => {
+                        const el = document.querySelector(
+                          `[name="${name}"]`
+                        ) as HTMLInputElement | HTMLTextAreaElement | null;
+                        if (el) el.value = v ?? "";
+                      };
+                      set("name", a.contactName);
+                      set("phone", a.contactPhone);
+                      set("address", a.addressLine);
+                      set("city", a.city);
+                      set("landmark", a.landmark);
+                      set("pincode", a.pincode);
+                      if (a.pincode) void onPincodeBlur(a.pincode);
+                    }}
+                    className="rounded-lg border border-line px-3 py-2 text-left text-sm transition-colors hover:border-brand-300 hover:bg-brand-50"
+                  >
+                    <span className="block font-medium text-ink">
+                      {a.label ?? "Address"}
+                      {a.isDefault ? (
+                        <span className="ml-1.5 text-xs text-brand-700">•</span>
+                      ) : null}
+                    </span>
+                    <span className="block max-w-48 truncate text-xs text-ink-soft">
+                      {a.addressLine}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : null}
 
           <div className="rounded-2xl border border-line bg-surface p-5">

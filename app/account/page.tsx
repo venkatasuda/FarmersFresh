@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { signOutCustomer } from "./actions";
+import { AddressBook } from "./address-book";
+import { BuyAgain } from "./buy-again";
 import { getMyWallet } from "./wallet-actions";
 import { WalletCard } from "./wallet-card";
 import { createClient } from "@/lib/supabase/server";
@@ -65,6 +67,10 @@ export default async function AccountPage() {
             <WalletCard wallet={wallet} />
           </div>
         ) : null}
+
+        <BuyAgain />
+
+        <AddressBook />
 
         <section className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">

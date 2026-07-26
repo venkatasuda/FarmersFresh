@@ -8,6 +8,7 @@ import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { Reviews } from "@/app/(shop)/reviews";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { Stars } from "@/app/(shop)/stars";
+import { SubscribeBox } from "@/app/(shop)/subscribe-box";
 import { TrackView } from "@/app/(shop)/track-view";
 import { formatRupees } from "@/lib/format";
 import { getFrequentlyBoughtTogether, getProductBySlug } from "@/lib/shop";
@@ -118,6 +119,13 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-6 max-w-xs">
             <AddToBasket product={product} />
+          </div>
+
+          {/* Repeat-delivery: the retention lever grocery apps lean on. Only
+              useful for logged-in customers, but the control gracefully points
+              guests to log in when they try. */}
+          <div className="mt-4 max-w-sm">
+            <SubscribeBox product={product} />
           </div>
 
           <dl className="mt-8 space-y-3 border-t border-line pt-6 text-sm">
