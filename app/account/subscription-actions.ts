@@ -9,7 +9,7 @@ export type MySubscription = {
   image_path: string | null;
   quantity: number;
   frequency: "daily" | "weekly" | "monthly";
-  status: "active" | "paused";
+  is_active: boolean;
   next_run: string | null;
 };
 
@@ -24,7 +24,7 @@ export async function getMySubscriptions(): Promise<MySubscription[]> {
   const { data, error } = await supabase
     .from("subscriptions")
     .select(
-      "id, product_id, quantity, frequency, status, next_run, products(name, image_path)"
+      "id, product_id, quantity, frequency, is_active, next_run, products(name, image_path)"
     )
     .order("created_at", { ascending: false });
 
@@ -40,7 +40,7 @@ export async function getMySubscriptions(): Promise<MySubscription[]> {
       image_path: (p.image_path as string | null) ?? null,
       quantity: Number(r.quantity) || 0,
       frequency: (r.frequency as MySubscription["frequency"]) ?? "weekly",
-      status: (r.status as MySubscription["status"]) ?? "active",
+      is_active: Boolean(r.is_active),
       next_run: (r.next_run as string | null) ?? null,
     };
   });
@@ -49,9 +49,9 @@ export async function getMySubscriptions(): Promise<MySubscription[]> {
 export type SubActionResult = { ok: boolean };
 
 /** Pause or resume — RLS scopes the update to the caller's own rows. */
-export async function setSubscriptionStatus(
+export async function setSubscriptionActive(
   id: string,
-  status: "active" | "paused"
+  isActive: boolean
 ): Promise<SubActionResult> {
   const supabase = await createClient();
   const {
@@ -61,7 +61,7 @@ export async function setSubscriptionStatus(
 
   const { error } = await supabase
     .from("subscriptions")
-    .update({ status })
+    .update({ is_active: isActive })
     .eq("id", id);
   return { ok: !error };
 }

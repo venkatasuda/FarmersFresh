@@ -5,6 +5,7 @@ import { signOutCustomer } from "./actions";
 import { AddressBook } from "./address-book";
 import { BuyAgain } from "./buy-again";
 import { getMyWallet } from "./wallet-actions";
+import { Subscriptions } from "./subscriptions";
 import { WalletCard } from "./wallet-card";
 import { createClient } from "@/lib/supabase/server";
 import { formatRupees } from "@/lib/format";
@@ -69,6 +70,8 @@ export default async function AccountPage() {
         ) : null}
 
         <BuyAgain />
+
+        <Subscriptions />
 
         <AddressBook />
 
