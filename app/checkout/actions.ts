@@ -50,6 +50,7 @@ export async function placeOrder(
   form: {
     name: string;
     phone: string;
+    email: string;
     address: string;
     city: string;
     pincode: string;
@@ -93,6 +94,7 @@ export async function placeOrder(
     p_org_id: orgId,
     p_contact_name: form.name,
     p_contact_phone: form.phone,
+    p_contact_email: form.email || null,
     p_address_line: form.address,
     p_city: form.city,
     p_pincode: form.pincode,

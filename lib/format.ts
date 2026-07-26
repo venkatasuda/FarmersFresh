@@ -16,12 +16,10 @@
  * converted deliberately — `price * qty` on a string silently gives NaN or
  * string concatenation, and you find out from a customer.
  */
-export function num(
-  value: number | string | null | undefined,
-  fallback = 0
-): number {
+export function num(value: unknown, fallback = 0): number {
   if (value === null || value === undefined) return fallback;
-  const n = typeof value === "number" ? value : Number.parseFloat(value);
+  const n =
+    typeof value === "number" ? value : Number.parseFloat(String(value));
   return Number.isFinite(n) ? n : fallback;
 }
 

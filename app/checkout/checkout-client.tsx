@@ -66,6 +66,7 @@ export function CheckoutClient() {
     const form = {
       name: String(formData.get("name") ?? ""),
       phone: String(formData.get("phone") ?? ""),
+      email: String(formData.get("email") ?? ""),
       address: String(formData.get("address") ?? ""),
       city: String(formData.get("city") ?? ""),
       pincode: String(formData.get("pincode") ?? ""),
@@ -123,6 +124,16 @@ export function CheckoutClient() {
                 inputMode="numeric"
                 autoComplete="tel"
                 hint="10 digits — we'll call before delivery"
+              />
+            </div>
+
+            <div className="mt-4">
+              <Field
+                name="email"
+                label="Email (optional)"
+                type="email"
+                autoComplete="email"
+                hint="For your order confirmation and receipt by email"
               />
             </div>
 
