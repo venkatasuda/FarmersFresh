@@ -17,6 +17,24 @@ type CartLine = SaleLine & {
   loose: boolean;
 };
 
+type CompletedSale = {
+  total: number;
+  change: number;
+  redeemed: number;
+  earned: number;
+  paid: number;
+  method: string;
+  memberName: string | null;
+  when: string;
+  items: {
+    name: string;
+    quantity: number;
+    unit: "kg" | "piece";
+    unitPrice: number;
+    lineTotal: number;
+  }[];
+};
+
 const METHODS = [
   { value: "cash", label: "Cash" },
   { value: "upi", label: "UPI" },
@@ -50,12 +68,7 @@ export function PosTerminal({
 
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{
-    total: number;
-    change: number;
-    redeemed: number;
-    earned: number;
-  } | null>(null);
+  const [done, setDone] = useState<CompletedSale | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -182,6 +195,20 @@ export function PosTerminal({
         change: r.change,
         redeemed: redeemApplied,
         earned: member ? Math.floor(owed / 100) : 0,
+        paid,
+        method,
+        memberName: member?.name ?? null,
+        when: new Date().toLocaleString("en-IN", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
+        items: cart.map((l) => ({
+          name: l.name,
+          quantity: l.quantity,
+          unit: l.unit,
+          unitPrice: l.unitPrice,
+          lineTotal: l.quantity * l.unitPrice,
+        })),
       });
       reset();
     });
@@ -263,13 +290,22 @@ export function PosTerminal({
                 +{done.earned} points added to their card
               </p>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setDone(null)}
-              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              New sale
-            </button>
+            <div className="mt-3 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => printReceipt(done)}
+                className="rounded-lg border border-brand-300 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+              >
+                Print receipt
+              </button>
+              <button
+                type="button"
+                onClick={() => setDone(null)}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                New sale
+              </button>
+            </div>
           </div>
         ) : cart.length === 0 ? (
           <p className="py-8 text-center text-sm text-ink-soft">
@@ -542,4 +578,79 @@ export function PosTerminal({
 
 function round3(n: number) {
   return Math.round(n * 1000) / 1000;
+}
+
+const rs = (n: number) => `₹${n.toFixed(2)}`;
+
+/**
+ * Prints a counter receipt. Opens a small self-contained window (no app CSS, no
+ * PDF library) sized like a thermal till roll and triggers the print dialog —
+ * which also offers "Save as PDF". Escapes item names so a product called
+ * `<b>` can't inject markup into the receipt.
+ */
+function printReceipt(sale: CompletedSale) {
+  const esc = (s: string) =>
+    s.replace(/[&<>"]/g, (c) =>
+      c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;"
+    );
+
+  const rows = sale.items
+    .map(
+      (i) =>
+        `<tr><td>${esc(i.name)}<br><span class="muted">${i.quantity}${
+          i.unit === "kg" ? "kg" : "×"
+        } @ ${rs(i.unitPrice)}</span></td><td class="r">${rs(
+          i.lineTotal
+        )}</td></tr>`
+    )
+    .join("");
+
+  const line = (label: string, value: string) =>
+    `<tr><td>${label}</td><td class="r">${value}</td></tr>`;
+
+  const extras = [
+    sale.redeemed > 0
+      ? line("Points redeemed", `-${rs(sale.redeemed)}`)
+      : "",
+    line("Total", rs(sale.total)),
+    sale.paid > 0 ? line(`Paid (${esc(sale.method)})`, rs(sale.paid)) : "",
+    sale.change > 0 ? line("Change", rs(sale.change)) : "",
+  ].join("");
+
+  const loyalty =
+    sale.memberName && (sale.earned > 0 || sale.redeemed > 0)
+      ? `<div class="center muted">${esc(sale.memberName)} · +${sale.earned} points</div>`
+      : "";
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title>
+<style>
+  @page { margin: 4mm; }
+  body { font-family: ui-monospace, Menlo, Consolas, monospace; width: 72mm; margin: 0 auto; color: #111; font-size: 12px; }
+  h1 { font-size: 15px; text-align: center; margin: 0; }
+  .muted { color: #555; font-size: 11px; }
+  .center { text-align: center; }
+  hr { border: none; border-top: 1px dashed #999; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 2px 0; vertical-align: top; }
+  .r { text-align: right; white-space: nowrap; }
+  .tot td { font-weight: 700; border-top: 1px solid #333; }
+</style></head><body>
+  <h1>Farmers Fresh</h1>
+  <div class="center muted">Fresh from our farms</div>
+  <hr>
+  <div class="muted">${sale.when}</div>
+  <hr>
+  <table>${rows}</table>
+  <hr>
+  <table>${extras}</table>
+  <hr>
+  ${loyalty}
+  <div class="center muted">Thank you! Visit again.</div>
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body></html>`;
+
+  const w = window.open("", "_blank", "width=380,height=600");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
 }

@@ -128,6 +128,13 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
               </p>
             </div>
 
+            <a
+              href={`/receipt?number=${encodeURIComponent(order.orderNumber)}`}
+              className="mt-2 inline-block text-sm text-brand-700 hover:underline"
+            >
+              View receipt →
+            </a>
+
             {cancelled ? (
               <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
                 This order was cancelled

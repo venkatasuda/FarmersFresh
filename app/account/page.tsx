@@ -125,12 +125,20 @@ export default async function AccountPage() {
                     <span className="text-sm font-semibold text-ink tabular-nums">
                       {formatRupees(o.total)}
                     </span>
-                    <Link
-                      href={`/track?number=${encodeURIComponent(o.order_number)}`}
-                      className="text-sm text-brand-700 hover:underline"
-                    >
-                      Track →
-                    </Link>
+                    <span className="flex items-center gap-3">
+                      <Link
+                        href={`/receipt?number=${encodeURIComponent(o.order_number)}`}
+                        className="text-sm text-ink-soft hover:text-brand-700 hover:underline"
+                      >
+                        Receipt
+                      </Link>
+                      <Link
+                        href={`/track?number=${encodeURIComponent(o.order_number)}`}
+                        className="text-sm text-brand-700 hover:underline"
+                      >
+                        Track →
+                      </Link>
+                    </span>
                   </div>
                 </li>
               ))}
