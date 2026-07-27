@@ -6,6 +6,7 @@ import { useCart } from "@/app/(shop)/cart-context";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/types";
 import {
+  attachOrderLocation,
   checkPincode,
   getCheckoutPrefill,
   getMyAddresses,
@@ -56,6 +57,16 @@ export function CheckoutClient({
   const [walletBalance, setWalletBalance] = useState(0);
   const [useCredit, setUseCredit] = useState(false);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  function useMyLocation() {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
   const [payMethod, setPayMethod] = useState<PaymentMethod>(
     ONLINE_ENABLED ? "upi" : "cod"
   );
@@ -286,6 +297,9 @@ export function CheckoutClient({
         return;
       }
 
+      // Attach the delivery pin (best-effort) so the rider can navigate to it.
+      if (coords) void attachOrderLocation(result.orderId, coords.lat, coords.lng);
+
       // Cash on delivery: nothing to collect now — straight to confirmation.
       if (result.paymentMethod === "cod") {
         void clearCart();
@@ -424,6 +438,14 @@ export function CheckoutClient({
               />
               <Field name="landmark" label="Landmark" />
             </div>
+
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="mt-3 rounded-lg border border-brand-300 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+            >
+              {coords ? "✓ Delivery pin added" : "📍 Pin my exact location for the rider"}
+            </button>
 
             {checkingPin ? (
               <p className="mt-2 text-sm text-ink-soft">Checking delivery…</p>

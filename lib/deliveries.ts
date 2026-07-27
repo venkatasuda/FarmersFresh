@@ -20,6 +20,7 @@ export async function getDeliveries(): Promise<Delivery[]> {
     .select(
       `id, order_number, status, contact_name, contact_phone, address_line,
        city, pincode, landmark, total, delivery_slot, assigned_to, placed_at,
+       address_lat, address_lng,
        assignee:profiles!orders_assigned_to_fkey(full_name)`
     )
     .in("status", ["confirmed", "packed", "out_for_delivery"])
@@ -44,6 +45,8 @@ export async function getDeliveries(): Promise<Delivery[]> {
     delivery_slot: string | null;
     assigned_to: string | null;
     placed_at: string;
+    address_lat: number | null;
+    address_lng: number | null;
     assignee: { full_name: string | null } | { full_name: string | null }[] | null;
   };
 
@@ -64,6 +67,8 @@ export async function getDeliveries(): Promise<Delivery[]> {
       assignedTo: o.assigned_to,
       assignedName: a?.full_name ?? null,
       placedAt: o.placed_at,
+      lat: o.address_lat,
+      lng: o.address_lng,
     };
   });
 }

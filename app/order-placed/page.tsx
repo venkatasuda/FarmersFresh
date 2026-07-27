@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ShopShell } from "@/app/(shop)/shop-shell";
+import { createClient } from "@/lib/supabase/server";
+import { getPersonalizedProducts } from "@/lib/shop";
 import { formatRupees } from "@/lib/format";
+import { AddMore } from "./add-more";
 
 export const metadata = { title: "Order placed · Farmers Fresh" };
 
@@ -20,6 +23,22 @@ export default async function OrderPlacedPage({
   const { number, total, paid } = await searchParams;
   const amount = total ? Number(total) : null;
   const isPaid = paid === "1";
+
+  // Add-more is only for a logged-in customer's COD order (add_to_order enforces
+  // the rest). Suggest a few personalised items.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const addMore =
+    user && !isPaid && number
+      ? (await getPersonalizedProducts(5)).map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.salePrice,
+          loose: p.packSize === null,
+        }))
+      : [];
 
   return (
     <ShopShell>
@@ -68,6 +87,10 @@ export default async function OrderPlacedPage({
           Write this number down — you&apos;ll need it if you call us about the
           order.
         </p>
+
+        {number && addMore.length > 0 ? (
+          <AddMore orderNumber={number} products={addMore} />
+        ) : null}
 
         <div className="mt-6 flex flex-col items-center gap-2">
           {number ? (

@@ -104,6 +104,12 @@ export default async function AppLayout({
                     Delivery
                   </Link>
                   <Link
+                    href="/dashboard/recipes"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Recipes
+                  </Link>
+                  <Link
                     href="/dashboard/traceability"
                     className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
                   >

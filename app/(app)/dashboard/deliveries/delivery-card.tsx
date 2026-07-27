@@ -22,12 +22,16 @@ export function DeliveryCard({
   const mine = delivery.assignedTo && delivery.assignedTo === myId;
   const takenByOther = delivery.assignedTo && delivery.assignedTo !== myId;
 
-  // A maps link from the address — opens Google Maps for navigation.
-  const mapsQuery = encodeURIComponent(
-    [delivery.addressLine, delivery.landmark, delivery.city, delivery.pincode]
-      .filter(Boolean)
-      .join(", ")
-  );
+  // A maps link — use the exact GPS pin when the customer dropped one,
+  // otherwise fall back to the typed address.
+  const mapsQuery =
+    delivery.lat != null && delivery.lng != null
+      ? `${delivery.lat},${delivery.lng}`
+      : encodeURIComponent(
+          [delivery.addressLine, delivery.landmark, delivery.city, delivery.pincode]
+            .filter(Boolean)
+            .join(", ")
+        );
 
   function run(fn: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);

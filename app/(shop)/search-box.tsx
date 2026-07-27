@@ -7,6 +7,20 @@ import { useEffect, useRef, useState } from "react";
 import { suggestProducts, type Suggestion } from "./search-actions";
 import { formatRupees } from "@/lib/format";
 
+// Minimal shapes for the browser SpeechRecognition API (no lib types shipped).
+type SpeechResultLike = {
+  results?: { [i: number]: { [j: number]: { transcript?: string } } };
+};
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  onresult: (e: SpeechResultLike) => void;
+  onend: () => void;
+  onerror: () => void;
+};
+
 /**
  * Search with live autocomplete, like BigBasket/Amazon: as you type, matching
  * products drop down with image + price. Debounced so it doesn't hit the server
@@ -18,7 +32,78 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const visualOn = Boolean(process.env.NEXT_PUBLIC_VISUAL_SEARCH);
+
+  async function handlePhoto(file: File) {
+    setScanning(true);
+    try {
+      const dataUrl: string = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result));
+        fr.onerror = () => rej(new Error("read failed"));
+        fr.readAsDataURL(file);
+      });
+      const resp = await fetch("/api/visual-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const j = (await resp.json().catch(() => ({}))) as { term?: string };
+      if (j.term) {
+        setQ(j.term);
+        go(j.term);
+      } else {
+        setQ("");
+        setItems([]);
+        alert("We couldn't recognise that. Try typing the name.");
+      }
+    } catch {
+      alert("Couldn't scan that photo. Try again.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  // Voice search uses the browser's built-in speech recognition (no server, no
+  // keys). Only shown where supported. Great for customers who'd rather speak.
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    setVoiceOn(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+
+  function startVoice() {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "en-IN";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    setListening(true);
+    rec.onresult = (e: SpeechResultLike) => {
+      const said = e.results?.[0]?.[0]?.transcript ?? "";
+      if (said) {
+        setQ(said);
+        go(said);
+      }
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    try {
+      rec.start();
+    } catch {
+      setListening(false);
+    }
+  }
 
   // Debounced suggestions.
   useEffect(() => {
@@ -78,9 +163,57 @@ export function SearchBox({ className = "" }: { className?: string }) {
           onChange={(e) => setQ(e.target.value)}
           onFocus={() => items.length > 0 && setOpen(true)}
           placeholder="Search mutton, rice, masala…"
-          className="w-full rounded-full border border-line bg-canvas py-2.5 pr-4 pl-9 text-sm text-ink outline-none transition-colors focus:border-brand-500 focus:bg-surface"
+          className={`w-full rounded-full border border-line bg-canvas py-2.5 pl-9 text-sm text-ink outline-none transition-colors focus:border-brand-500 focus:bg-surface ${
+            voiceOn && visualOn ? "pr-16" : voiceOn || visualOn ? "pr-11" : "pr-4"
+          }`}
           autoComplete="off"
         />
+        <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
+          {visualOn ? (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handlePhoto(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                aria-label="Search by photo"
+                className={`flex size-7 items-center justify-center rounded-full ${
+                  scanning ? "animate-pulse bg-brand-600 text-white" : "text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden>
+                  <path d="M4 8a2 2 0 0 1 2-2h1l1-1.5h6L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                  <circle cx="12" cy="12.5" r="3" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+              </button>
+            </>
+          ) : null}
+          {voiceOn ? (
+            <button
+              type="button"
+              onClick={startVoice}
+              aria-label="Search by voice"
+              className={`flex size-7 items-center justify-center rounded-full ${
+                listening ? "animate-pulse bg-brand-600 text-white" : "text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden>
+                <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </form>
 
       {open && items.length > 0 ? (

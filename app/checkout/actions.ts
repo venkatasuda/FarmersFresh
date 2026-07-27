@@ -164,6 +164,24 @@ export async function previewCoupon(
   return { ok: true, discount: Number(d.discount ?? 0) };
 }
 
+/** Attaches a GPS pin to a just-placed order (best-effort). */
+export async function attachOrderLocation(
+  orderId: string,
+  lat: number,
+  lng: number
+): Promise<void> {
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("attach_order_location", {
+      p_order_id: orderId,
+      p_lat: lat,
+      p_lng: lng,
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 /**
  * Places the order.
  *

@@ -159,6 +159,8 @@ export type Delivery = {
   assignedTo: string | null;
   assignedName: string | null;
   placedAt: string;
+  lat: number | null;
+  lng: number | null;
 };
 
 export type CustomerBalance = {
