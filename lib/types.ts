@@ -37,6 +37,8 @@ export type ShopProduct = {
   reviewCount: number;
   /** In stock but running low — powers the "only a few left" urgency cue. */
   lowStock: boolean;
+  /** Among the shop's top sellers (last 30 days) — shows a "Bestseller" badge. */
+  isBestseller: boolean;
   /** Dietary tags: 'veg', 'non-veg', 'vegan', 'organic', 'egg-free', 'gluten-free'. */
   dietTags: string[];
   /**

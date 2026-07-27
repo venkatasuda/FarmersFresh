@@ -65,6 +65,12 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             Recipes
           </Link>
           <Link
+            href="/hampers"
+            className="hidden text-sm font-medium text-ink-soft transition-colors hover:text-brand-700 sm:inline-block"
+          >
+            Hampers
+          </Link>
+          <Link
             href="/pass"
             className="hidden rounded-full border border-brand-300 px-3 py-1.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 sm:inline-block"
           >

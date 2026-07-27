@@ -4,6 +4,7 @@ import { ProductCard } from "@/app/(shop)/product-card";
 import { ProductImage } from "@/app/(shop)/product-image";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getOffers, getPersonalOffers } from "@/lib/shop";
+import { DealCountdown } from "./deal-countdown";
 import { formatRupees } from "@/lib/format";
 import { discountPercent } from "@/lib/types";
 
@@ -32,6 +33,11 @@ export default async function OffersPage() {
           <p className="mt-1 text-sm text-ink-soft">
             Fresh markdowns across the store — biggest savings first.
           </p>
+          {offers.length > 0 ? (
+            <div className="mt-3">
+              <DealCountdown />
+            </div>
+          ) : null}
         </header>
 
         {offers.length === 0 ? (

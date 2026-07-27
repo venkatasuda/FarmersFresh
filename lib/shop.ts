@@ -57,7 +57,8 @@ async function getRatingsMap(): Promise<Map<string, Rating>> {
 function toProduct(
   r: ProductRow,
   stock: { inStock: boolean; low: boolean } | undefined,
-  rating?: Rating
+  rating?: Rating,
+  isBestseller = false
 ): ShopProduct | null {
   const inStock = stock?.inStock ?? false;
   if (!r.slug || r.sale_price === null) return null;
@@ -85,6 +86,7 @@ function toProduct(
     stepQty: num(r.step_qty, 0.5),
     inStock,
     lowStock: inStock && (stock?.low ?? false),
+    isBestseller,
     avgRating: rating && rating.count > 0 ? rating.avg : null,
     reviewCount: rating?.count ?? 0,
     dietTags: r.diet_tags ?? [],
@@ -101,6 +103,13 @@ const SELECT =
  * see the private stock ledger and return only a boolean per product.
  */
 type Stock = { inStock: boolean; low: boolean };
+
+/** The shop's current best-selling product ids (last 30 days). */
+async function getBestsellerSet(): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("bestseller_ids", { p_limit: 8 });
+  return new Set(idsFromRpc(data));
+}
 
 async function getStockMap(): Promise<Map<string, Stock>> {
   const supabase = await createClient();
@@ -128,7 +137,7 @@ async function getStockMap(): Promise<Map<string, Stock>> {
 export async function getCatalogue(): Promise<ShopProduct[]> {
   const supabase = await createClient();
 
-  const [{ data, error }, stock, ratings] = await Promise.all([
+  const [{ data, error }, stock, ratings, best] = await Promise.all([
     supabase
       .from("products")
       .select(SELECT)
@@ -136,6 +145,7 @@ export async function getCatalogue(): Promise<ShopProduct[]> {
       .order("name", { ascending: true }),
     getStockMap(),
     getRatingsMap(),
+    getBestsellerSet(),
   ]);
 
   if (error) {
@@ -144,7 +154,7 @@ export async function getCatalogue(): Promise<ShopProduct[]> {
   }
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id)))
+    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id), best.has(r.id)))
     .filter((p): p is ShopProduct => p !== null);
 }
 
@@ -175,10 +185,11 @@ export async function getCatalogueByCategory(
   );
   if (ids.length === 0) return [];
 
-  const [{ data, error }, stock, ratings] = await Promise.all([
+  const [{ data, error }, stock, ratings, best] = await Promise.all([
     supabase.from("products").select(SELECT).in("id", ids),
     getStockMap(),
     getRatingsMap(),
+    getBestsellerSet(),
   ]);
 
   if (error) {
@@ -189,7 +200,7 @@ export async function getCatalogueByCategory(
   const order = new Map(ids.map((id, i) => [id, i]));
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id)))
+    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id), best.has(r.id)))
     .filter((p): p is ShopProduct => p !== null)
     // `.in()` does not preserve order, so restore the ordering the SQL chose.
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));

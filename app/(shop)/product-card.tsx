@@ -62,6 +62,11 @@ export function ProductCard({
               {product.badge}
             </span>
           ) : null}
+          {product.isBestseller && product.inStock ? (
+            <span className="rounded-md bg-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-950">
+              ★ Bestseller
+            </span>
+          ) : null}
           {/* Scarcity nudge. */}
           {product.lowStock ? (
             <span className="rounded-md bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">
