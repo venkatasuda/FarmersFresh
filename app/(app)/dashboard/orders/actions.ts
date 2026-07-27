@@ -7,6 +7,25 @@ import type { OrderStatus } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
+/** Instantly credit loyalty points to a customer's balance for an order. */
+export async function instantRefund(
+  orderId: string,
+  points: number,
+  reason: string
+): Promise<{ ok: boolean; message?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("instant_refund", {
+    p_order_id: orderId,
+    p_points: points,
+    p_reason: reason || null,
+  });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  const d = (data ?? {}) as { ok?: boolean; message?: string };
+  if (!d.ok) return { ok: false, message: d.message ?? "Couldn't refund." };
+  revalidatePath("/dashboard/orders");
+  return { ok: true };
+}
+
 const ALLOWED: OrderStatus[] = [
   "confirmed",
   "packed",

@@ -63,6 +63,20 @@ export async function rateDelivery(
   return { ok: !!d.ok, message: d.message ?? "" };
 }
 
+export async function tipDelivery(
+  orderNumber: string,
+  points: number
+): Promise<{ ok: boolean; message?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("tip_delivery", {
+    p_number: orderNumber,
+    p_points: points,
+  });
+  if (error) return { ok: false, message: "Couldn't tip just now. Try again." };
+  const d = (data ?? {}) as { ok?: boolean; message?: string };
+  return { ok: !!d.ok, message: d.message };
+}
+
 export async function trackOrder(
   orderNumber: string,
   phone: string

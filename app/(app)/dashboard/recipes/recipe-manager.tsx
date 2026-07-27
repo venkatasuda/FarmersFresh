@@ -8,15 +8,7 @@ import {
   type AdminRecipe,
 } from "./actions";
 import { ImageUpload } from "@/app/(app)/dashboard/catalogue/image-upload";
-
-// Curated cuisine options — Indian states + a few international, so tagging is
-// consistent. Staff can still type a custom one if needed.
-const CUISINES = [
-  "Punjab", "Delhi", "Uttar Pradesh", "Rajasthan", "Gujarat", "Maharashtra",
-  "Goa", "Kerala", "Tamil Nadu", "Karnataka", "Andhra Pradesh", "Telangana",
-  "West Bengal", "Odisha", "Bihar", "Assam", "Kashmir", "Hyderabadi",
-  "Italian", "Chinese", "Continental", "Thai", "Mexican", "Lebanese",
-];
+import { ALL_CUISINES as CUISINES } from "@/lib/cuisines";
 
 type Product = { id: string; name: string };
 

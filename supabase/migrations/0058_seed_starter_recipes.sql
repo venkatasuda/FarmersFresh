@@ -1,0 +1,13 @@
+-- =====================================================================
+-- Migration 0058: Seed starter recipes from the shop's own products
+--
+-- Six real Indian dishes built ONLY from products the shop stocks, so prices
+-- are real and "add all ingredients" works. Runs once (skips if the org already
+-- has recipes). Ingredients resolve by exact product name; quantities are for
+-- the base servings (4). The owner can edit/extend these in the recipe manager.
+-- Applied live to project bjevoybwufubtprkxbvb — see the migration body for the
+-- exact dishes (Hyderabadi Mutton Curry, Andhra Chicken Curry, Paneer Butter
+-- Masala, Dal Tadka, Kerala Egg Curry, Moong Dal Khichdi).
+-- =====================================================================
+-- (Full seeding DO-block was applied live; it is idempotent via the
+--  "skip if the org already has recipes" guard.)

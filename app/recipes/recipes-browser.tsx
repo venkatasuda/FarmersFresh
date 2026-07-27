@@ -8,6 +8,7 @@ import {
   type RecipeCard,
   type RecipeDetail,
 } from "./actions";
+import { INDIAN_STATES, INTERNATIONAL_CUISINES } from "@/lib/cuisines";
 import { formatRupees } from "@/lib/format";
 
 export function RecipesBrowser({
@@ -96,23 +97,36 @@ export function RecipesBrowser({
           </label>
         </div>
 
-        {/* Cuisine chips */}
-        {cuisines.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Chip active={cuisine === ""} onClick={() => { setCuisine(""); refresh({ cuisine: "" }); }}>
-              All cuisines
-            </Chip>
-            {cuisines.map((c) => (
-              <Chip
-                key={c.cuisine}
-                active={cuisine === c.cuisine}
-                onClick={() => { setCuisine(c.cuisine); refresh({ cuisine: c.cuisine }); }}
-              >
-                {c.cuisine}
-              </Chip>
-            ))}
-          </div>
-        ) : null}
+        {/* Cuisine — every Indian state + international, not just the ones with
+            recipes, so people can explore any region. */}
+        <label className="mt-3 block">
+          <span className="text-xs text-ink-soft">Cuisine / state</span>
+          <select
+            value={cuisine}
+            onChange={(e) => {
+              setCuisine(e.target.value);
+              refresh({ cuisine: e.target.value });
+            }}
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+          >
+            <option value="">All cuisines</option>
+            <optgroup label="Indian states & styles">
+              {INDIAN_STATES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </optgroup>
+            <optgroup label="International">
+              {INTERNATIONAL_CUISINES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </optgroup>
+          </select>
+          {cuisines.length > 0 ? (
+            <span className="mt-1 block text-xs text-ink-soft">
+              Recipes so far in: {cuisines.map((c) => c.cuisine).join(", ")}
+            </span>
+          ) : null}
+        </label>
       </div>
 
       {/* Cards */}
@@ -246,16 +260,3 @@ function RecipeModal({
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
-        active ? "bg-brand-600 text-white" : "border border-line text-ink-soft hover:bg-brand-50"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

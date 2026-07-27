@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { advanceOrder, cancelOrder } from "./actions";
+import { advanceOrder, cancelOrder, instantRefund } from "./actions";
 import { formatQty, formatRupees } from "@/lib/format";
 import {
   SLOT_LABELS,
@@ -23,6 +23,8 @@ export function OrderCard({ order }: { order: StaffOrder }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refundAmt, setRefundAmt] = useState("");
 
   const next = nextStatus(order.status);
   const finished = order.status === "delivered" || order.status === "cancelled";
@@ -175,6 +177,58 @@ export function OrderCard({ order }: { order: StaffOrder }) {
           )}
         </footer>
       ) : null}
+
+      {/* Instant goodwill refund to the customer's loyalty points. */}
+      <div className="mt-3 border-t border-line pt-3">
+        {refundOpen ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              value={refundAmt}
+              onChange={(e) => setRefundAmt(e.target.value)}
+              placeholder="Points"
+              className="w-24 rounded-md border border-line bg-surface px-2 py-1.5 text-sm tabular-nums"
+            />
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  const r = await instantRefund(
+                    order.id,
+                    Math.max(0, Number.parseFloat(refundAmt) || 0),
+                    "Goodwill refund"
+                  );
+                  if (r.ok) {
+                    setRefundOpen(false);
+                    setRefundAmt("");
+                  }
+                  return r;
+                })
+              }
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              Refund to points
+            </button>
+            <button
+              type="button"
+              onClick={() => setRefundOpen(false)}
+              className="text-sm text-ink-soft"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRefundOpen(true)}
+            className="text-xs text-ink-soft hover:text-brand-700"
+          >
+            Refund points to customer
+          </button>
+        )}
+      </div>
     </article>
   );
 }
