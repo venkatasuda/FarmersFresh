@@ -1,10 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 /**
  * A one-shot confetti burst on order confirmation — a small moment of delight
  * that makes placing an order feel rewarding. Pure CSS, no library.
+ *
+ * Rendered only after mount: the random positions must never run during SSR,
+ * or the server and client HTML would differ and React would throw a hydration
+ * mismatch.
  */
 export function Confetti() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
   const colors = ["#16a34a", "#f59e0b", "#ef4444", "#3b82f6", "#a855f7"];
   const pieces = Array.from({ length: 28 });
   return (

@@ -13,6 +13,7 @@ import { SubscribeBox } from "@/app/(shop)/subscribe-box";
 import { TrackView } from "@/app/(shop)/track-view";
 import { formatRupees } from "@/lib/format";
 import { getFrequentlyBoughtTogether, getProductBySlug } from "@/lib/shop";
+import { getSubscriptionDiscountPct } from "@/lib/settings";
 import { discountPercent, packLabel, unitPrice } from "@/lib/types";
 
 // Next.js 16: params is a Promise.
@@ -38,7 +39,10 @@ export default async function ProductPage({ params }: Props) {
   // unlisted item 404s to the public without any extra check here.
   if (!product) notFound();
 
-  const goesWith = await getFrequentlyBoughtTogether(product.id, 4);
+  const [goesWith, subscriptionDiscountPct] = await Promise.all([
+    getFrequentlyBoughtTogether(product.id, 4),
+    getSubscriptionDiscountPct(),
+  ]);
 
   return (
     <ShopShell>
@@ -134,7 +138,7 @@ export default async function ProductPage({ params }: Props) {
               useful for logged-in customers, but the control gracefully points
               guests to log in when they try. */}
           <div className="mt-4 max-w-sm">
-            <SubscribeBox product={product} />
+            <SubscribeBox product={product} discountPct={subscriptionDiscountPct} />
           </div>
 
           <dl className="mt-8 space-y-3 border-t border-line pt-6 text-sm">

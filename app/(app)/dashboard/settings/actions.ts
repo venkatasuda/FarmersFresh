@@ -15,6 +15,7 @@ export type AdminSettings = {
   gstin: string;
   businessAddress: string;
   maxDiscountPercent: number;
+  subscriptionDiscountPercent: number;
 };
 
 export async function getAdminSettings(): Promise<AdminSettings | null> {
@@ -33,6 +34,7 @@ export async function getAdminSettings(): Promise<AdminSettings | null> {
     gstin: (d.gstin as string) ?? "",
     businessAddress: (d.business_address as string) ?? "",
     maxDiscountPercent: Number(d.max_discount_percent ?? 50),
+    subscriptionDiscountPercent: Number(d.subscription_discount_percent ?? 5),
   };
 }
 
@@ -54,6 +56,11 @@ export async function saveSettings(
     p_business_address: input.businessAddress,
     p_max_discount_percent: Number.isFinite(input.maxDiscountPercent)
       ? input.maxDiscountPercent
+      : null,
+    p_subscription_discount_percent: Number.isFinite(
+      input.subscriptionDiscountPercent
+    )
+      ? input.subscriptionDiscountPercent
       : null,
   });
   if (error) return { ok: false, message: sanitizeError(error.message) };

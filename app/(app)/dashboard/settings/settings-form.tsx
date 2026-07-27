@@ -73,6 +73,22 @@ export function SettingsForm({ initial }: { initial: AdminSettings }) {
       </Section>
 
       <Section
+        title="Subscribe & Save"
+        subtitle="The standing discount on every recurring (subscription) delivery."
+      >
+        <Num
+          label="Subscriber discount (% off each order)"
+          value={form.subscriptionDiscountPercent}
+          onChange={(v) => set("subscriptionDiscountPercent", v)}
+        />
+        <p className="mt-1 text-xs text-ink-soft">
+          Rewards customers who commit to repeat delivery. A modest 3–5% usually
+          converts well without hurting margin. Set to 0 to turn it off. Capped
+          at 50%.
+        </p>
+      </Section>
+
+      <Section
         title="Order alerts"
         subtitle="Where new orders are announced to your team (not shown to customers)."
       >

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/app/(shop)/cart-context";
 import { ProductImage } from "@/app/(shop)/product-image";
+import { HonestPrice } from "@/app/(shop)/honest-price";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { FREE_DELIVERY_OVER, deliveryFeeFor } from "@/lib/types";
 
@@ -169,6 +170,8 @@ export function CartClient() {
           <p className="mt-3 text-center text-xs text-ink-soft">
             Pay cash or UPI when it arrives. Weights are confirmed at cutting.
           </p>
+
+          <HonestPrice className="mt-4" />
         </aside>
       </div>
     </>

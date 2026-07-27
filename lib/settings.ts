@@ -12,6 +12,20 @@ import {
   type StoreSettings,
 } from "@/lib/types";
 
+/**
+ * The standing "subscribe & save" discount percent (0 if none). Public read,
+ * used on the product page to show the incentive to subscribe.
+ */
+export async function getSubscriptionDiscountPct(): Promise<number> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("subscription_discount_pct");
+    return num(data, 0);
+  } catch {
+    return 0;
+  }
+}
+
 export async function getStoreSettings(): Promise<StoreSettings> {
   const fallback: StoreSettings = {
     name: "Farmers Fresh",

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useCart } from "@/app/(shop)/cart-context";
+import { HonestPrice } from "@/app/(shop)/honest-price";
 import { formatLineQty, formatRupees } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/types";
 import {
@@ -683,6 +684,8 @@ export function CheckoutClient({
               ? "Final price follows the weighed cut. We'll confirm by phone."
               : "Payments are processed securely. Card details never touch our servers."}
           </p>
+
+          <HonestPrice className="mt-4" />
         </aside>
       </form>
     </>

@@ -4,7 +4,9 @@ import { ShopShell } from "@/app/(shop)/shop-shell";
 import { signOutCustomer } from "./actions";
 import { AddressBook } from "./address-book";
 import { BuyAgain } from "./buy-again";
-import { getMyWallet } from "./wallet-actions";
+import { getMyWallet, getMySavings } from "./wallet-actions";
+import { SavingsCard } from "./savings-card";
+import { getStoreSettings } from "@/lib/settings";
 import { getMyMembership } from "@/app/pass/actions";
 import { getMyScratchCards } from "./scratch-actions";
 import { ScratchCards } from "./scratch-cards";
@@ -41,15 +43,25 @@ export default async function AccountPage() {
   // Not logged in → the customer login (not the staff one).
   if (!user) redirect("/account/login");
 
-  const [{ data }, wallet, membership, scratchCards, myCoupons, { data: tierData }] =
-    await Promise.all([
-      supabase.rpc("my_orders"),
-      getMyWallet(),
-      getMyMembership(),
-      getMyScratchCards(),
-      getMyCoupons(),
-      supabase.rpc("my_tier"),
-    ]);
+  const [
+    { data },
+    wallet,
+    membership,
+    scratchCards,
+    myCoupons,
+    { data: tierData },
+    savings,
+    settings,
+  ] = await Promise.all([
+    supabase.rpc("my_orders"),
+    getMyWallet(),
+    getMyMembership(),
+    getMyScratchCards(),
+    getMyCoupons(),
+    supabase.rpc("my_tier"),
+    getMySavings(),
+    getStoreSettings(),
+  ]);
   const tier = tierData as
     | { tier: string; spent: number; multiplier: number; next_tier: string | null; to_next: number }
     | null;
@@ -84,6 +96,10 @@ export default async function AccountPage() {
           <div className="mt-6">
             <WalletCard wallet={wallet} qrSvg={await qrSvg(wallet.code)} />
           </div>
+        ) : null}
+
+        {savings ? (
+          <SavingsCard savings={savings} deliveryFee={settings.deliveryFee} />
         ) : null}
 
         {scratchCards.length > 0 ? <ScratchCards initial={scratchCards} /> : null}
