@@ -19,6 +19,7 @@ import { clearCart, saveCart } from "./cart-sync-actions";
 import { getMyWallet } from "@/app/account/wallet-actions";
 
 const SLOTS = [
+  { value: "express_2h", label: "Express — within 2 hours" },
   { value: "today_evening", label: "Today, 4–8 pm" },
   { value: "tomorrow_morning", label: "Tomorrow, 7–11 am" },
   { value: "tomorrow_evening", label: "Tomorrow, 4–8 pm" },

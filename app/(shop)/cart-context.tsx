@@ -43,12 +43,20 @@ type CartState = {
   drawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
+  /** Configured free-delivery threshold, for the basket-building nudge. */
+  freeDeliveryThreshold: number;
 };
 
 const CartContext = createContext<CartState | null>(null);
 const STORAGE_KEY = "ff.cart.v1";
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({
+  children,
+  freeDeliveryThreshold = 500,
+}: {
+  children: React.ReactNode;
+  freeDeliveryThreshold?: number;
+}) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [notice, setNotice] = useState<CartNotice>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -135,6 +143,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       drawerOpen,
       openDrawer,
       closeDrawer,
+      freeDeliveryThreshold,
     };
   }, [
     lines,
@@ -148,6 +157,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     drawerOpen,
     openDrawer,
     closeDrawer,
+    freeDeliveryThreshold,
   ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

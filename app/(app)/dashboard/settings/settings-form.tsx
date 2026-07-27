@@ -58,6 +58,18 @@ export function SettingsForm({ initial }: { initial: AdminSettings }) {
             onChange={(v) => set("deliveryFee", v)}
           />
         </div>
+        <div className="mt-4">
+          <Num
+            label="Max total discount (% of order)"
+            value={form.maxDiscountPercent}
+            onChange={(v) => set("maxDiscountPercent", v)}
+          />
+          <p className="mt-1 text-xs text-ink-soft">
+            A safety cap: coupons + member discount can never take more than this
+            off an order, so you can&apos;t sell at a loss. Loyalty points aren&apos;t
+            counted here.
+          </p>
+        </div>
       </Section>
 
       <Section

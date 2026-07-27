@@ -14,6 +14,7 @@ export type AdminSettings = {
   deliveryFee: number;
   gstin: string;
   businessAddress: string;
+  maxDiscountPercent: number;
 };
 
 export async function getAdminSettings(): Promise<AdminSettings | null> {
@@ -31,6 +32,7 @@ export async function getAdminSettings(): Promise<AdminSettings | null> {
     deliveryFee: Number(d.delivery_fee ?? 40),
     gstin: (d.gstin as string) ?? "",
     businessAddress: (d.business_address as string) ?? "",
+    maxDiscountPercent: Number(d.max_discount_percent ?? 50),
   };
 }
 
@@ -50,6 +52,9 @@ export async function saveSettings(
     p_delivery_fee: Number.isFinite(input.deliveryFee) ? input.deliveryFee : null,
     p_gstin: input.gstin,
     p_business_address: input.businessAddress,
+    p_max_discount_percent: Number.isFinite(input.maxDiscountPercent)
+      ? input.maxDiscountPercent
+      : null,
   });
   if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/settings");

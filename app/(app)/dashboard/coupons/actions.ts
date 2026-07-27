@@ -25,6 +25,31 @@ export async function createCoupon(input: {
     return { ok: false, message: "Enter a valid discount value." };
   }
 
+  // Margin guardrails — coupons should grow the basket, not give away profit.
+  if (input.kind === "percent") {
+    if (value > 30) {
+      return {
+        ok: false,
+        message: "Keep percentage discounts at 30% or less to protect your margin — or use a flat ₹ amount with a minimum spend.",
+      };
+    }
+    if (input.minSubtotal <= 0) {
+      return {
+        ok: false,
+        message: "Set a minimum spend so the coupon encourages a bigger basket (e.g. 10% off over ₹500).",
+      };
+    }
+  } else {
+    // A flat ₹ coupon should require the customer to spend clearly more than it
+    // gives back, so it lifts the order value instead of shrinking it.
+    if (input.minSubtotal < value * 2) {
+      return {
+        ok: false,
+        message: `A ₹${value} coupon should need at least ₹${value * 2} spend, so the order grows.`,
+      };
+    }
+  }
+
   const supabase = await createClient();
   const { data: orgId } = await supabase.rpc("current_org_id");
   if (!orgId) return { ok: false, message: "Not signed in." };
@@ -62,6 +87,17 @@ export async function grantPersonalCoupon(input: {
   minSubtotal: number;
   days: number;
 }): Promise<{ ok: boolean; code?: string; message?: string }> {
+  // Same basket-growing guardrails as public coupons.
+  if (input.kind === "percent" && input.value > 30) {
+    return { ok: false, message: "Keep percentage discounts at 30% or less." };
+  }
+  if (input.kind === "flat" && input.minSubtotal < input.value * 2) {
+    return {
+      ok: false,
+      message: `A ₹${input.value} coupon should need at least ₹${input.value * 2} spend.`,
+    };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("grant_personal_coupon", {
     p_phone: input.phone,
@@ -75,6 +111,18 @@ export async function grantPersonalCoupon(input: {
   const d = (data ?? {}) as { ok?: boolean; code?: string; message?: string };
   if (!d.ok) return { ok: false, message: d.message ?? "Couldn't grant." };
   revalidatePath("/dashboard/coupons");
+  return { ok: true, code: d.code };
+}
+
+/** Issue a gift card for a value; returns the code to hand to the customer. */
+export async function issueGiftCard(
+  value: number
+): Promise<{ ok: boolean; code?: string; message?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("issue_gift_card", { p_value: value });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  const d = (data ?? {}) as { ok?: boolean; code?: string; message?: string };
+  if (!d.ok) return { ok: false, message: d.message ?? "Couldn't issue." };
   return { ok: true, code: d.code };
 }
 

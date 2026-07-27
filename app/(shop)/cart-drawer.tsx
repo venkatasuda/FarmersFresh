@@ -6,7 +6,7 @@ import { useCart } from "./cart-context";
 import { ProductImage } from "./product-image";
 import { cartRecommendations, type MiniProduct } from "./recommend-actions";
 import { formatLineQty, formatRupees } from "@/lib/format";
-import { FREE_DELIVERY_OVER, deliveryFeeFor } from "@/lib/types";
+import { deliveryFeeFor } from "@/lib/types";
 
 /**
  * The slide-out basket. Clicking the header cart opens this instead of a full
@@ -25,6 +25,7 @@ export function CartDrawer() {
     drawerOpen,
     closeDrawer,
     ready,
+    freeDeliveryThreshold,
   } = useCart();
 
   // Complementary suggestions for what's in the basket ("complete your order").
@@ -64,8 +65,8 @@ export function CartDrawer() {
     };
   }, [drawerOpen, closeDrawer]);
 
-  const fee = deliveryFeeFor(subtotal);
-  const toFree = FREE_DELIVERY_OVER - subtotal;
+  const fee = deliveryFeeFor(subtotal, freeDeliveryThreshold);
+  const toFree = freeDeliveryThreshold - subtotal;
 
   return (
     <>
@@ -278,7 +279,7 @@ export function CartDrawer() {
                   <div
                     className="h-full rounded-full bg-brand-500 transition-all duration-500"
                     style={{
-                      width: `${Math.min(100, (subtotal / FREE_DELIVERY_OVER) * 100)}%`,
+                      width: `${Math.min(100, (subtotal / freeDeliveryThreshold) * 100)}%`,
                     }}
                   />
                 </div>

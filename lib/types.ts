@@ -275,6 +275,7 @@ export type StaffOrder = {
 };
 
 export const SLOT_LABELS: Record<string, string> = {
+  express_2h: "Express — within 2 hours",
   today_evening: "Today, 4–8 pm",
   tomorrow_morning: "Tomorrow, 7–11 am",
   tomorrow_evening: "Tomorrow, 4–8 pm",

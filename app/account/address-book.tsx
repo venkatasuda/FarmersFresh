@@ -32,7 +32,19 @@ export function AddressBook() {
     city: "",
     pincode: "",
     landmark: "",
+    lat: null as number | null,
+    lng: null as number | null,
   });
+
+  function useMyLocation() {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude })),
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   async function load() {
     const supabase = createClient();
@@ -66,6 +78,8 @@ export function AddressBook() {
         city: form.city.trim() || null,
         pincode: form.pincode.replace(/\D/g, "").slice(0, 6) || null,
         landmark: form.landmark.trim() || null,
+        lat: form.lat,
+        lng: form.lng,
         is_default: addresses.length === 0,
       });
       setForm({
@@ -76,6 +90,8 @@ export function AddressBook() {
         city: "",
         pincode: "",
         landmark: "",
+        lat: null,
+        lng: null,
       });
       setAdding(false);
       await load();
@@ -130,6 +146,13 @@ export function AddressBook() {
             <input value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} placeholder="Landmark" className={inp} />
           </div>
           <input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="Phone" inputMode="numeric" className={inp} />
+          <button
+            type="button"
+            onClick={useMyLocation}
+            className="rounded-lg border border-brand-300 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            {form.lat != null ? "✓ Location pinned" : "📍 Use my current location"}
+          </button>
           <div className="flex gap-2">
             <button type="button" disabled={busy || !form.address_line} onClick={save} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60">
               {busy ? "Saving…" : "Save address"}

@@ -10,6 +10,7 @@ import { getMyScratchCards } from "./scratch-actions";
 import { ScratchCards } from "./scratch-cards";
 import { getMyCoupons } from "./coupon-actions";
 import { MyCoupons } from "./my-coupons";
+import { GiftRedeem } from "./gift-redeem";
 import { NotificationToggle } from "./notification-toggle";
 import { ReportIssue } from "./report-issue";
 import { Subscriptions } from "./subscriptions";
@@ -40,13 +41,18 @@ export default async function AccountPage() {
   // Not logged in → the customer login (not the staff one).
   if (!user) redirect("/account/login");
 
-  const [{ data }, wallet, membership, scratchCards, myCoupons] = await Promise.all([
-    supabase.rpc("my_orders"),
-    getMyWallet(),
-    getMyMembership(),
-    getMyScratchCards(),
-    getMyCoupons(),
-  ]);
+  const [{ data }, wallet, membership, scratchCards, myCoupons, { data: tierData }] =
+    await Promise.all([
+      supabase.rpc("my_orders"),
+      getMyWallet(),
+      getMyMembership(),
+      getMyScratchCards(),
+      getMyCoupons(),
+      supabase.rpc("my_tier"),
+    ]);
+  const tier = tierData as
+    | { tier: string; spent: number; multiplier: number; next_tier: string | null; to_next: number }
+    | null;
   const orders = ((data ?? []) as unknown[]).map((o) => o as MyOrder);
 
   const who =
@@ -84,6 +90,8 @@ export default async function AccountPage() {
 
         <MyCoupons coupons={myCoupons} />
 
+        <GiftRedeem />
+
         <Link
           href="/pass"
           className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4 transition-colors hover:bg-brand-100"
@@ -100,6 +108,26 @@ export default async function AccountPage() {
             {membership ? "Member" : "Get the Pass"}
           </span>
         </Link>
+
+        {tier ? (
+          <div className="mt-6 rounded-2xl border border-line bg-surface p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-ink">
+                  {tier.tier} member
+                  <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-800">
+                    {tier.multiplier}× points
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  {tier.next_tier
+                    ? `Spend ${formatRupees(tier.to_next)} more to reach ${tier.next_tier} and earn points even faster.`
+                    : "You're at our top tier — earning points at the highest rate."}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <NotificationToggle />
 

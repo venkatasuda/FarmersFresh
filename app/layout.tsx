@@ -5,6 +5,7 @@ import { CartDrawer } from "@/app/(shop)/cart-drawer";
 import { CartToast } from "@/app/(shop)/cart-toast";
 import { WishlistProvider } from "@/app/(shop)/wishlist-context";
 import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
+import { getStoreSettings } from "@/lib/settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,11 +43,15 @@ export const viewport: Viewport = {
   themeColor: "#16a34a",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The free-delivery threshold powers the basket's "spend X more" nudge, so it
+  // must reflect the owner's setting, not a hardcoded number.
+  const settings = await getStoreSettings();
+
   return (
     <html
       lang="en"
@@ -56,7 +61,7 @@ export default function RootLayout({
         {/* The basket must survive navigation between product pages, so the
             provider sits above the router outlet. It is inert on staff pages. */}
         <WishlistProvider>
-          <CartProvider>
+          <CartProvider freeDeliveryThreshold={settings.freeDeliveryThreshold}>
             {children}
             <CartDrawer />
             <CartToast />
