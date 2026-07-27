@@ -56,9 +56,10 @@ async function getRatingsMap(): Promise<Map<string, Rating>> {
 
 function toProduct(
   r: ProductRow,
-  inStock: boolean,
+  stock: { inStock: boolean; low: boolean } | undefined,
   rating?: Rating
 ): ShopProduct | null {
+  const inStock = stock?.inStock ?? false;
   if (!r.slug || r.sale_price === null) return null;
   // PostgREST returns an embedded row as an object or a one-element array
   // depending on how it infers the relationship. Handle both.
@@ -83,6 +84,7 @@ function toProduct(
     minOrderQty: num(r.min_order_qty, 0.5),
     stepQty: num(r.step_qty, 0.5),
     inStock,
+    lowStock: inStock && (stock?.low ?? false),
     avgRating: rating && rating.count > 0 ? rating.avg : null,
     reviewCount: rating?.count ?? 0,
     dietTags: r.diet_tags ?? [],
@@ -98,7 +100,9 @@ const SELECT =
  * An RPC, not a table read: `catalogue_stock()` is SECURITY DEFINER so it can
  * see the private stock ledger and return only a boolean per product.
  */
-async function getStockMap(): Promise<Map<string, boolean>> {
+type Stock = { inStock: boolean; low: boolean };
+
+async function getStockMap(): Promise<Map<string, Stock>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("catalogue_stock");
 
@@ -110,10 +114,9 @@ async function getStockMap(): Promise<Map<string, boolean>> {
   }
 
   return new Map(
-    ((data ?? []) as { product_id: string; in_stock: boolean }[]).map((r) => [
-      r.product_id,
-      r.in_stock === true,
-    ])
+    ((data ?? []) as { product_id: string; in_stock: boolean; low: boolean }[]).map(
+      (r) => [r.product_id, { inStock: r.in_stock === true, low: r.low === true }]
+    )
   );
 }
 
@@ -141,7 +144,7 @@ export async function getCatalogue(): Promise<ShopProduct[]> {
   }
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
+    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null);
 }
 
@@ -186,7 +189,7 @@ export async function getCatalogueByCategory(
   const order = new Map(ids.map((id, i) => [id, i]));
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
+    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null)
     // `.in()` does not preserve order, so restore the ordering the SQL chose.
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
@@ -238,7 +241,7 @@ export async function getProductsByIds(
   const order = new Map(ids.map((id, i) => [id, i]));
 
   return ((data ?? []) as ProductRow[])
-    .map((r) => toProduct(r, stock.get(r.id) ?? false, ratings.get(r.id)))
+    .map((r) => toProduct(r, stock.get(r.id), ratings.get(r.id)))
     .filter((p): p is ShopProduct => p !== null)
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
@@ -364,5 +367,5 @@ export async function getProductBySlug(
 
   if (error || !data) return null;
   const row = data as ProductRow;
-  return toProduct(row, stock.get(row.id) ?? false, ratings.get(row.id));
+  return toProduct(row, stock.get(row.id), ratings.get(row.id));
 }

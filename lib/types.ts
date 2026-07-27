@@ -35,6 +35,8 @@ export type ShopProduct = {
   brandTagline: string | null;
   avgRating: number | null;
   reviewCount: number;
+  /** In stock but running low — powers the "only a few left" urgency cue. */
+  lowStock: boolean;
   /** Dietary tags: 'veg', 'non-veg', 'vegan', 'organic', 'egg-free', 'gluten-free'. */
   dietTags: string[];
   /**

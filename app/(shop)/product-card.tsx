@@ -51,9 +51,21 @@ export function ProductCard({
               {off}% off
             </span>
           ) : null}
+          {/* Freshness — our own-farm edge. Loose cuts are cut to order. */}
+          {product.inStock && product.unit === "kg" ? (
+            <span className="rounded-md bg-green-700 px-2 py-0.5 text-xs font-medium text-white">
+              Cut fresh today
+            </span>
+          ) : null}
           {product.badge && product.inStock ? (
             <span className="rounded-md bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
               {product.badge}
+            </span>
+          ) : null}
+          {/* Scarcity nudge. */}
+          {product.lowStock ? (
+            <span className="rounded-md bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">
+              Only a few left
             </span>
           ) : null}
         </div>

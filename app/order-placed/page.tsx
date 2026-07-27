@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPersonalizedProducts } from "@/lib/shop";
 import { formatRupees } from "@/lib/format";
 import { AddMore } from "./add-more";
+import { Confetti } from "./confetti";
 
 export const metadata = { title: "Order placed · Farmers Fresh" };
 
@@ -42,6 +43,7 @@ export default async function OrderPlacedPage({
 
   return (
     <ShopShell>
+      {number ? <Confetti /> : null}
       <div className="mx-auto max-w-md rounded-2xl border border-line bg-surface px-6 py-12 text-center">
         <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-brand-100 text-brand-700">
           <svg viewBox="0 0 24 24" fill="none" className="size-7" aria-hidden>
