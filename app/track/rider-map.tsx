@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef } from "react";
 
 /**
@@ -8,18 +9,20 @@ import { useEffect, useRef } from "react";
  * library loads from a CDN on demand). The marker moves as new coordinates
  * arrive from the track poll; we never plot a destination pin because customer
  * addresses aren't geocoded.
+ *
+ * Leaflet is loaded at runtime from a CDN, so there's no npm package or types —
+ * the global is typed loosely as `any`.
  */
-type L = typeof import("leaflet");
 declare global {
   interface Window {
-    L?: unknown;
+    L?: any;
   }
 }
 
-function loadLeaflet(): Promise<L | null> {
+function loadLeaflet(): Promise<any> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve(null);
-    if (window.L) return resolve(window.L as L);
+    if (window.L) return resolve(window.L);
 
     const css = document.createElement("link");
     css.rel = "stylesheet";
@@ -28,7 +31,7 @@ function loadLeaflet(): Promise<L | null> {
 
     const js = document.createElement("script");
     js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    js.onload = () => resolve((window.L as L) ?? null);
+    js.onload = () => resolve(window.L ?? null);
     js.onerror = () => resolve(null);
     document.body.appendChild(js);
   });
