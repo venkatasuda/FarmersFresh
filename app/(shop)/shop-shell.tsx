@@ -190,6 +190,11 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
             <h3 className="text-sm font-medium text-ink">Help</h3>
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
               <li>
+                <Link href="/help" className="hover:text-brand-700">
+                  Help &amp; support
+                </Link>
+              </li>
+              <li>
                 <Link href="/track" className="hover:text-brand-700">
                   Track my order
                 </Link>

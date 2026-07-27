@@ -54,6 +54,30 @@ export async function createCoupon(input: {
   return { ok: true };
 }
 
+/** Grant a personal, single-use coupon to a customer found by phone. */
+export async function grantPersonalCoupon(input: {
+  phone: string;
+  kind: "percent" | "flat";
+  value: number;
+  minSubtotal: number;
+  days: number;
+}): Promise<{ ok: boolean; code?: string; message?: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("grant_personal_coupon", {
+    p_phone: input.phone,
+    p_kind: input.kind,
+    p_value: input.value,
+    p_min: input.minSubtotal,
+    p_days: input.days,
+    p_max: null,
+  });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  const d = (data ?? {}) as { ok?: boolean; code?: string; message?: string };
+  if (!d.ok) return { ok: false, message: d.message ?? "Couldn't grant." };
+  revalidatePath("/dashboard/coupons");
+  return { ok: true, code: d.code };
+}
+
 export async function toggleCoupon(
   id: string,
   active: boolean

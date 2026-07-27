@@ -66,6 +66,12 @@ export default async function AppLayout({
                 Returns
               </Link>
               <Link
+                href="/dashboard/support"
+                className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+              >
+                Support
+              </Link>
+              <Link
                 href="/dashboard/stock"
                 className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
               >

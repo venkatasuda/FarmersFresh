@@ -45,6 +45,24 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+export async function rateDelivery(
+  orderNumber: string,
+  phone: string,
+  rating: number,
+  comment: string
+): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("rate_delivery", {
+    p_number: orderNumber,
+    p_phone: phone,
+    p_rating: rating,
+    p_comment: comment || null,
+  });
+  if (error) return { ok: false, message: "Couldn't submit. Try again." };
+  const d = (data ?? {}) as { ok?: boolean; message?: string };
+  return { ok: !!d.ok, message: d.message ?? "" };
+}
+
 export async function trackOrder(
   orderNumber: string,
   phone: string

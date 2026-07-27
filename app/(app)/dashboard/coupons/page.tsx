@@ -1,5 +1,6 @@
 import { CouponForm } from "./coupon-form";
 import { CouponToggle } from "./coupon-toggle";
+import { GrantCoupon } from "./grant-coupon";
 import { requireSession } from "@/lib/auth";
 import { formatRupees } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -52,6 +53,8 @@ export default async function CouponsPage() {
       </div>
 
       <CouponForm />
+
+      <GrantCoupon />
 
       <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <h2 className="border-b border-line px-5 py-3 text-sm font-medium text-ink">

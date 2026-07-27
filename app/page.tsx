@@ -5,7 +5,12 @@ import { ProductCard } from "@/app/(shop)/product-card";
 import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getActiveBanners } from "@/lib/banners";
-import { getCatalogue, getCategories } from "@/lib/shop";
+import {
+  getCatalogue,
+  getCategories,
+  getPersonalizedProducts,
+  getRefillSuggestions,
+} from "@/lib/shop";
 import { buildCategoryTree } from "@/lib/types";
 
 export const metadata = {
@@ -13,10 +18,12 @@ export const metadata = {
 };
 
 export default async function ShopHome() {
-  const [products, categories, banners] = await Promise.all([
+  const [products, categories, banners, refill, forYou] = await Promise.all([
     getCatalogue(),
     getCategories(),
     getActiveBanners(),
+    getRefillSuggestions(),
+    getPersonalizedProducts(10),
   ]);
 
   const tree = buildCategoryTree(categories);
@@ -76,6 +83,24 @@ export default async function ShopHome() {
         <>
           {/* Personalized: what this visitor looked at last time. */}
           <RecentlyViewed />
+
+          {/* Smart refill — items this customer buys on a rhythm, about due. */}
+          {refill.length > 0 ? (
+            <Row
+              title="Time to restock?"
+              subtitle="Things you buy regularly — you may be running low"
+              products={refill}
+            />
+          ) : null}
+
+          {/* Personalised feed from the customer's own category habits. */}
+          {forYou.length > 0 ? (
+            <Row
+              title="Picked for you"
+              subtitle="Based on what you usually shop for"
+              products={forYou}
+            />
+          ) : null}
 
           {/* Department tiles — the standard grocery entry point. */}
           {tree.length > 0 ? (

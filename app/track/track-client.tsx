@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { trackOrder, type TrackedOrder } from "./actions";
 import { RiderMap } from "./rider-map";
+import { RateDelivery } from "./rate-delivery";
 import { formatQty, formatRupees } from "@/lib/format";
 
 function etaText(t: NonNullable<TrackedOrder["tracking"]>): string | null {
@@ -144,6 +145,10 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
             >
               View receipt →
             </a>
+
+            {order.status === "delivered" ? (
+              <RateDelivery orderNumber={order.orderNumber} phone={phone} />
+            ) : null}
 
             {order.tracking ? (
               <div className="mt-4">

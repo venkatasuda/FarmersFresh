@@ -335,6 +335,20 @@ export async function getPersonalOffers(limit = 8): Promise<ShopProduct[]> {
   return prods.filter(isOnSale).slice(0, limit);
 }
 
+/** Products the logged-in customer is about due to run out of. */
+export async function getRefillSuggestions(): Promise<ShopProduct[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("refill_suggestions");
+  return getProductsByIds(idsFromRpc(data));
+}
+
+/** A personalised feed ranked by the customer's own category habits. */
+export async function getPersonalizedProducts(limit = 10): Promise<ShopProduct[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("personalized_products", { p_limit: limit });
+  return getProductsByIds(idsFromRpc(data));
+}
+
 export async function getProductBySlug(
   slug: string
 ): Promise<ShopProduct | null> {

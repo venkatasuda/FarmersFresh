@@ -8,6 +8,8 @@ import { getMyWallet } from "./wallet-actions";
 import { getMyMembership } from "@/app/pass/actions";
 import { getMyScratchCards } from "./scratch-actions";
 import { ScratchCards } from "./scratch-cards";
+import { getMyCoupons } from "./coupon-actions";
+import { MyCoupons } from "./my-coupons";
 import { NotificationToggle } from "./notification-toggle";
 import { ReportIssue } from "./report-issue";
 import { Subscriptions } from "./subscriptions";
@@ -38,11 +40,12 @@ export default async function AccountPage() {
   // Not logged in → the customer login (not the staff one).
   if (!user) redirect("/account/login");
 
-  const [{ data }, wallet, membership, scratchCards] = await Promise.all([
+  const [{ data }, wallet, membership, scratchCards, myCoupons] = await Promise.all([
     supabase.rpc("my_orders"),
     getMyWallet(),
     getMyMembership(),
     getMyScratchCards(),
+    getMyCoupons(),
   ]);
   const orders = ((data ?? []) as unknown[]).map((o) => o as MyOrder);
 
@@ -78,6 +81,8 @@ export default async function AccountPage() {
         ) : null}
 
         {scratchCards.length > 0 ? <ScratchCards initial={scratchCards} /> : null}
+
+        <MyCoupons coupons={myCoupons} />
 
         <Link
           href="/pass"
