@@ -5,6 +5,7 @@ import {
   addRecipeItem,
   createRecipe,
   setRecipeImage,
+  setRecipeVideo,
   type AdminRecipe,
 } from "./actions";
 import { ImageUpload } from "@/app/(app)/dashboard/catalogue/image-upload";
@@ -144,6 +145,16 @@ function IngredientAdder({
       <div className="mt-3">
         <ImageUpload value={null} onChange={(p) => void setRecipeImage(recipe.id, p)} />
       </div>
+
+      <label className="mt-3 block">
+        <span className="text-xs text-brand-700">YouTube video link (your channel)</span>
+        <input
+          defaultValue=""
+          placeholder="https://youtu.be/…"
+          onBlur={(e) => void setRecipeVideo(recipe.id, e.target.value.trim())}
+          className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-brand-500"
+        />
+      </label>
 
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <select value={product} onChange={(e) => setProduct(e.target.value)} className={inp}>

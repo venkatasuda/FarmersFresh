@@ -31,6 +31,7 @@ export type RecipeDetail = {
   servings: number;
   description: string | null;
   imagePath: string | null;
+  videoUrl: string | null;
   items: RecipeIngredient[];
 };
 
@@ -85,6 +86,7 @@ export async function getRecipeDetail(
     servings: Number(d.servings ?? 4),
     description: (d.description as string | null) ?? null,
     imagePath: (d.image_path as string | null) ?? null,
+    videoUrl: (d.video_url as string | null) ?? null,
     items: items.map((i) => ({
       productId: String(i.product_id),
       slug: String(i.slug ?? ""),

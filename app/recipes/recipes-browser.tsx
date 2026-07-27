@@ -11,6 +11,15 @@ import {
 import { INDIAN_STATES, INTERNATIONAL_CUISINES } from "@/lib/cuisines";
 import { formatRupees } from "@/lib/format";
 
+/** Turn a YouTube watch / short / youtu.be link into an embeddable URL. */
+function youtubeEmbed(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/
+  );
+  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
+}
+
 export function RecipesBrowser({
   cuisines,
   initial,
@@ -25,6 +34,37 @@ export function RecipesBrowser({
   const [cards, setCards] = useState<RecipeCard[]>(initial);
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState<RecipeDetail | null>(null);
+  const [ask, setAsk] = useState("");
+
+  // Rule-based "cook assistant": read the plain-language request and fill the
+  // filters. No LLM — free & instant. This is the seam where a custom NLU model
+  // could plug in later (return { servings, budget, diet, cuisine }).
+  function runAsk() {
+    const t = ask.toLowerCase();
+    const bud =
+      t.match(/(?:under|below|within|budget|₹|rs\.?)\s*(\d{2,5})/) ||
+      t.match(/(\d{2,5})\s*(?:rupees|rs|₹)/);
+    const srv =
+      t.match(/(\d{1,2})\s*(?:people|ppl|persons?|members?)/) ||
+      t.match(/(?:for|serves?)\s*(\d{1,2})/);
+    const d = /\b(diet|light|healthy)\b/.test(t)
+      ? "diet"
+      : /\btraditional\b/.test(t)
+        ? "traditional"
+        : "";
+    const cui =
+      [...INDIAN_STATES, ...INTERNATIONAL_CUISINES].find((c) =>
+        t.includes(c.toLowerCase())
+      ) ?? "";
+
+    const nextServings = srv ? Math.max(1, Number.parseInt(srv[1])) : servings;
+    const nextBudget = bud ? bud[1] : budget;
+    setServings(nextServings);
+    setBudget(nextBudget);
+    setDiet(d);
+    setCuisine(cui);
+    refresh({ servings: nextServings, budget: nextBudget, diet: d, cuisine: cui });
+  }
 
   function refresh(next?: Partial<{ servings: number; budget: string; diet: string; cuisine: string }>) {
     const s = next?.servings ?? servings;
@@ -51,6 +91,31 @@ export function RecipesBrowser({
 
   return (
     <div className="space-y-5">
+      {/* Cook assistant — say it in plain words. */}
+      <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4">
+        <label className="text-sm font-medium text-brand-900">
+          What shall we cook?
+        </label>
+        <div className="mt-2 flex gap-2">
+          <input
+            value={ask}
+            onChange={(e) => setAsk(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") runAsk();
+            }}
+            placeholder="e.g. veg dinner for 4 under ₹600"
+            className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-brand-500"
+          />
+          <button
+            type="button"
+            onClick={runAsk}
+            className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Suggest
+          </button>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="rounded-2xl border border-line bg-surface p-4">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -227,6 +292,18 @@ function RecipeModal({
           <button type="button" onClick={onClose} className="text-ink-soft hover:text-ink">✕</button>
         </div>
         {detail.description ? <p className="mt-2 text-sm text-ink-soft">{detail.description}</p> : null}
+
+        {youtubeEmbed(detail.videoUrl) ? (
+          <div className="mt-3 aspect-video w-full overflow-hidden rounded-xl">
+            <iframe
+              src={youtubeEmbed(detail.videoUrl)!}
+              title="Recipe video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          </div>
+        ) : null}
 
         <ul className="mt-4 divide-y divide-line">
           {detail.items.map((i) => (

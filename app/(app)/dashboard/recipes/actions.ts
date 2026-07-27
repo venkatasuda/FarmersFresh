@@ -59,6 +59,19 @@ export async function setRecipeImage(
   return { ok: !error };
 }
 
+export async function setRecipeVideo(
+  recipeId: string,
+  url: string
+): Promise<{ ok: boolean }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_recipe_video", {
+    p_recipe: recipeId,
+    p_url: url || null,
+  });
+  if (!error) revalidatePath("/dashboard/recipes");
+  return { ok: !error };
+}
+
 export async function addRecipeItem(
   recipeId: string,
   productId: string,
