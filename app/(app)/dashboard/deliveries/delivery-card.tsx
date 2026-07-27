@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { claimDelivery, setDeliveryStatus } from "./actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  claimDelivery,
+  setDeliveryStatus,
+  updateRiderLocation,
+} from "./actions";
 import { formatRupees } from "@/lib/format";
 import { SLOT_LABELS, type Delivery } from "@/lib/types";
 
@@ -141,6 +145,106 @@ export function DeliveryCard({
           </>
         ) : null}
       </div>
+
+      {mine && delivery.status === "out_for_delivery" ? (
+        <LocationShare orderId={delivery.id} />
+      ) : null}
     </article>
+  );
+}
+
+/**
+ * Rider's "share live location" control. When on, it watches the device GPS and
+ * pushes each position to the order so the customer sees a moving marker. The
+ * ETA buttons tag the customer's map with an honest, rider-set arrival time.
+ * Stops on unmount or when toggled off — nothing runs in the background.
+ */
+function LocationShare({ orderId }: { orderId: string }) {
+  const [sharing, setSharing] = useState(false);
+  const [eta, setEta] = useState<number | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const watchId = useRef<number | null>(null);
+  const lastPos = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (watchId.current !== null) navigator.geolocation?.clearWatch(watchId.current);
+    };
+  }, []);
+
+  function start() {
+    if (!("geolocation" in navigator)) {
+      setNote("This device can't share location.");
+      return;
+    }
+    setNote(null);
+    setSharing(true);
+    watchId.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        lastPos.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        void updateRiderLocation(
+          orderId,
+          pos.coords.latitude,
+          pos.coords.longitude,
+          eta ?? undefined
+        );
+      },
+      () => setNote("Couldn't get your location. Allow location access."),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  function stop() {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
+    setSharing(false);
+  }
+
+  function setEtaMinutes(m: number) {
+    setEta(m);
+    const p = lastPos.current;
+    if (p) void updateRiderLocation(orderId, p.lat, p.lng, m);
+    else setNote("Turn on location sharing first.");
+  }
+
+  return (
+    <div className="mt-3 rounded-lg bg-brand-50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-brand-900">
+          Live location {sharing ? "· on" : ""}
+        </span>
+        <button
+          type="button"
+          onClick={sharing ? stop : start}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            sharing
+              ? "border border-brand-300 text-brand-700"
+              : "bg-brand-600 text-white hover:bg-brand-700"
+          }`}
+        >
+          {sharing ? "Stop sharing" : "Share my location"}
+        </button>
+      </div>
+      {sharing ? (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-xs text-brand-700">ETA:</span>
+          {[10, 20, 30].map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setEtaMinutes(m)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                eta === m ? "bg-brand-600 text-white" : "border border-brand-300 text-brand-700"
+              }`}
+            >
+              {m} min
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {note ? <p className="mt-1.5 text-xs text-red-700">{note}</p> : null}
+    </div>
   );
 }

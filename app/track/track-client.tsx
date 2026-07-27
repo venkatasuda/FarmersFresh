@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { trackOrder, type TrackedOrder } from "./actions";
+import { RiderMap } from "./rider-map";
 import { formatQty, formatRupees } from "@/lib/format";
+
+function etaText(t: NonNullable<TrackedOrder["tracking"]>): string | null {
+  if (t.etaMinutes == null || !t.etaSetAt) return null;
+  const elapsedMin = (Date.now() - new Date(t.etaSetAt).getTime()) / 60000;
+  const remaining = Math.max(Math.round(t.etaMinutes - elapsedMin), 1);
+  return `Arriving in about ${remaining} min`;
+}
 
 const STEPS: { key: TrackedOrder["status"]; label: string }[] = [
   { key: "placed", label: "Placed" },
@@ -47,11 +55,13 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
   useEffect(() => {
     if (!order || finished || !creds.current) return;
 
+    // Poll faster while it's on the way so the rider marker moves smoothly.
+    const every = order.status === "out_for_delivery" ? 10000 : 20000;
     const id = window.setInterval(async () => {
       if (document.hidden || !creds.current) return;
       const r = await trackOrder(creds.current.number, creds.current.phone);
       if (r.ok) setOrder(r.order);
-    }, 20000);
+    }, every);
 
     return () => window.clearInterval(id);
   }, [order, finished]);
@@ -134,6 +144,26 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
             >
               View receipt →
             </a>
+
+            {order.tracking ? (
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-brand-700">
+                    <span className="size-2 animate-pulse rounded-full bg-brand-500" />
+                    Your rider is on the way
+                  </span>
+                  {etaText(order.tracking) ? (
+                    <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-brand-800">
+                      {etaText(order.tracking)}
+                    </span>
+                  ) : null}
+                </div>
+                <RiderMap lat={order.tracking.lat} lng={order.tracking.lng} />
+                <p className="mt-1 text-center text-xs text-ink-soft">
+                  Live location, updated as they move.
+                </p>
+              </div>
+            ) : null}
 
             {cancelled ? (
               <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

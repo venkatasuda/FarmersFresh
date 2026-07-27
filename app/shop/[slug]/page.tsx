@@ -142,6 +142,10 @@ export default async function ProductPage({ params }: Props) {
               Free over ₹500, otherwise ₹40. Same day where we deliver.
             </Fact>
             <Fact label="Payment">Cash or UPI when it reaches you.</Fact>
+            <Fact label="Quality">
+              Quality assured and fully traceable to source — every batch is
+              logged from farm to your door.
+            </Fact>
             {/* Only true for loose goods. A sealed 5 kg bag of atta weighs
                 5 kg — promising it "may vary" would be nonsense. */}
             {packLabel(product) === null ? (

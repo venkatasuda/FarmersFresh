@@ -27,6 +27,13 @@ export type TrackedOrder = {
   contactName: string;
   cancelledReason: string | null;
   items: TrackedItem[];
+  tracking: {
+    lat: number;
+    lng: number;
+    updatedAt: string;
+    etaMinutes: number | null;
+    etaSetAt: string | null;
+  } | null;
 };
 
 export type TrackResult =
@@ -89,6 +96,17 @@ export async function trackOrder(
           slug: (it.slug as string) ?? null,
         };
       }),
+      tracking: (() => {
+        const t = d.tracking as Record<string, unknown> | null;
+        if (!t || t.lat == null || t.lng == null) return null;
+        return {
+          lat: num(t.lat),
+          lng: num(t.lng),
+          updatedAt: String(t.updated_at ?? ""),
+          etaMinutes: t.eta_minutes == null ? null : num(t.eta_minutes),
+          etaSetAt: (t.eta_set_at as string) ?? null,
+        };
+      })(),
     },
   };
 }

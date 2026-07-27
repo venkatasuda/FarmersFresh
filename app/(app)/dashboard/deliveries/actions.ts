@@ -22,6 +22,31 @@ export async function claimDelivery(
 }
 
 /**
+ * Push the rider's live GPS (and optionally an ETA) to the order, so the
+ * customer's track page can show a moving marker. Best-effort — a dropped
+ * update just means the marker doesn't move that tick.
+ */
+export async function updateRiderLocation(
+  orderId: string,
+  lat: number,
+  lng: number,
+  etaMinutes?: number
+): Promise<DeliveryResult> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { ok: false, message: "No location." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_rider_location", {
+    p_order_id: orderId,
+    p_lat: lat,
+    p_lng: lng,
+    p_eta: Number.isFinite(etaMinutes) ? etaMinutes : null,
+  });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  return { ok: true };
+}
+
+/**
  * Advance a delivery's status. Reuses the same orders update the order queue
  * uses, so the customer's status notifications fire from one place.
  */
