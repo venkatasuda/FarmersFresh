@@ -67,6 +67,22 @@ export function ProductCard({
 
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         <div className="flex-1">
+          {product.dietTags.includes("veg") || product.dietTags.includes("non-veg") ? (
+            <span
+              className={`mb-1 flex size-4 items-center justify-center rounded-sm border ${
+                product.dietTags.includes("non-veg")
+                  ? "border-red-600"
+                  : "border-green-600"
+              }`}
+              title={product.dietTags.includes("non-veg") ? "Non-veg" : "Veg"}
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  product.dietTags.includes("non-veg") ? "bg-red-600" : "bg-green-600"
+                }`}
+              />
+            </span>
+          ) : null}
           {/* Everything here is house brand, so the brand line is context,
               not a choice. Kept quiet and grey so it doesn't compete with the
               product name on 42 near-identical cards. */}

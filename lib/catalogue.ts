@@ -26,6 +26,7 @@ type Row = {
   is_published: boolean;
   is_active: boolean;
   sort_order: number;
+  diet_tags: string[] | null;
 };
 
 function toAdmin(r: Row, onHand: number): AdminProduct {
@@ -46,12 +47,13 @@ function toAdmin(r: Row, onHand: number): AdminProduct {
     isPublished: r.is_published,
     isActive: r.is_active,
     sortOrder: r.sort_order,
+    dietTags: r.diet_tags ?? [],
     onHand,
   };
 }
 
 const SELECT =
-  "id, name, slug, description, unit, sale_price, compare_at_price, pack_size, pack_unit, badge, image_path, category_id, brand_id, is_published, is_active, sort_order";
+  "id, name, slug, description, unit, sale_price, compare_at_price, pack_size, pack_unit, badge, image_path, category_id, brand_id, is_published, is_active, sort_order, diet_tags";
 
 export async function getAdminProducts(
   includeRetired = false

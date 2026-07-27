@@ -41,6 +41,9 @@ export function ProductForm({
   const [badge, setBadge] = useState(product?.badge ?? "");
   const [imagePath, setImagePath] = useState(product?.imagePath ?? null);
   const [published, setPublished] = useState(product?.isPublished ?? false);
+  const [dietTags, setDietTags] = useState<string[]>(product?.dietTags ?? []);
+  const toggleTag = (t: string) =>
+    setDietTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
 
   // The central fork: sold loose by weight, or in packs. See migration 0008.
   const [soldLoose, setSoldLoose] = useState(product?.packSize === null);
@@ -80,6 +83,7 @@ export function ProductForm({
         badge,
         imagePath,
         isPublished: published,
+        dietTags,
         sortOrder: product?.sortOrder ?? 100,
       });
 
@@ -276,6 +280,29 @@ export function ProductForm({
             className={inputClass}
           />
         </Field>
+      </section>
+
+      <section className="rounded-2xl border border-line bg-surface p-5">
+        <h2 className="text-sm font-medium text-ink">Dietary tags</h2>
+        <p className="mt-0.5 text-xs text-ink-soft">
+          Power the veg/non-veg dot and the filter chips on the shop.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {["veg", "non-veg", "vegan", "organic", "egg-free", "gluten-free"].map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => toggleTag(t)}
+              className={`rounded-full px-3 py-1.5 text-sm capitalize transition-colors ${
+                dietTags.includes(t)
+                  ? "bg-brand-600 text-white"
+                  : "border border-line text-ink-soft hover:bg-brand-50"
+              }`}
+            >
+              {t.replace("-", " ")}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-line bg-surface p-5">

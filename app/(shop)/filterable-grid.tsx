@@ -11,13 +11,29 @@ type Sort = "featured" | "price-asc" | "price-desc" | "rating";
  * page at BigBasket/Amazon. Works on the already-loaded list (client-side), so
  * changing sort or filter is instant with no round trip.
  */
+const DIET_FILTERS = [
+  { key: "veg", label: "Veg" },
+  { key: "non-veg", label: "Non-veg" },
+  { key: "vegan", label: "Vegan" },
+  { key: "organic", label: "Organic" },
+];
+
 export function FilterableGrid({ products }: { products: ShopProduct[] }) {
   const [sort, setSort] = useState<Sort>("featured");
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [diet, setDiet] = useState("");
+
+  // Only show diet chips the catalogue actually uses.
+  const availableDiets = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of products) for (const t of p.dietTags) set.add(t);
+    return DIET_FILTERS.filter((d) => set.has(d.key));
+  }, [products]);
 
   const shown = useMemo(() => {
     let list = products;
     if (inStockOnly) list = list.filter((p) => p.inStock);
+    if (diet) list = list.filter((p) => p.dietTags.includes(diet));
     const copy = [...list];
     switch (sort) {
       case "price-asc":
@@ -32,10 +48,21 @@ export function FilterableGrid({ products }: { products: ShopProduct[] }) {
       // "featured" keeps the server order.
     }
     return copy;
-  }, [products, sort, inStockOnly]);
+  }, [products, sort, inStockOnly, diet]);
 
   return (
     <div>
+      {availableDiets.length > 0 ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Chip active={diet === ""} onClick={() => setDiet("")}>All</Chip>
+          {availableDiets.map((d) => (
+            <Chip key={d.key} active={diet === d.key} onClick={() => setDiet(d.key)}>
+              {d.label}
+            </Chip>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-ink">
           <input
@@ -74,5 +101,19 @@ export function FilterableGrid({ products }: { products: ShopProduct[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+        active ? "bg-brand-600 text-white" : "border border-line text-ink-soft hover:bg-brand-50"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

@@ -35,6 +35,8 @@ export type ShopProduct = {
   brandTagline: string | null;
   avgRating: number | null;
   reviewCount: number;
+  /** Dietary tags: 'veg', 'non-veg', 'vegan', 'organic', 'egg-free', 'gluten-free'. */
+  dietTags: string[];
   /**
    * Pack size, or null when the item is sold LOOSE BY WEIGHT.
    *
@@ -127,6 +129,7 @@ export type AdminProduct = {
   isPublished: boolean;
   isActive: boolean;
   sortOrder: number;
+  dietTags: string[];
   onHand: number;
 };
 

@@ -21,6 +21,7 @@ export type ProductInput = {
   badge: string;
   imagePath: string | null;
   isPublished: boolean;
+  dietTags: string[];
   sortOrder: number;
 };
 
@@ -66,6 +67,13 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
   });
 
   if (error) return { ok: false, message: sanitizeError(error.message) };
+
+  // Dietary tags aren't part of save_product — set them directly (staff have
+  // update rights on their org's products, same as the publish toggle).
+  await supabase
+    .from("products")
+    .update({ diet_tags: input.dietTags ?? [] })
+    .eq("id", String(data));
 
   revalidatePath("/dashboard/catalogue");
   revalidatePath("/dashboard/stock");

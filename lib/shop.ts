@@ -30,6 +30,7 @@ type ProductRow = {
   category_slug: string | null;
   min_order_qty: number | string;
   step_qty: number | string;
+  diet_tags: string[] | null;
 };
 
 type Rating = { avg: number; count: number };
@@ -84,11 +85,12 @@ function toProduct(
     inStock,
     avgRating: rating && rating.count > 0 ? rating.avg : null,
     reviewCount: rating?.count ?? 0,
+    dietTags: r.diet_tags ?? [],
   };
 }
 
 const SELECT =
-  "id, slug, name, description, unit, sale_price, compare_at_price, badge, brand, pack_size, pack_unit, image_path, category, category_slug, min_order_qty, step_qty, brands(slug, name, tagline)";
+  "id, slug, name, description, unit, sale_price, compare_at_price, badge, brand, pack_size, pack_unit, image_path, category, category_slug, min_order_qty, step_qty, diet_tags, brands(slug, name, tagline)";
 
 /**
  * Availability, keyed by product id.

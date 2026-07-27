@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { suggestProducts, type Suggestion } from "./search-actions";
+import { toSearchTerm, VOICE_LANGS } from "@/lib/grocery-terms";
 import { formatRupees } from "@/lib/format";
 
 // Minimal shapes for the browser SpeechRecognition API (no lib types shipped).
@@ -33,6 +34,7 @@ export function SearchBox({ className = "" }: { className?: string }) {
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceLang, setVoiceLang] = useState("en-IN");
   const [listening, setListening] = useState(false);
   const [scanning, setScanning] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -85,15 +87,17 @@ export function SearchBox({ className = "" }: { className?: string }) {
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) return;
     const rec = new Ctor();
-    rec.lang = "en-IN";
+    rec.lang = voiceLang;
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     setListening(true);
     rec.onresult = (e: SpeechResultLike) => {
       const said = e.results?.[0]?.[0]?.transcript ?? "";
       if (said) {
-        setQ(said);
-        go(said);
+        // Map a regional word (e.g. "dhaniya") to the English product term.
+        const term = toSearchTerm(said);
+        setQ(term);
+        go(term);
       }
     };
     rec.onend = () => setListening(false);
@@ -164,11 +168,26 @@ export function SearchBox({ className = "" }: { className?: string }) {
           onFocus={() => items.length > 0 && setOpen(true)}
           placeholder="Search mutton, rice, masala…"
           className={`w-full rounded-full border border-line bg-canvas py-2.5 pl-9 text-sm text-ink outline-none transition-colors focus:border-brand-500 focus:bg-surface ${
-            voiceOn && visualOn ? "pr-16" : voiceOn || visualOn ? "pr-11" : "pr-4"
+            voiceOn && visualOn ? "pr-28" : voiceOn ? "pr-24" : visualOn ? "pr-11" : "pr-4"
           }`}
           autoComplete="off"
         />
         <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
+          {voiceOn ? (
+            <select
+              value={voiceLang}
+              onChange={(e) => setVoiceLang(e.target.value)}
+              aria-label="Voice language"
+              className="max-w-[4.5rem] rounded-md border border-line bg-surface py-1 pl-1 pr-0.5 text-xs text-ink-soft outline-none"
+              title="Voice search language"
+            >
+              {VOICE_LANGS.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
           {visualOn ? (
             <>
               <input
