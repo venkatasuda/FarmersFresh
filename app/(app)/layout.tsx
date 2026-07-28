@@ -118,6 +118,12 @@ export default async function AppLayout({
                     Wastage
                   </Link>
                   <Link
+                    href="/dashboard/coldchain"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Cold chain
+                  </Link>
+                  <Link
                     href="/dashboard/coupons"
                     className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
                   >
