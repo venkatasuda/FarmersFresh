@@ -28,12 +28,20 @@ export default async function AppLayout({
                 Overview
               </Link>
               {session.isOwner ? (
-                <Link
-                  href="/dashboard/sales"
-                  className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                >
-                  Sales
-                </Link>
+                <>
+                  <Link
+                    href="/dashboard/sales"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Sales
+                  </Link>
+                  <Link
+                    href="/dashboard/financials"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Financials
+                  </Link>
+                </>
               ) : null}
               <Link
                 href="/dashboard/pos"
