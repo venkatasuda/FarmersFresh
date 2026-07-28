@@ -215,12 +215,16 @@ export async function createPurchaseOrder(input: {
 
 export async function receivePurchaseOrder(
   poId: string,
-  items: { itemId: string; qty: number }[]
+  items: { itemId: string; qty: number; expiry?: string }[]
 ): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("receive_purchase_order", {
     p_po: poId,
-    p_items: items.map((i) => ({ item_id: i.itemId, qty: i.qty })),
+    p_items: items.map((i) => ({
+      item_id: i.itemId,
+      qty: i.qty,
+      expiry: i.expiry || null,
+    })),
   });
   if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/purchasing");

@@ -94,10 +94,22 @@ export default async function AppLayout({
                     Catalogue
                   </Link>
                   <Link
+                    href="/dashboard/reorder"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Reorder
+                  </Link>
+                  <Link
                     href="/dashboard/purchasing"
                     className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
                   >
                     Purchasing
+                  </Link>
+                  <Link
+                    href="/dashboard/expiry"
+                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
+                  >
+                    Expiry
                   </Link>
                   <Link
                     href="/dashboard/wastage"

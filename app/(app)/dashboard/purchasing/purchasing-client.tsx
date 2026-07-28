@@ -461,13 +461,18 @@ function ReceiveModal({
   const [qtys, setQtys] = useState<Record<string, string>>(
     Object.fromEntries(detail.items.map((i) => [i.id, String(i.qtyOrdered)]))
   );
+  const [expiries, setExpiries] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function submit() {
     setError(null);
     const items = detail.items
-      .map((i) => ({ itemId: i.id, qty: Number.parseFloat(qtys[i.id] ?? "0") || 0 }))
+      .map((i) => ({
+        itemId: i.id,
+        qty: Number.parseFloat(qtys[i.id] ?? "0") || 0,
+        expiry: expiries[i.id] || undefined,
+      }))
       .filter((i) => i.qty > 0);
     if (items.length === 0) {
       setError("Enter at least one received quantity.");
@@ -500,20 +505,32 @@ function ReceiveModal({
         <ul className="mt-4 space-y-2">
           {detail.items.map((i) => (
             <li key={i.id} className="flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm text-ink">{i.productName}</p>
                 <p className="text-xs text-ink-soft">
                   Ordered {i.qtyOrdered} @ {formatRupees(i.unitCost)}
                 </p>
               </div>
-              <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={qtys[i.id] ?? ""}
-                onChange={(e) => setQtys((q) => ({ ...q, [i.id]: e.target.value }))}
-                className="w-24 rounded-lg border border-line bg-surface px-2 py-2 text-sm tabular-nums"
-              />
+              <label className="text-xs text-ink-soft">
+                <span className="mb-0.5 block">Expiry</span>
+                <input
+                  type="date"
+                  value={expiries[i.id] ?? ""}
+                  onChange={(e) => setExpiries((x) => ({ ...x, [i.id]: e.target.value }))}
+                  className="rounded-lg border border-line bg-surface px-2 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-ink-soft">
+                <span className="mb-0.5 block">Qty</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={qtys[i.id] ?? ""}
+                  onChange={(e) => setQtys((q) => ({ ...q, [i.id]: e.target.value }))}
+                  className="w-20 rounded-lg border border-line bg-surface px-2 py-2 text-sm tabular-nums"
+                />
+              </label>
             </li>
           ))}
         </ul>
