@@ -1,5 +1,15 @@
 import type { NextConfig } from "next";
 
+// Derive the Supabase Storage host from the project URL so this config is
+// portable across projects/environments (no hardcoded project ref).
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
+  } catch {
+    return "supabase.co";
+  }
+})();
+
 const nextConfig: NextConfig = {
   images: {
     /**
@@ -18,7 +28,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.pexels.com" },
       {
         protocol: "https",
-        hostname: "bjevoybwufubtprkxbvb.supabase.co",
+        hostname: supabaseHost,
         pathname: "/storage/v1/object/public/**",
       },
     ],

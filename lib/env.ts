@@ -15,7 +15,7 @@ function required(name: string, value: string | undefined): string {
   if (!value || value.trim() === "" || unfilled) {
     throw new Error(
       `Missing ${name}.\n\n` +
-        `Create E:\\FarmersFresh\\.env.local (copy .env.example) and fill in\n` +
+        `Create a .env.local at the project root (copy .env.example) and fill in\n` +
         `your values from Supabase → Project Settings → Data API / API Keys.\n` +
         `Then restart the dev server — Next.js only reads .env files on boot.`
     );
