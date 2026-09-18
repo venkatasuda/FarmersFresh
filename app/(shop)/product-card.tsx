@@ -30,7 +30,7 @@ export function ProductCard({
   const per = unitPrice(product);
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md">
+    <article className="ff-hover-lift group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-soft hover:border-brand-200">
       <WishlistButton productId={product.id} />
       <Link
         href={`/shop/${product.slug}`}

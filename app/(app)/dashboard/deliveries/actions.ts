@@ -2,66 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { sanitizeError } from "@/lib/guard";
 
-export type DeliveryResult = { ok: true } | { ok: false; message: string };
-
-export async function claimDelivery(
-  orderId: string,
-  take: boolean
-): Promise<DeliveryResult> {
+export async function setShift(on: boolean): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("claim_delivery", {
-    p_order_id: orderId,
-    p_take: take,
-  });
-  if (error) return { ok: false, message: sanitizeError(error.message) };
+  await supabase.rpc("set_my_shift", { p_on: on });
   revalidatePath("/dashboard/deliveries");
-  revalidatePath("/dashboard/orders");
-  return { ok: true };
+  return on;
 }
 
-/**
- * Push the rider's live GPS (and optionally an ETA) to the order, so the
- * customer's track page can show a moving marker. Best-effort — a dropped
- * update just means the marker doesn't move that tick.
- */
-export async function updateRiderLocation(
-  orderId: string,
-  lat: number,
-  lng: number,
-  etaMinutes?: number
-): Promise<DeliveryResult> {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return { ok: false, message: "No location." };
-  }
+export async function autoAssign(): Promise<
+  { ok: true; count: number } | { ok: false; message: string }
+> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("update_rider_location", {
-    p_order_id: orderId,
-    p_lat: lat,
-    p_lng: lng,
-    p_eta: Number.isFinite(etaMinutes) ? etaMinutes : null,
-  });
-  if (error) return { ok: false, message: sanitizeError(error.message) };
-  return { ok: true };
-}
-
-/**
- * Advance a delivery's status. Reuses the same orders update the order queue
- * uses, so the customer's status notifications fire from one place.
- */
-export async function setDeliveryStatus(
-  orderId: string,
-  status: "out_for_delivery" | "delivered"
-): Promise<DeliveryResult> {
-  const supabase = await createClient();
-  const patch: Record<string, unknown> = { status };
-  if (status === "delivered") patch.delivered_at = new Date().toISOString();
-
-  const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
-  if (error) return { ok: false, message: sanitizeError(error.message) };
-
+  const { data, error } = await supabase.rpc("auto_assign_deliveries");
+  if (error) return { ok: false, message: "Couldn't auto-assign — check on-shift riders." };
   revalidatePath("/dashboard/deliveries");
-  revalidatePath("/dashboard/orders");
-  return { ok: true };
+  return { ok: true, count: Number(data ?? 0) };
 }

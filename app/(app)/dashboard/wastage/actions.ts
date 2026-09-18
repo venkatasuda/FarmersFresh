@@ -4,15 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeError } from "@/lib/guard";
 
-export const WASTAGE_REASONS = [
-  { value: "spoilage", label: "Spoilage" },
-  { value: "expiry", label: "Expired" },
-  { value: "damage", label: "Damaged" },
-  { value: "theft", label: "Theft / loss" },
-  { value: "count_adjustment", label: "Count adjustment" },
-  { value: "other", label: "Other" },
-] as const;
-
 export type WastageRow = {
   id: string;
   productName: string;

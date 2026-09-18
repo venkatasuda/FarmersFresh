@@ -1,15 +1,17 @@
 import { DeliveryCard } from "./delivery-card";
+import { DeliveryControls } from "./delivery-controls";
 import { requireSession } from "@/lib/auth";
-import { getDeliveries, getMyProfileId } from "@/lib/deliveries";
+import { getDeliveries, getMyProfileId, getMyShift } from "@/lib/deliveries";
 
 export const metadata = { title: "Deliveries · Farmers Fresh" };
 export const dynamic = "force-dynamic";
 
 export default async function DeliveriesPage() {
   await requireSession();
-  const [deliveries, myId] = await Promise.all([
+  const [deliveries, myId, onShift] = await Promise.all([
     getDeliveries(),
     getMyProfileId(),
+    getMyShift(),
   ]);
 
   const mine = deliveries.filter((d) => d.assignedTo === myId);
@@ -29,6 +31,8 @@ export default async function DeliveriesPage() {
           the customer is told automatically.
         </p>
       </div>
+
+      <DeliveryControls initialOnShift={onShift} />
 
       {deliveries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-16 text-center">

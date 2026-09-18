@@ -20,153 +20,60 @@ export default async function AppLayout({
             <Link href="/dashboard" aria-label="Farmers Fresh — dashboard">
               <Wordmark subdued />
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link
-                href="/dashboard"
-                className="text-ink-soft transition-colors hover:text-brand-700"
-              >
-                Overview
-              </Link>
-              {session.isOwner ? (
-                <>
-                  <Link
-                    href="/dashboard/sales"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Sales
-                  </Link>
-                  <Link
-                    href="/dashboard/financials"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Financials
-                  </Link>
-                </>
-              ) : null}
-              <Link
-                href="/dashboard/pos"
-                className="font-medium text-brand-700 transition-colors hover:text-brand-800"
-              >
+            <nav className="scrollbar-thin flex max-w-[70vw] items-center gap-1 overflow-x-auto text-sm">
+              <NavLink href="/dashboard">Overview</NavLink>
+              <NavLink href="/dashboard/pos" primary>
                 Counter
-              </Link>
-              <Link
-                href="/dashboard/orders"
-                className="text-ink-soft transition-colors hover:text-brand-700"
-              >
-                Orders
-              </Link>
-              <Link
-                href="/dashboard/deliveries"
-                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
-              >
-                Deliveries
-              </Link>
-              <Link
-                href="/dashboard/credit"
-                className="text-ink-soft transition-colors hover:text-brand-700"
-              >
-                Credit
-              </Link>
-              <Link
-                href="/dashboard/returns"
-                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
-              >
-                Returns
-              </Link>
-              <Link
-                href="/dashboard/support"
-                className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-              >
-                Support
-              </Link>
-              <Link
-                href="/dashboard/stock"
-                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
-              >
-                Stock
-              </Link>
+              </NavLink>
+              <NavLink href="/dashboard/orders">Orders</NavLink>
               {session.isOwner ? (
                 <>
-                  <Link
-                    href="/dashboard/catalogue"
-                    className="text-ink-soft transition-colors hover:text-brand-700"
-                  >
-                    Catalogue
-                  </Link>
-                  <Link
-                    href="/dashboard/reorder"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Reorder
-                  </Link>
-                  <Link
-                    href="/dashboard/purchasing"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Purchasing
-                  </Link>
-                  <Link
-                    href="/dashboard/expiry"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Expiry
-                  </Link>
-                  <Link
-                    href="/dashboard/wastage"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Wastage
-                  </Link>
-                  <Link
-                    href="/dashboard/coldchain"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Cold chain
-                  </Link>
-                  <Link
-                    href="/dashboard/coupons"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Coupons
-                  </Link>
-                  <Link
-                    href="/dashboard/banners"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Banners
-                  </Link>
-                  <Link
-                    href="/dashboard/delivery"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Delivery
-                  </Link>
-                  <Link
-                    href="/dashboard/recipes"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Recipes
-                  </Link>
-                  <Link
-                    href="/dashboard/traceability"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Traceability
-                  </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    className="hidden text-ink-soft transition-colors hover:text-brand-700 lg:inline"
-                  >
-                    Settings
-                  </Link>
+                  <Menu
+                    label="Operations"
+                    items={[
+                      ["/dashboard/reorder", "Reorder"],
+                      ["/dashboard/production", "Production"],
+                      ["/dashboard/purchasing", "Purchasing"],
+                      ["/dashboard/expiry", "Expiry"],
+                      ["/dashboard/wastage", "Wastage"],
+                      ["/dashboard/coldchain", "Cold chain"],
+                      ["/dashboard/stock", "Stock"],
+                      ["/dashboard/deliveries", "Deliveries"],
+                      ["/dashboard/returns", "Returns"],
+                    ]}
+                  />
+                  <Menu
+                    label="Money"
+                    items={[
+                      ["/dashboard/sales", "Sales"],
+                      ["/dashboard/financials", "Financials"],
+                      ["/dashboard/credit", "Credit"],
+                    ]}
+                  />
+                  <Menu
+                    label="Catalogue"
+                    items={[
+                      ["/dashboard/catalogue", "Catalogue"],
+                      ["/dashboard/coupons", "Coupons"],
+                      ["/dashboard/banners", "Banners"],
+                      ["/dashboard/delivery", "Delivery"],
+                      ["/dashboard/recipes", "Recipes"],
+                      ["/dashboard/traceability", "Traceability"],
+                    ]}
+                  />
+                  <NavLink href="/dashboard/support">Support</NavLink>
+                  <NavLink href="/dashboard/settings">Settings</NavLink>
                 </>
-              ) : null}
-              <Link
-                href="/"
-                className="hidden text-ink-soft transition-colors hover:text-brand-700 sm:inline"
-              >
-                Shop
-              </Link>
+              ) : (
+                <>
+                  <NavLink href="/dashboard/deliveries">Deliveries</NavLink>
+                  <NavLink href="/dashboard/credit">Credit</NavLink>
+                  <NavLink href="/dashboard/stock">Stock</NavLink>
+                  <NavLink href="/dashboard/returns">Returns</NavLink>
+                  <NavLink href="/dashboard/support">Support</NavLink>
+                </>
+              )}
+              <NavLink href="/">Shop</NavLink>
             </nav>
           </div>
 
@@ -186,9 +93,56 @@ export default async function AppLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main data-dash className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         {children}
       </main>
     </div>
+  );
+}
+
+function NavLink({
+  href,
+  children,
+  primary = false,
+}: {
+  href: string;
+  children: React.ReactNode;
+  primary?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`shrink-0 rounded-lg px-2.5 py-1.5 ${
+        primary
+          ? "font-medium text-brand-700 hover:text-brand-800"
+          : "text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+// Native <details> dropdown — no JS, no library. Closes on outside click via
+// the browser's own behaviour; groups the long owner nav into three menus.
+function Menu({ label, items }: { label: string; items: [string, string][] }) {
+  return (
+    <details className="group relative shrink-0">
+      <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg px-2.5 py-1.5 text-ink-soft hover:bg-brand-50 hover:text-brand-700 [&::-webkit-details-marker]:hidden">
+        {label}
+        <span className="text-[10px] transition-transform group-open:rotate-180">▾</span>
+      </summary>
+      <div className="absolute left-0 z-30 mt-2 w-44 rounded-xl border border-line bg-surface p-1 shadow-lift">
+        {items.map(([href, text]) => (
+          <Link
+            key={href}
+            href={href}
+            className="block rounded-lg px-3 py-2 text-ink-soft hover:bg-brand-50 hover:text-brand-700"
+          >
+            {text}
+          </Link>
+        ))}
+      </div>
+    </details>
   );
 }

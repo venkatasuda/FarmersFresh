@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { ShopShell } from "@/app/(shop)/shop-shell";
 import { getCatalogue } from "@/lib/shop";
+import { searchItems } from "@/lib/search";
 
 export const metadata = { title: "Search · Farmers Fresh" };
 
@@ -11,22 +12,12 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const term = (q ?? "").trim().toLowerCase();
+  const term = (q ?? "").trim();
 
-  // Filtering in memory rather than with a database query: the catalogue is
-  // six items. A `ilike` round trip per keystroke would be more code and
-  // slower. Revisit past a few hundred products, where full-text search and
-  // an index start to earn their keep.
+  // Typo- and language-tolerant, ranked. In-memory over the catalogue (small);
+  // see lib/search.ts for the scale note.
   const all = await getCatalogue();
-  const results = term
-    ? all.filter((p) =>
-        [p.name, p.description, p.category]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(term)
-      )
-    : [];
+  const results = searchItems(all, term);
 
   return (
     <ShopShell>

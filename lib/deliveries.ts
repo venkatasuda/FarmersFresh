@@ -73,6 +73,13 @@ export async function getDeliveries(): Promise<Delivery[]> {
   });
 }
 
+/** Whether the signed-in user is currently marked on-shift (a rider). */
+export async function getMyShift(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_shift");
+  return Boolean(data);
+}
+
 /** The signed-in user's own profile id, so the UI can tell "mine" from others'. */
 export async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient();

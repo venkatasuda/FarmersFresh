@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { formatQty, formatRupees } from "@/lib/format";
-import { getExpiring, writeOffBatch, type ExpiringBatch } from "./actions";
+import { getExpiring, markDown, writeOffBatch, type ExpiringBatch } from "./actions";
+
+/** Clearance price: 30% off, but never below cost. */
+function suggestPrice(b: ExpiringBatch): number {
+  const cut = Math.round(b.salePrice * 0.7);
+  return Math.max(cut, b.lastCost ?? 0);
+}
 
 const WINDOWS = [3, 7, 14, 30] as const;
 
@@ -26,6 +32,21 @@ export function ExpiryClient({
 
   function refresh() {
     startTransition(async () => setRows(await getExpiring(days)));
+  }
+
+  function doMarkDown(b: ExpiringBatch) {
+    const price = suggestPrice(b);
+    if (!b.expiryDate || price <= 0 || price >= b.salePrice) return;
+    if (!confirm(`Mark down ${b.productName} to ₹${price} until ${b.expiryDate}?`)) return;
+    setError(null);
+    startTransition(async () => {
+      const r = await markDown(b.productId, price, b.expiryDate!);
+      if (!r.ok) {
+        setError(r.message);
+        return;
+      }
+      refresh();
+    });
   }
 
   function writeOff(b: ExpiringBatch) {
@@ -131,6 +152,20 @@ export function ExpiryClient({
                             ? "expires today"
                             : `${b.daysLeft}d left`}
                     </span>
+                    {b.markedDown ? (
+                      <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
+                        marked down
+                      </span>
+                    ) : b.expiryDate && suggestPrice(b) < b.salePrice ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => doMarkDown(b)}
+                        className="rounded-lg border border-brand-300 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                      >
+                        Mark down to ₹{suggestPrice(b)}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       disabled={pending}

@@ -3,12 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { formatQty, formatRupees } from "@/lib/format";
-import {
-  WASTAGE_REASONS,
-  logWastage,
-  type WastageRow,
-  type WastageSummary,
-} from "./actions";
+import { logWastage, type WastageRow, type WastageSummary } from "./actions";
+
+const WASTAGE_REASONS = [
+  { value: "spoilage", label: "Spoilage" },
+  { value: "expiry", label: "Expired" },
+  { value: "damage", label: "Damaged" },
+  { value: "theft", label: "Theft / loss" },
+  { value: "count_adjustment", label: "Count adjustment" },
+  { value: "other", label: "Other" },
+] as const;
 
 type ProductOpt = { id: string; name: string; unit: "kg" | "piece"; onHand: number };
 
@@ -148,7 +152,7 @@ function LogForm({
 }) {
   const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [qty, setQty] = useState("");
-  const [reason, setReason] = useState(WASTAGE_REASONS[0].value);
+  const [reason, setReason] = useState<string>(WASTAGE_REASONS[0].value);
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);

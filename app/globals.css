@@ -35,6 +35,15 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Soft, layered shadows — the single biggest "designed by a pro" tell.
+     Tinted with the ink colour so shadows feel part of the palette, not grey
+     smudges. Tailwind exposes these as shadow-soft / shadow-lift / shadow-pop. */
+  --shadow-soft: 0 1px 2px rgba(20, 35, 26, 0.04), 0 4px 16px -6px rgba(20, 35, 26, 0.08);
+  --shadow-lift: 0 2px 4px rgba(20, 35, 26, 0.05), 0 14px 34px -10px rgba(20, 35, 26, 0.16);
+  --shadow-pop: 0 4px 8px rgba(20, 35, 26, 0.06), 0 24px 48px -12px rgba(20, 35, 26, 0.22);
+
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
@@ -44,7 +53,11 @@ html {
 }
 
 body {
-  background: var(--color-canvas);
+  /* A whisper of depth on the canvas — a faint radial wash, not a gradient
+     that shouts. Fixed so it doesn't scroll. */
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, var(--color-canvas) 60%);
+  background-attachment: fixed;
   color: var(--color-ink);
   /* The layout sets the Geist font variables; use them rather than
      hard-coding Arial, which silently overrode them before. */
@@ -95,7 +108,101 @@ body {
 }
 
 .ff-rise {
-  animation: ff-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ff-rise 0.4s var(--ease-out-quart) both;
+}
+
+/* Stagger children of a list: add .ff-stagger to a parent and each direct
+   child rises a beat after the last. Pure CSS, no JS. */
+.ff-stagger > * {
+  animation: ff-rise 0.45s var(--ease-out-quart) both;
+}
+.ff-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.ff-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.ff-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.ff-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.ff-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.ff-stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.ff-stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.ff-stagger > *:nth-child(8) { animation-delay: 0.30s; }
+
+/* A card that gently lifts toward the cursor — the interaction that reads as
+   "someone cared". Only where hover is a real pointer. */
+@media (hover: hover) {
+  .ff-hover-lift {
+    transition: transform 0.2s var(--ease-out-quart), box-shadow 0.2s var(--ease-out-quart);
+  }
+  .ff-hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+/* Add-to-basket confirm pop, and cart-count badge bounce on change. */
+@keyframes ff-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.ff-pop { animation: ff-pop 0.4s var(--ease-out-quart); }
+
+@keyframes ff-badge {
+  0% { transform: scale(0.4); opacity: 0.4; }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.ff-badge { animation: ff-badge 0.35s var(--ease-out-quart); }
+
+/* Skeleton shimmer — a moving sheen instead of a dead grey block. */
+@keyframes ff-shimmer {
+  100% { background-position: -200% 0; }
+}
+.ff-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-line) 20%,
+    #eef4f0 40%,
+    var(--color-line) 60%
+  );
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  animation: ff-shimmer 1.4s linear infinite;
+}
+
+/* Give every existing dashboard card the soft shadow without a 15-file sweep.
+   New screens should use the <Card> primitive; this covers the old inline ones.
+   ponytail: scoped class-selector, replace with <Card> when a screen is touched. */
+[data-dash] .rounded-2xl.border.border-line.bg-surface {
+  box-shadow: var(--shadow-soft);
+}
+
+/* Green gradient text for the odd hero word — used sparingly. */
+.ff-gradient-text {
+  background: linear-gradient(120deg, var(--color-brand-700), var(--color-brand-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Consistent, smooth micro-transitions on everything interactive — applied
+   app-wide via base layer, so every button/link/field on every screen feels
+   the same, without touching a single component. Tailwind utilities still
+   win on any specific property. */
+@layer base {
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"] {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 0.15s;
+    transition-timing-function: var(--ease-out-quart);
+  }
+  button:not(:disabled):active,
+  [role="button"]:active {
+    transform: translateY(0.5px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

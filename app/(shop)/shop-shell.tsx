@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Leaf } from "@/app/brand";
 import { AnnouncementBar } from "./announcement-bar";
+import { BottomNav } from "./bottom-nav";
 import { CartButton } from "./cart-button";
 import { SearchBox } from "./search-box";
 import { AccountButton } from "./account-button";
@@ -154,7 +155,7 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
         ) : null}
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:pb-6">
         {children}
       </main>
 
@@ -252,6 +253,8 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+
+      <BottomNav />
     </div>
   );
 }

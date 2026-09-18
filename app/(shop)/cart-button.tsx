@@ -26,7 +26,10 @@ export function CartButton() {
       {/* Render the count only after hydration — the server can't know what's
           in localStorage, and rendering 0 then 3 is a hydration mismatch. */}
       {ready && count > 0 ? (
-        <span className="flex size-5 items-center justify-center rounded-full bg-white text-xs font-semibold text-brand-700">
+        <span
+          key={count}
+          className="ff-badge flex size-5 items-center justify-center rounded-full bg-white text-xs font-semibold text-brand-700"
+        >
           {count}
         </span>
       ) : null}

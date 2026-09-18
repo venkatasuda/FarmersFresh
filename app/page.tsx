@@ -57,7 +57,7 @@ export default async function ShopHome() {
           <path d="M21 3.5c.6 7-3 15-11 15.2C6 18.8 3 15.6 3 11.4 3 6.9 6.7 3.6 11.6 3.3c3.4-.2 6.6 0 9.4.2Z" />
         </svg>
 
-        <div className="relative">
+        <div className="ff-rise relative">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-brand-50 ring-1 ring-white/15 ring-inset">
             <span className="size-1.5 rounded-full bg-brand-200" />
             Groceries & fresh meat, one delivery
@@ -116,7 +116,7 @@ export default async function ShopHome() {
                     <Link
                       key={department.id}
                       href={`/collections/${department.slug}`}
-                      className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+                      className="ff-hover-lift group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center shadow-soft hover:border-brand-200"
                     >
                       <span
                         className="flex size-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-105"
@@ -231,7 +231,7 @@ function Row({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="ff-stagger grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {products.slice(0, 4).map((p, i) => (
           <ProductCard key={p.id} product={p} priority={priority && i < 4} />
         ))}

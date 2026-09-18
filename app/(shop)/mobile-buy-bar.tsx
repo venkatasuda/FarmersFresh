@@ -48,7 +48,7 @@ export function MobileBuyBar({ product }: { product: ShopProduct }) {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:hidden">
+    <div className="fixed inset-x-0 bottom-14 z-30 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:hidden">
       {product.inStock ? (
         <div className="flex items-center gap-3">
           <div className="flex items-center rounded-lg border border-line">
