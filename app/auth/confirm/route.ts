@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  done.searchParams.set("confirmed", "1");
+  // Missing/invalid/expired token — do NOT claim success. Signal the failure so
+  // the login page shows an error instead of a false "Email confirmed".
+  done.searchParams.set("confirm_error", "1");
   return NextResponse.redirect(done);
 }

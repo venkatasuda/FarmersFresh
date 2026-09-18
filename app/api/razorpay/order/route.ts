@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const admin = createClient(supabaseUrl, serviceRole);
   const { data: order, error } = await admin
     .from("orders")
-    .select("id, order_number, total, is_paid, status")
+    .select("id, order_number, total, is_paid, status, razorpay_order_id")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -63,6 +63,17 @@ export async function POST(request: NextRequest) {
   const rupees = Number(order.total);
   if (!Number.isFinite(rupees) || rupees <= 0) {
     return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
+  }
+
+  // Idempotent: if a Razorpay order already exists for this order, reuse it —
+  // never create a second one (paying the earlier one would then fail verify).
+  if (order.razorpay_order_id) {
+    return NextResponse.json({
+      razorpayOrderId: order.razorpay_order_id,
+      amount: Math.round(rupees * 100),
+      keyId,
+      orderNumber: order.order_number,
+    });
   }
 
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
@@ -86,11 +97,38 @@ export async function POST(request: NextRequest) {
 
   const rp = (await res.json()) as { id: string; amount: number };
 
-  // Remember which Razorpay order pays for this order, so verify can cross-check.
-  await admin
+  // Store the Razorpay order id — but ONLY if none was set meanwhile (a racing
+  // request may have created one). Conditional update + row count makes this
+  // race-safe. If the save fails outright, do NOT hand back a payment window we
+  // can't later reconcile.
+  const { data: saved, error: saveErr } = await admin
     .from("orders")
     .update({ razorpay_order_id: rp.id })
-    .eq("id", order.id);
+    .eq("id", order.id)
+    .is("razorpay_order_id", null)
+    .select("razorpay_order_id");
+
+  if (saveErr) {
+    return NextResponse.json({ error: "Couldn't record the payment order." }, { status: 500 });
+  }
+
+  if (!saved || saved.length === 0) {
+    // A concurrent request won the race — use the id it stored, discard ours.
+    const { data: fresh } = await admin
+      .from("orders")
+      .select("razorpay_order_id")
+      .eq("id", order.id)
+      .maybeSingle();
+    if (fresh?.razorpay_order_id) {
+      return NextResponse.json({
+        razorpayOrderId: fresh.razorpay_order_id,
+        amount: Math.round(rupees * 100),
+        keyId,
+        orderNumber: order.order_number,
+      });
+    }
+    return NextResponse.json({ error: "Couldn't record the payment order." }, { status: 500 });
+  }
 
   return NextResponse.json({
     razorpayOrderId: rp.id,

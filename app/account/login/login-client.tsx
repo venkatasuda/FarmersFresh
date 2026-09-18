@@ -24,6 +24,7 @@ export function LoginClient() {
   // Shown after a successful sign-up redirects here.
   const justConfirmed = params.get("confirmed") === "1";
   const justSignedUp = params.get("check") === "1";
+  const confirmFailed = params.get("confirm_error") === "1";
 
   async function signIn() {
     setError(null);
@@ -69,6 +70,12 @@ export function LoginClient() {
         <p className="mt-4 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-800">
           Almost there — we&apos;ve emailed you a confirmation link. Click it,
           then log in.
+        </p>
+      ) : null}
+      {confirmFailed ? (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          That confirmation link is invalid or has expired. Try logging in — if
+          it still asks you to confirm, sign up again to get a fresh link.
         </p>
       ) : null}
 

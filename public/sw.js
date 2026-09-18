@@ -8,8 +8,14 @@
  * caching.
  */
 
-const CACHE = "ff-v1";
+// Bump on any caching-logic change so `activate` purges the old cache — this
+// also evicts any private page a previous version may have stored.
+const CACHE = "ff-v2";
 const OFFLINE_URL = "/offline";
+
+// Never cache authenticated / sensitive / data routes. On a shared POS or
+// tablet, a cached dashboard/account/receipt page must not survive logout.
+const PRIVATE = /^\/(dashboard|account|checkout|login|auth|api|track|receipt|order-placed|wishlist)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -68,23 +74,25 @@ self.addEventListener("notificationclick", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
-  // Only handle GET navigations; let everything else (POST, API, Supabase)
-  // go straight to the network untouched. Never cache mutations or data.
-  if (req.method !== "GET") return;
+  // Only public GET navigations are ever cached. Everything else (POST, API,
+  // Supabase, cross-origin, and any protected page) goes to the network
+  // untouched — not intercepted, so nothing sensitive is ever stored.
+  if (req.method !== "GET" || req.mode !== "navigate") return;
 
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          // Keep a copy of the last good page for offline fallback.
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin || PRIVATE.test(url.pathname)) return;
+
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        // Cache only a clean, public, successful HTML page — never a redirect,
+        // 401/403/404/5xx, or anything but a 200.
+        if (res && res.ok && res.status === 200 && !res.redirected) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          return res;
-        })
-        .catch(async () => {
-          const cached = await caches.match(req);
-          return cached || caches.match(OFFLINE_URL);
-        })
-    );
-  }
+        }
+        return res;
+      })
+      .catch(async () => (await caches.match(req)) || caches.match(OFFLINE_URL))
+  );
 });

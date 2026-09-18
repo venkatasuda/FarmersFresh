@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const admin = createClient(supabaseUrl, serviceRole);
   const { data: m, error } = await admin
     .from("pass_memberships")
-    .select("id, amount, status")
+    .select("id, amount, status, razorpay_order_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -44,6 +44,15 @@ export async function POST(request: NextRequest) {
   const rupees = Number(m.amount);
   if (!Number.isFinite(rupees) || rupees <= 0) {
     return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
+  }
+
+  // Idempotent: reuse an existing Razorpay order for this pass, don't make a 2nd.
+  if (m.razorpay_order_id) {
+    return NextResponse.json({
+      razorpayOrderId: m.razorpay_order_id,
+      amount: Math.round(rupees * 100),
+      keyId,
+    });
   }
 
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
@@ -60,7 +69,33 @@ export async function POST(request: NextRequest) {
   if (!res.ok) return NextResponse.json({ error: "Couldn't start payment." }, { status: 502 });
 
   const rp = (await res.json()) as { id: string; amount: number };
-  await admin.from("pass_memberships").update({ razorpay_order_id: rp.id }).eq("id", id);
+
+  // Race-safe + checked save (see the order route for the rationale).
+  const { data: saved, error: saveErr } = await admin
+    .from("pass_memberships")
+    .update({ razorpay_order_id: rp.id })
+    .eq("id", id)
+    .is("razorpay_order_id", null)
+    .select("razorpay_order_id");
+
+  if (saveErr) {
+    return NextResponse.json({ error: "Couldn't record the payment order." }, { status: 500 });
+  }
+  if (!saved || saved.length === 0) {
+    const { data: fresh } = await admin
+      .from("pass_memberships")
+      .select("razorpay_order_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (fresh?.razorpay_order_id) {
+      return NextResponse.json({
+        razorpayOrderId: fresh.razorpay_order_id,
+        amount: Math.round(rupees * 100),
+        keyId,
+      });
+    }
+    return NextResponse.json({ error: "Couldn't record the payment order." }, { status: 500 });
+  }
 
   return NextResponse.json({ razorpayOrderId: rp.id, amount: rp.amount, keyId });
 }

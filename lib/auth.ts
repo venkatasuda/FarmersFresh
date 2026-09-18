@@ -44,18 +44,14 @@ export async function requireSession(): Promise<Session> {
     .eq("id", user.id)
     .maybeSingle();
 
-  // Authenticated with Supabase but no profile row: the bootstrap block in
-  // migration 0001 was never run for this user. Don't pretend it's fine.
-  //
-  // Send them through /auth/signout rather than straight to /login. Their token
-  // is still valid, so proxy.ts would bounce them from /login back to
-  // /dashboard, back to here, forever. Clearing the session breaks the loop.
+  // Authenticated but no STAFF profile row. This is the common case of a
+  // *customer* account wandering into a staff page — NOT an error, and we must
+  // not destroy their customer session over it (the old code signed them out).
+  // Send them to the public storefront: "/" isn't protected, so there's no
+  // redirect loop back through /login. A genuinely mis-provisioned staff member
+  // simply lands on the shop; the owner links their account separately.
   if (profileError || !profile) {
-    redirect(
-      `/auth/signout?error=${encodeURIComponent(
-        "Your account isn't linked to an organisation yet. Ask the owner to set it up."
-      )}`
-    );
+    redirect("/");
   }
 
   const { data: org } = await supabase
