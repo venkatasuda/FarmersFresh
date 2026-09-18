@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: ./.github/actions/node-setup
       - run: npm run test:coverage -- --reporter=default --reporter=junit --outputFile=reports/unit-api.xml
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: unit-api-results
@@ -54,7 +54,7 @@ jobs:
       - run: npm audit --audit-level=high --json > dependency-audit.json
       - run: npm sbom --sbom-format=cyclonedx > sbom.cdx.json
         if: ${{ !cancelled() }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: dependency-audit-and-sbom
@@ -120,7 +120,7 @@ jobs:
       - run: supabase start --workdir .ci-recovery
       - run: node scripts/ci/export-local-env.mjs .ci-recovery
       - run: npm run test:database
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: database-results
@@ -156,7 +156,7 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:3000/login > /dev/null
           docker run --rm --network host -v "$PWD/scripts/ci:/scripts:ro" grafana/k6:0.57.0 run /scripts/http-load.js
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: browser-results
