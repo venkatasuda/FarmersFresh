@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://farmersfresh.store"
+  ),
   title: {
     default: "Farmers Fresh",
     template: "%s",
@@ -34,6 +37,20 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
+  },
+  // Social preview (the generated app/opengraph-image is picked up automatically).
+  openGraph: {
+    type: "website",
+    siteName: "Farmers Fresh",
+    title: "Farmers Fresh — Indian groceries & fresh meat, delivered",
+    description:
+      "Everyday groceries plus meat from our own farms. Honest prices, no hidden fees. Pay on delivery.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Farmers Fresh — Indian groceries & fresh meat, delivered",
+    description:
+      "Everyday groceries plus meat from our own farms. Honest prices, no hidden fees.",
   },
 };
 

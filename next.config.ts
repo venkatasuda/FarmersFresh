@@ -36,6 +36,27 @@ const nextConfig: NextConfig = {
     // more headroom, so allow 90 for hero shots.
     qualities: [75, 90],
   },
+
+  // Security headers applied to every response. HSTS forces HTTPS on repeat
+  // visits; the rest are cheap hardening. No Permissions-Policy lock on
+  // geolocation/camera — the app legitimately uses both (delivery pin, visual
+  // search).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

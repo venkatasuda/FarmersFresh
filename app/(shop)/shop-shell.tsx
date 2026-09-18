@@ -243,6 +243,9 @@ export async function ShopShell({ children }: { children: React.ReactNode }) {
               <Link href="/privacy" className="hover:text-brand-700">
                 Privacy
               </Link>
+              <Link href="/terms" className="hover:text-brand-700">
+                Terms
+              </Link>
               <Link href="/returns" className="hover:text-brand-700">
                 Refunds
               </Link>
