@@ -23,12 +23,18 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
-export const SUPABASE_URL = required(
-  "NEXT_PUBLIC_SUPABASE_URL",
-  process.env.NEXT_PUBLIC_SUPABASE_URL
-);
+// Lazy, not eager: evaluated when a client is actually created (runtime), not
+// at module import. Eager consts threw during `next build` page-data collection
+// whenever the env wasn't present (CI without secrets, a fresh clone), failing
+// the build at an obscure point. The loud, helpful error still fires at runtime
+// if the app genuinely runs without configuration.
+export function supabaseUrl(): string {
+  return required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
 
-export const SUPABASE_ANON_KEY = required(
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+export function supabaseAnonKey(): string {
+  return required(
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
