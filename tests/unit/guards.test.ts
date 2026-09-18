@@ -36,3 +36,25 @@ describe("customer-safe errors and formatting", () => {
     expect(formatRupees(1500)).toContain("1,500");
   });
 });
+
+describe('strict numeric parsing boundaries', () => {
+  it('accepts complete decimal strings and scientific notation', () => {
+    expect(toAmount(' 12.50 ')).toBe(12.5);
+    expect(toQuantity('.5')).toBe(0.5);
+    expect(toAmount('1.2e2')).toBe(120);
+    expect(toQuantity('+1')).toBe(1);
+  });
+  it.each([NaN, Infinity, 0, -1])('rejects invalid configured limit %s', max => {
+    expect(toAmount(1, max)).toBeNull();
+    expect(toQuantity(1, max)).toBeNull();
+  });
+  it('rejects a rounded result above a fractional limit', () => {
+    expect(toAmount(1.006, 1.007)).toBeNull();
+    expect(toQuantity(1.0006, 1.0007)).toBeNull();
+  });
+  it('rejects overflow and malformed decimal syntax', () => {
+    expect(toAmount(1e308, 1e308)).toBeNull();
+    expect(toQuantity('1e999')).toBeNull();
+    expect(toAmount('1.2.3')).toBeNull();
+  });
+});

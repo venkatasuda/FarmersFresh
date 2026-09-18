@@ -1,21 +1,16 @@
 /* Farmers Fresh service worker.
- *
- * Deliberately conservative: a NETWORK-FIRST strategy for navigations, falling
- * back to a cached shell only when the network fails. This means the app is
- * installable and survives a dropped connection, but never serves a stale
- * page or, worse, a stale PRICE when the network is fine. For a shop, showing
- * an old price would be a real problem — so freshness wins over aggressive
- * caching.
+ * Navigations always use the network. Offline mode shows a generic page;
+ * personalised SSR HTML and prices never enter the service-worker cache.
  */
 
 // Bump on any caching-logic change so `activate` purges the old cache — this
 // also evicts any private page a previous version may have stored.
-const CACHE = "ff-v2";
+const CACHE = "ff-v3";
 const OFFLINE_URL = "/offline";
 
 // Never cache authenticated / sensitive / data routes. On a shared POS or
 // tablet, a cached dashboard/account/receipt page must not survive logout.
-const PRIVATE = /^\/(dashboard|account|checkout|login|auth|api|track|receipt|order-placed|wishlist)(\/|$)/;
+const PRIVATE = /^\/(dashboard|staff|admin|pos|account|checkout|login|auth|api|track|receipt|order-placed|wishlist)(\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -26,13 +21,15 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-      )
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((key) => key.startsWith("ff-") && key !== CACHE)
+          .map((key) => caches.delete(key))
+      );
+      await self.clients.claim();
+    })()
   );
-  self.clients.claim();
 });
 
 // ---- Web Push -----------------------------------------------------------
@@ -42,7 +39,7 @@ self.addEventListener("push", (event) => {
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
-  } catch (_e) {
+  } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Farmers Fresh";
@@ -73,26 +70,21 @@ self.addEventListener("notificationclick", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-
-  // Only public GET navigations are ever cached. Everything else (POST, API,
-  // Supabase, cross-origin, and any protected page) goes to the network
-  // untouched — not intercepted, so nothing sensitive is ever stored.
   if (req.method !== "GET" || req.mode !== "navigate") return;
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || PRIVATE.test(url.pathname)) return;
 
   event.respondWith(
-    fetch(req)
-      .then((res) => {
-        // Cache only a clean, public, successful HTML page — never a redirect,
-        // 401/403/404/5xx, or anything but a 200.
-        if (res && res.ok && res.status === 200 && !res.redirected) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-        }
-        return res;
-      })
-      .catch(async () => (await caches.match(req)) || caches.match(OFFLINE_URL))
+    fetch(req, { cache: "no-store" }).catch(async () => {
+      // Match only the generic offline page in this worker's current cache.
+      // Never fall back to HTML cached for a previous account or URL.
+      const cache = await caches.open(CACHE);
+      const offline = await cache.match(OFFLINE_URL);
+      return offline || new Response("You are offline. Please reconnect and try again.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    })
   );
 });

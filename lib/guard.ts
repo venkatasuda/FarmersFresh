@@ -7,23 +7,39 @@
  * and they stop a raw database error from ever being shown to a customer.
  */
 
-/**
- * A finite, positive amount, or null. Rejects NaN, Infinity, negatives and
- * absurd values — the things a tampered client or a fat-fingered field produce.
- */
-export function toAmount(value: unknown, max = 10_000_000): number | null {
-  const n =
-    typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+// Accept a whole decimal value, including scientific notation, without
+// coercing booleans/arrays/objects or accepting text such as "12junk".
+const DECIMAL = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+function positiveRounded(value: unknown, max: number, scale: number): number | null {
+  if (!Number.isFinite(max) || max <= 0) return null;
+
+  let n: number;
+  if (typeof value === "number") {
+    n = value;
+  } else if (typeof value === "string") {
+    const text = value.trim();
+    if (!DECIMAL.test(text)) return null;
+    n = Number(text);
+  } else {
+    return null;
+  }
+
   if (!Number.isFinite(n) || n <= 0 || n > max) return null;
-  return Math.round(n * 100) / 100;
+  const rounded = Math.round(n * scale) / scale;
+  // Rounding can turn a positive value into zero or push it above the limit.
+  if (!Number.isFinite(rounded) || rounded <= 0 || rounded > max) return null;
+  return rounded;
 }
 
-/** A finite quantity in (0, max]. Used for weights and pack counts. */
+/** A finite, positive amount, rounded to paise, or null. */
+export function toAmount(value: unknown, max = 10_000_000): number | null {
+  return positiveRounded(value, max, 100);
+}
+
+/** A finite quantity in (0, max], rounded to three decimal places, or null. */
 export function toQuantity(value: unknown, max = 1000): number | null {
-  const n =
-    typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
-  if (!Number.isFinite(n) || n <= 0 || n > max) return null;
-  return Math.round(n * 1000) / 1000;
+  return positiveRounded(value, max, 1000);
 }
 
 // Technical tokens that mean a database/internal error surfaced, rather than
