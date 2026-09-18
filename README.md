@@ -8,22 +8,24 @@ Built to last: multi-tenant from day one, PostgreSQL core, immutable event log, 
 
 ---
 
+## Launch and CI status
+
+This project now has blocking release checks. See [Production CI](docs/engineering/PRODUCTION-CI.md), [Architecture](docs/engineering/ARCHITECTURE.md) and [Validation](docs/engineering/VALIDATION.md). The current code has failing regression/lint/audit checks; it is not validated for launch. No automatic deployment job is included.
+
 ## Getting started
 
 ### 1. Install dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 ### 2. Set up Supabase
 
-- Create a Supabase project.
-- SQL Editor → run `supabase/migrations/0001_init_phase1.sql`.
-- SQL Editor → run `supabase/migrations/0002_staff_cards.sql`.
-- Create your user in Authentication → Users, then run the one-time bootstrap block
-  (Section 11 of migration 0001) to make yourself owner of your first farm + store.
-- Copy `.env.example` to `.env.local` and fill in your project URL + anon key.
+- For isolated local testing, use Docker and the pinned Supabase CLI; follow the [CI guide](docs/engineering/PRODUCTION-CI.md).
+- The application depends on many migrations and RPCs. Running only migrations 0001/0002 is insufficient for the current storefront.
+- The historical chain must be repaired or intentionally re-baselined and verified from an empty database before production setup. The supplied schema snapshot supports a separate recovery-test route; it does not repair migration history.
+- Copy `.env.example` to `.env.local` for development and set the project's URL and public key. Never use production credentials in automated tests.
 
 ### 3. Run
 
@@ -31,7 +33,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — you'll be redirected to `/login`.
+Open http://localhost:3000 for the public storefront; staff sign in at `/login`.
 
 ### 4. Before every push
 

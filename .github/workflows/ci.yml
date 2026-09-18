@@ -1,54 +1,189 @@
-name: CI/CD
-
+name: Production CI
 on:
   push:
     branches: [main]
   pull_request:
-
-# Cancel superseded runs on the same ref.
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '23 3 * * *'
+permissions:
+  contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+  group: production-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  CI: 'true'
+  NEXT_TELEMETRY_DISABLED: '1'
 jobs:
-  ci:
-    name: Lint + build (typecheck)
-    runs-on: ubuntu-latest
+  quality:
+    name: Lint, types and architecture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      # eslint is advisory — build is the gate that blocks a bad merge.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: ./.github/actions/node-setup
       - run: npm run lint
-        continue-on-error: true
-      # `next build` runs the TypeScript typecheck, so this one step catches
-      # both the wastage type error and the "use server" export bug before merge.
-      - run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
-  # CD — OPTIONAL. If Vercel's native Git integration is already connected to
-  # this repo (it deploys on every push automatically), DELETE this job to avoid
-  # double deploys. Keep it only if you want deploys driven from GitHub.
-  # Requires repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
-  deploy:
-    name: Deploy to Vercel (production)
-    needs: ci
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - run: npm run typecheck
+        if: ${{ !cancelled() }}
+      - run: npm run ci:boundaries
+        if: ${{ !cancelled() }}
+  unit-api:
+    name: Unit, payment API and coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ./.github/actions/node-setup
+      - run: npm run test:coverage -- --reporter=default --reporter=junit --outputFile=reports/unit-api.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
         with:
-          node-version: 20
-      - run: npm install --global vercel@latest
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          name: unit-api-results
+          path: |
+            reports/
+            coverage/
+          retention-days: 14
+  supply-chain:
+    name: Dependency vulnerabilities and SBOM
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ./.github/actions/node-setup
+      - run: npm audit --audit-level=high --json > dependency-audit.json
+      - run: npm sbom --sbom-format=cyclonedx > sbom.cdx.json
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: dependency-audit-and-sbom
+          path: |
+            dependency-audit.json
+            sbom.cdx.json
+          retention-days: 30
+  secrets:
+    name: Secret scanning across Git history
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Scan repository history with Gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.3 git /repo --redact --exit-code 1
+  static-security:
+    name: Static application security rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: docker run --rm -v "$PWD:/src" semgrep/semgrep:1.130.0 semgrep scan --config /src/security/semgrep.yml --error /src/app /src/lib
+  edge-types:
+    name: Notification worker typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.4.5
+      - run: deno check supabase/functions/send-notifications/index.ts
+  migrations:
+    name: Fresh database from historical migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.76.8
+      - run: supabase start
+      - run: supabase db reset --local
+      - run: supabase db lint --local --level error --fail-on error
+      - run: supabase stop --no-backup
+        if: always()
+  database:
+    name: RLS, checkout, payments and concurrency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ./.github/actions/node-setup
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.76.8
+      # Independent recovery route exercises the supplied live-schema snapshot
+      # while the separate historical migration gate still blocks launch.
+      - run: npm run ci:recovery
+      - run: supabase start --workdir .ci-recovery
+      - run: node scripts/ci/export-local-env.mjs .ci-recovery
+      - run: npm run test:database
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: database-results
+          path: reports/
+          retention-days: 14
+      - run: supabase stop --workdir .ci-recovery --no-backup
+        if: always()
+  production-browser:
+    name: Production build and browser tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: ./.github/actions/node-setup
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.76.8
+      - run: npm run ci:recovery
+      - run: supabase start --workdir .ci-recovery
+      - run: node scripts/ci/export-local-env.mjs .ci-recovery
+      - run: node scripts/ci/seed-browser.mjs
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - run: npm run test:e2e
+      - name: Public-read load smoke (not production capacity certification)
+        run: |
+          npm run start -- --hostname 0.0.0.0 > /tmp/load-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/login > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3000/login > /dev/null
+          docker run --rm --network host -v "$PWD/scripts/ci:/scripts:ro" grafana/k6:0.57.0 run /scripts/http-load.js
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: browser-results
+          path: |
+            playwright-report/
+            test-results/
+            reports/
+          retention-days: 14
+      - run: supabase stop --workdir .ci-recovery --no-backup
+        if: always()
+  launch-gate:
+    name: Launch gate
+    if: always()
+    needs: [quality, unit-api, supply-chain, secrets, static-security, edge-types, migrations, database, production-browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Reject any failed, cancelled or skipped required check
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, sys
+          jobs=json.loads(os.environ['JOB_RESULTS'])
+          failed=[name for name,job in jobs.items() if job['result'] != 'success']
+          if failed:
+              print('Release blocked by: '+', '.join(failed))
+              sys.exit(1)
+          print('All implemented release gates passed for this commit.')
+          PYCODE

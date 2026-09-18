@@ -1,0 +1,132 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> farmersfresh@0.1.0 test:coverage
+> vitest run --coverage
+
+
+ RUN  v5.0.1 /workspace/scratch/b7b3115f8ffb/review/FarmersFresh-main
+      Coverage enabled with v8
+
+ ❯ tests/unit/service-worker.test.ts (6 tests | 1 failed) 15ms
+   ❯ PWA privacy (6)
+     × never stores personalised homepage HTML 7ms
+ ❯ tests/unit/guards.test.ts (23 tests | 3 failed) 40ms
+   ❯ money and quantity validation (15)
+     × rejects malformed values: 12junk 6ms
+     × enforces limits and rounding 1ms
+     × never emits zero, negative, infinite or above-limit accepted values 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/guards.test.ts > money and quantity validation > rejects malformed values: 12junk
+AssertionError: expected 12 to be null
+
+- Expected:
+null
+
++ Received:
+12
+
+ ❯ tests/unit/guards.test.ts:7:29
+      5| describe("money and quantity validation", () => {
+      6|   it.each([null, undefined, "", NaN, Infinity, -Infinity, -1, 0, "12ju…
+      7|     expect(toAmount(value)).toBeNull(); expect(toQuantity(value)).toBe…
+       |                             ^
+      8|   });
+      9|   it("enforces limits and rounding", () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/unit/guards.test.ts > money and quantity validation > enforces limits and rounding
+AssertionError: expected +0 to be null
+
+- Expected:
+null
+
++ Received:
+0
+
+ ❯ tests/unit/guards.test.ts:13:29
+     11|     expect(toQuantity("1.23456")).toBe(1.235);
+     12|     expect(toAmount(101, 100)).toBeNull(); expect(toQuantity(51, 50)).…
+     13|     expect(toAmount(0.001)).toBeNull(); expect(toQuantity(0.00001)).to…
+       |                             ^
+     14|     expect(toAmount(100, 100)).toBe(100); expect(toQuantity(50, 50)).t…
+     15|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/unit/guards.test.ts > money and quantity validation > never emits zero, negative, infinite or above-limit accepted values
+Error: Property failed after 4 tests
+{ seed: 20260918, path: "3:1:0:0:0:0", endOnFailure: true }
+Counterexample: [5e-324]
+Shrunk 5 time(s)
+
+Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+ ❯ buildError node_modules/fast-check/lib/fast-check.js:2469:16
+ ❯ throwIfFailed node_modules/fast-check/lib/fast-check.js:2476:8
+ ❯ reportRunDetails node_modules/fast-check/lib/fast-check.js:2492:14
+ ❯ Module.assert node_modules/fast-check/lib/fast-check.js:2662:7
+ ❯ tests/unit/guards.test.ts:17:8
+     15|   });
+     16|   it("never emits zero, negative, infinite or above-limit accepted val…
+     17|     fc.assert(fc.property(fc.double({ noNaN: false }), value => {
+       |        ^
+     18|       for (const parsed of [toAmount(value, 50), toQuantity(value, 50)…
+     19|         if (parsed !== null) { expect(Number.isFinite(parsed)).toBe(tr…
+
+Caused by: AssertionError: expected 0 to be greater than 0
+ ❯ tests/unit/guards.test.ts:19:91
+ ❯ Property.predicate node_modules/fast-check/lib/fast-check.js:1355:99
+ ❯ Property.run node_modules/fast-check/lib/fast-check.js:1324:24
+ ❯ propertyExecution node_modules/fast-check/lib/fast-check.js:2549:23
+ ❯ run node_modules/fast-check/lib/fast-check.js:2639:91
+ ❯ runIt node_modules/fast-check/lib/fast-check.js:2542:15
+ ❯ check node_modules/fast-check/lib/fast-check.js:2655:14
+ ❯ Module.assert node_modules/fast-check/lib/fast-check.js:2660:14
+ ❯ tests/unit/guards.test.ts:17:8
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/unit/service-worker.test.ts > PWA privacy > never stores personalised homepage HTML
+AssertionError: expected [ 'https://ci.invalid/' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "https://ci.invalid/",
++ ]
+
+ ❯ tests/unit/service-worker.test.ts:22:60
+     20|     const w=worker();let pending:Promise<unknown>|undefined;
+     21|     w.listeners.fetch({request:{method:'GET',mode:'navigate',url:'http…
+     22|     await pending;await Promise.resolve();expect(w.stored).toEqual([]);
+       |                                                            ^
+     23|   });
+     24| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  2 failed | 2 passed (4)
+      Tests  4 failed | 67 passed (71)
+   Start at  21:18:49
+   Duration  386ms (transform 48%, import 25%, tests 18%, worker 9%)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |     100 |    99.34 |     100 |     100 |                   
+ ...zorpay/webhook |     100 |    95.65 |     100 |     100 |                   
+  route.ts         |     100 |    95.65 |     100 |     100 | 26                
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 153/153 )
+Branches     : 99.34% ( 151/152 )
+Functions    : 100% ( 12/12 )
+Lines        : 100% ( 142/142 )
+================================================================================

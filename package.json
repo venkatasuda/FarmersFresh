@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:database": "vitest run --config vitest.database.config.mts",
+    "test:e2e": "playwright test",
+    "ci:recovery": "node scripts/ci/prepare-recovery.mjs",
+    "ci:boundaries": "node scripts/ci/check-boundaries.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -18,14 +25,24 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "22.20.3",
+    "@types/pg": "8.23.1",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "5.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "fast-check": "4.10.1",
+    "pg": "8.23.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "5.0.1"
+  },
+  "engines": {
+    "node": ">=22.16.0 <25"
   }
 }

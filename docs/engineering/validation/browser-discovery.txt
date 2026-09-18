@@ -1,0 +1,35 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+Listing tests:
+  [chromium] › checkout.spec.ts:3:5 › guest COD checkout ignores tampered display price and reserves inventory
+  [chromium] › launch.spec.ts:3:5 › public shop renders without browser errors
+  [chromium] › launch.spec.ts:8:5 › anonymous staff access redirects to login
+  [chromium] › launch.spec.ts:12:5 › staff login has no serious WCAG accessibility violations
+  [chromium] › launch.spec.ts:16:5 › security headers are present on rendered response
+  [chromium] › launch.spec.ts:21:5 › live payment API rejects a forged callback
+  [chromium] › launch.spec.ts:25:5 › live webhook rejects a forged signature
+  [chromium] › launch.spec.ts:29:5 › responsive cart has no horizontal overflow
+  [firefox] › checkout.spec.ts:3:5 › guest COD checkout ignores tampered display price and reserves inventory
+  [firefox] › launch.spec.ts:3:5 › public shop renders without browser errors
+  [firefox] › launch.spec.ts:8:5 › anonymous staff access redirects to login
+  [firefox] › launch.spec.ts:12:5 › staff login has no serious WCAG accessibility violations
+  [firefox] › launch.spec.ts:16:5 › security headers are present on rendered response
+  [firefox] › launch.spec.ts:21:5 › live payment API rejects a forged callback
+  [firefox] › launch.spec.ts:25:5 › live webhook rejects a forged signature
+  [firefox] › launch.spec.ts:29:5 › responsive cart has no horizontal overflow
+  [webkit] › checkout.spec.ts:3:5 › guest COD checkout ignores tampered display price and reserves inventory
+  [webkit] › launch.spec.ts:3:5 › public shop renders without browser errors
+  [webkit] › launch.spec.ts:8:5 › anonymous staff access redirects to login
+  [webkit] › launch.spec.ts:12:5 › staff login has no serious WCAG accessibility violations
+  [webkit] › launch.spec.ts:16:5 › security headers are present on rendered response
+  [webkit] › launch.spec.ts:21:5 › live payment API rejects a forged callback
+  [webkit] › launch.spec.ts:25:5 › live webhook rejects a forged signature
+  [webkit] › launch.spec.ts:29:5 › responsive cart has no horizontal overflow
+  [mobile] › checkout.spec.ts:3:5 › guest COD checkout ignores tampered display price and reserves inventory
+  [mobile] › launch.spec.ts:3:5 › public shop renders without browser errors
+  [mobile] › launch.spec.ts:8:5 › anonymous staff access redirects to login
+  [mobile] › launch.spec.ts:12:5 › staff login has no serious WCAG accessibility violations
+  [mobile] › launch.spec.ts:16:5 › security headers are present on rendered response
+  [mobile] › launch.spec.ts:21:5 › live payment API rejects a forged callback
+  [mobile] › launch.spec.ts:25:5 › live webhook rejects a forged signature
+  [mobile] › launch.spec.ts:29:5 › responsive cart has no horizontal overflow
+Total: 32 tests in 2 files

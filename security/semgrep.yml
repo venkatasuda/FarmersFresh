@@ -1,0 +1,28 @@
+rules:
+  - id: no-dynamic-code-execution
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Dynamic code execution requires explicit redesign; never execute client-controlled code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: no-disabled-tls-validation
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: TLS verification must remain enabled.
+    pattern-either:
+      - pattern: "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'"
+      - pattern: "{rejectUnauthorized: false, ...}"
+  - id: no-public-service-role-secret
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Service-role and payment secrets must never use NEXT_PUBLIC environment variables.
+    pattern-regex: 'NEXT_PUBLIC_[A-Z_]*(SERVICE_ROLE|KEY_SECRET|WEBHOOK_SECRET|PRIVATE_KEY)'
+  - id: no-process-shell-in-web-app
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Web request code must not invoke a shell; use a constrained service.
+    pattern-either:
+      - pattern: "import {exec, ...} from 'node:child_process'"
+      - pattern: "import {execSync, ...} from 'node:child_process'"
+      - pattern: "require('child_process')"

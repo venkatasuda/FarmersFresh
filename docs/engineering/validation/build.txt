@@ -1,0 +1,93 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> farmersfresh@0.1.0 build
+> next build
+
+▲ Next.js 16.2.10 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.5s
+  Running TypeScript ...
+  Finished TypeScript in 7.1s ...
+  Collecting page data using 8 workers ...
+⚠ Using edge runtime on a page currently disables static generation for that page
+  Generating static pages using 8 workers (0/28) ...
+  Generating static pages using 8 workers (7/28) 
+  Generating static pages using 8 workers (14/28) 
+  Generating static pages using 8 workers (21/28) 
+✓ Generating static pages using 8 workers (28/28) in 252ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /account
+├ ƒ /account/login
+├ ƒ /account/signup
+├ ƒ /api/razorpay/membership
+├ ƒ /api/razorpay/membership/verify
+├ ƒ /api/razorpay/order
+├ ƒ /api/razorpay/verify
+├ ƒ /api/razorpay/webhook
+├ ƒ /api/visual-search
+├ ƒ /auth/confirm
+├ ƒ /auth/signout
+├ ƒ /cart
+├ ƒ /checkout
+├ ƒ /collections/[slug]
+├ ƒ /contact
+├ ƒ /dashboard
+├ ƒ /dashboard/banners
+├ ƒ /dashboard/catalogue
+├ ƒ /dashboard/catalogue/[id]
+├ ƒ /dashboard/catalogue/new
+├ ƒ /dashboard/coldchain
+├ ƒ /dashboard/coupons
+├ ƒ /dashboard/credit
+├ ƒ /dashboard/credit/[id]
+├ ƒ /dashboard/deliveries
+├ ƒ /dashboard/delivery
+├ ƒ /dashboard/expiry
+├ ƒ /dashboard/financials
+├ ƒ /dashboard/orders
+├ ƒ /dashboard/pos
+├ ƒ /dashboard/production
+├ ƒ /dashboard/purchasing
+├ ƒ /dashboard/recipes
+├ ƒ /dashboard/reorder
+├ ƒ /dashboard/returns
+├ ƒ /dashboard/sales
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/stock
+├ ƒ /dashboard/support
+├ ƒ /dashboard/traceability
+├ ƒ /dashboard/wastage
+├ ƒ /delivery-info
+├ ƒ /hampers
+├ ƒ /help
+├ ƒ /login
+├ ○ /manifest.webmanifest
+├ ƒ /offers
+├ ƒ /offline
+├ ƒ /opengraph-image
+├ ƒ /order-placed
+├ ƒ /pass
+├ ƒ /privacy
+├ ƒ /receipt
+├ ƒ /recipes
+├ ƒ /returns
+├ ○ /robots.txt
+├ ƒ /search
+├ ƒ /shop/[slug]
+├ ƒ /sitemap.xml
+├ ƒ /terms
+├ ƒ /track
+└ ƒ /wishlist
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

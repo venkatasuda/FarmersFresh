@@ -1,0 +1,4 @@
+{
+  "last_included_migration": "0079_place_order_aggregate_lines.sql",
+  "purpose": "Recovery test baseline supplied in the uploaded ZIP; not a validated canonical migration baseline"
+}
