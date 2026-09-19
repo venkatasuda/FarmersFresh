@@ -1,6 +1,7 @@
 // Notification worker — drains the `notifications` outbox and delivers each
 // pending row on its channel. Poller, run on a schedule (see the DB cron).
-// Idempotent: only touches rows still 'pending', marks each as it goes.
+// Concurrency-safe: claims a batch via claim_notifications() (atomic
+// pending -> 'sending'), so overlapping runs never send the same row twice.
 //
 // verify_jwt is FALSE because the platform scheduler calls it, not a user. It
 // authenticates with the service-role key from the env and takes no request
@@ -298,12 +299,9 @@ async function sendPush(n: Notif) {
 }
 
 Deno.serve(async () => {
-  const { data: rows, error } = await admin
-    .from("notifications")
-    .select("id, channel, recipient, template, payload")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(25);
+  // Atomically claim a batch (pending -> 'sending' under FOR UPDATE SKIP LOCKED)
+  // so overlapping runs never grab the same row and send duplicates. See 0088.
+  const { data: rows, error } = await admin.rpc("claim_notifications", { p_limit: 25 });
 
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
