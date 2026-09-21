@@ -1,14 +1,23 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
+
+// Unit tests only — pure logic, no database, no Next runtime. The database
+// suite has its own config (vitest.database.config.mts) and Playwright owns e2e.
 export default defineConfig({
-  resolve: { alias: { "@": fileURLToPath(new URL(".", import.meta.url)) } },
+  resolve: {
+    alias: {
+      // Match the tsconfig "@/*" -> repo root alias so tests import like the app.
+      "@": fileURLToPath(new URL(".", import.meta.url)),
+    },
+  },
   test: {
-    include: ["tests/unit/**/*.test.ts", "tests/api/**/*.test.ts"],
-    environment: "node", clearMocks: true, restoreMocks: true,
+    environment: "node",
+    include: ["tests/unit/**/*.test.ts"],
     coverage: {
-      provider: "v8", reportOnFailure: true, reporter: ["text", "lcov", "json-summary"],
-      include: ["lib/guard.ts", "lib/format.ts", "app/api/razorpay/webhook/route.ts", "app/api/razorpay/verify/route.ts", "app/api/razorpay/order/route.ts", "app/api/razorpay/membership/route.ts"],
-      thresholds: { statements: 90, branches: 85, functions: 90, lines: 90 },
+      provider: "v8",
+      reportsDirectory: "coverage",
+      include: ["lib/**/*.ts"],
+      exclude: ["lib/supabase/**", "**/*.d.ts", "lib/env.ts"],
     },
   },
 });

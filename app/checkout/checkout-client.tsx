@@ -31,6 +31,36 @@ const SLOTS = [
 // never dead buttons before the shop has connected one. COD always works.
 const ONLINE_ENABLED = Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
 
+// A held online order (created, awaiting payment) is persisted so a refresh or
+// a return to /checkout can resume paying the SAME order instead of stranding
+// it until the 30-minute auto-cancel. Matches the server's hold window.
+const HELD_KEY = "ff.held.v1";
+const HELD_TTL_MS = 30 * 60 * 1000;
+type Held = { orderId: string; orderNumber: string; total: number };
+
+function saveHeld(h: Held) {
+  try {
+    localStorage.setItem(HELD_KEY, JSON.stringify({ ...h, ts: Date.now() }));
+  } catch { /* storage may be unavailable */ }
+}
+function clearHeld() {
+  try { localStorage.removeItem(HELD_KEY); } catch { /* ignore */ }
+}
+function readHeld(): Held | null {
+  try {
+    const raw = localStorage.getItem(HELD_KEY);
+    if (!raw) return null;
+    const h = JSON.parse(raw) as Held & { ts?: number };
+    if (!h.orderId || !h.ts || Date.now() - h.ts > HELD_TTL_MS) {
+      clearHeld();
+      return null;
+    }
+    return { orderId: h.orderId, orderNumber: h.orderNumber, total: h.total };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Checkout body. Split from the route so `ShopShell` (an async Server
  * Component that loads categories) can wrap it — a Client Component cannot
@@ -74,11 +104,14 @@ export function CheckoutClient({
   // Set once an online order has been created and is awaiting payment, so a
   // dismissed Razorpay sheet lets the customer retry the SAME order instead of
   // creating a duplicate.
-  const [held, setHeld] = useState<{
-    orderId: string;
-    orderNumber: string;
-    total: number;
-  } | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
+
+  // Resume a held order after a refresh / return to checkout (server keeps it
+  // payable for 30 min). Stale or missing entries are ignored.
+  useEffect(() => {
+    const h = readHeld();
+    if (h) setHeld(h);
+  }, []);
 
   // Coupon: the applied code + the discount the server confirmed. Both are
   // re-validated by place_order at submit — this is only the friendly preview.
@@ -149,9 +182,11 @@ export function CheckoutClient({
     // Saved addresses, for the picker.
     getMyAddresses().then((a) => setAddresses(a));
 
-    let done = false;
+    // Prefill + PIN resolved together, so exactly ONE checkPincode runs against
+    // the authoritative PIN (account first, saved header location as fallback).
+    // Doing the fallback synchronously alongside the async prefill used to fire
+    // two competing checks whose results raced on pinServed.
     getCheckoutPrefill().then((p) => {
-      done = true;
       if (p) {
         setField("name", p.name);
         setField("phone", p.phone);
@@ -159,28 +194,24 @@ export function CheckoutClient({
         setField("address", p.address);
         setField("city", p.city);
         setField("landmark", p.landmark);
-        setField("pincode", p.pincode);
-        if (p.pincode) void onPincodeBlur(p.pincode);
         if (p.name || p.address) setPrefilled(true);
       }
-    });
 
-    // Guest fallback: the header location PIN, if the prefill didn't cover it.
-    try {
-      const raw = window.localStorage.getItem("ff.location.v1");
-      if (raw) {
-        const loc = JSON.parse(raw) as { pincode?: string };
-        const el = document.querySelector(
-          'input[name="pincode"]'
-        ) as HTMLInputElement | null;
-        if (!done && el && loc.pincode && !el.value) {
-          el.value = loc.pincode;
-          void onPincodeBlur(loc.pincode);
+      let pin = p?.pincode ?? "";
+      if (!pin) {
+        try {
+          const raw = window.localStorage.getItem("ff.location.v1");
+          if (raw) pin = (JSON.parse(raw) as { pincode?: string }).pincode ?? "";
+        } catch {
+          /* ignore */
         }
       }
-    } catch {
-      /* ignore */
-    }
+      const el = document.querySelector(
+        'input[name="pincode"]'
+      ) as HTMLInputElement | null;
+      if (el && pin && !el.value) el.value = pin;
+      if (pin) void onPincodeBlur(pin);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -206,7 +237,7 @@ export function CheckoutClient({
     }
   }
 
-  if (ready && lines.length === 0) {
+  if (ready && lines.length === 0 && !held) {
     return (
       <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-16 text-center">
         <h1 className="text-lg font-medium text-ink">Nothing to check out</h1>
@@ -237,6 +268,7 @@ export function CheckoutClient({
   ) {
     if (r.status === "paid") {
       setHeld(null);
+      clearHeld();
       void clearCart();
       clear();
       router.push(
@@ -247,6 +279,12 @@ export function CheckoutClient({
         "Payment wasn't completed. We've held your order for 30 minutes — tap Complete payment to finish, or it will be cancelled."
       );
     } else {
+      // The order can no longer be paid (already paid / cancelled) — drop the
+      // resume pointer so the customer starts a fresh order.
+      if (r.gone) {
+        setHeld(null);
+        clearHeld();
+      }
       setError(r.message);
     }
   }
@@ -312,11 +350,14 @@ export function CheckoutClient({
       }
 
       // UPI / Card: the order is created and held; collect the money now.
-      setHeld({
+      // Persist it so a refresh mid-payment can still resume this order.
+      const heldOrder = {
         orderId: result.orderId,
         orderNumber: result.orderNumber,
         total: result.total,
-      });
+      };
+      setHeld(heldOrder);
+      saveHeld(heldOrder);
       const r = await payForOrder({
         orderId: result.orderId,
         method: result.paymentMethod,
@@ -332,7 +373,12 @@ export function CheckoutClient({
         Where should we deliver?
       </h1>
 
-      {prefilled ? (
+      {held ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          You have order {held.orderNumber} awaiting payment — tap{" "}
+          <span className="font-medium">Complete payment</span> below to finish.
+        </p>
+      ) : prefilled ? (
         <p className="mb-4 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-800">
           Welcome back — we&apos;ve filled in your details. Just check them and
           place your order.
@@ -673,7 +719,7 @@ export function CheckoutClient({
               : pinServed === false
                 ? "Out of delivery area"
                 : held
-                  ? `Complete payment · ${formatRupees(grandTotal)}`
+                  ? `Complete payment · ${formatRupees(held.total)}`
                   : payMethod === "cod"
                     ? "Place order"
                     : `Pay ${formatRupees(grandTotal)}`}

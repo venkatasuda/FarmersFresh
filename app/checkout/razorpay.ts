@@ -54,7 +54,9 @@ function loadScript(): Promise<boolean> {
 export type PayResult =
   | { status: "paid" }
   | { status: "dismissed" }
-  | { status: "error"; message: string };
+  // `gone` = the order can no longer be paid (already paid / cancelled / not
+  // found), so a persisted "resume payment" pointer should be discarded.
+  | { status: "error"; message: string; gone?: boolean };
 
 /** Pay for a Farmers Fresh Pass (membership). Same verified flow as an order. */
 export async function payForMembership(params: {
@@ -143,7 +145,11 @@ export async function payForOrder(params: {
     });
     if (!res.ok) {
       const j = (await res.json().catch(() => ({}))) as { error?: string };
-      return { status: "error", message: j.error ?? "Couldn't start the payment." };
+      return {
+        status: "error",
+        message: j.error ?? "Couldn't start the payment.",
+        gone: res.status === 404 || res.status === 409,
+      };
     }
     opened = (await res.json()) as typeof opened;
   } catch {

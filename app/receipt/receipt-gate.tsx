@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getReceipt, type Receipt } from "./actions";
+import { getReceipt } from "./actions";
+import type { Receipt } from "./receipt-types";
 import { ReceiptView } from "./receipt-view";
 
 /**

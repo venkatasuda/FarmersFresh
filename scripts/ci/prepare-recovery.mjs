@@ -1,20 +1,37 @@
-// Recovery test environment ONLY. This is not a replacement migration chain.
-import { mkdirSync, readFileSync, writeFileSync, copyFileSync, readdirSync, rmSync } from "node:fs";
-const directory = ".ci-recovery/supabase";
-rmSync(`${directory}/migrations`, { recursive: true, force: true });
-mkdirSync(`${directory}/migrations`, { recursive: true });
-copyFileSync("supabase/config.toml", `${directory}/config.toml`);
-let sql = readFileSync("supabase/schema_snapshot.sql", "utf8");
-// pg_dump psql meta commands cannot be sent as SQL by the CLI migration runner.
-sql = sql.split("\n").filter(line => !line.startsWith("\\restrict") && !line.startsWith("\\unrestrict")).join("\n");
-sql = sql.replace("CREATE SCHEMA public;", "CREATE SCHEMA IF NOT EXISTS public;");
-writeFileSync(`${directory}/migrations/00000000000000_recovery_snapshot.sql`, sql);
-console.log("Prepared isolated schema-snapshot test environment; historical migration gate remains mandatory.");
+#!/usr/bin/env node
+// Build a `.ci-recovery` Supabase workdir that reconstructs the database from
+// the live-schema SNAPSHOT (supabase/schema_snapshot.sql) rather than replaying
+// the numbered migrations. This gives the database/browser jobs a fast, known
+// schema to test against, while the separate `migrations` job still gates launch
+// by replaying every historical migration on a fresh DB.
+//
+// Assumes schema_snapshot.sql is a `supabase db dump` output (safe to apply on a
+// fresh local database). Regenerate it with:  supabase db dump -f supabase/schema_snapshot.sql
 
-const metadata=JSON.parse(readFileSync("supabase/schema_snapshot.meta.json","utf8"));
-if(!existsMigration(metadata.last_included_migration))throw new Error("Snapshot migration boundary is missing");
-function existsMigration(name) { return readdirSync("supabase/migrations").includes(name); }
-for(const name of readdirSync("supabase/migrations").filter(name=>name.endsWith(".sql") && name>metadata.last_included_migration).sort()) {
-  copyFileSync(`supabase/migrations/${name}`,`${directory}/migrations/${name}`);
-  console.log(`Included post-snapshot migration: ${name}`);
+import { mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+const ROOT = process.cwd();
+const SNAPSHOT = join(ROOT, "supabase", "schema_snapshot.sql");
+const CONFIG = join(ROOT, "supabase", "config.toml");
+const OUT = join(ROOT, ".ci-recovery", "supabase");
+
+if (!existsSync(SNAPSHOT)) {
+  console.error(`Missing ${SNAPSHOT}. Generate it with: supabase db dump -f supabase/schema_snapshot.sql`);
+  process.exit(1);
 }
+
+mkdirSync(join(OUT, "migrations"), { recursive: true });
+
+// A distinct project_id so the recovery stack's Docker containers never clash
+// with the migrations job's default stack.
+const config = readFileSync(CONFIG, "utf8").replace(
+  /^project_id\s*=.*$/m,
+  'project_id = "farmersfresh-recovery"'
+);
+writeFileSync(join(OUT, "config.toml"), config);
+
+// The snapshot becomes the single migration `supabase start` applies.
+copyFileSync(SNAPSHOT, join(OUT, "migrations", "00000000000000_snapshot.sql"));
+
+console.log("Prepared .ci-recovery from schema_snapshot.sql");

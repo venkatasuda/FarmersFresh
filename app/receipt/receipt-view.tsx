@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { Receipt } from "./actions";
+import type { Receipt } from "./receipt-types";
 import { PrintButton } from "./print-button";
 import { formatRupees } from "@/lib/format";
 

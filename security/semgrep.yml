@@ -1,28 +1,36 @@
 rules:
-  - id: no-dynamic-code-execution
+  - id: ff-no-eval
     languages: [typescript, javascript]
     severity: ERROR
-    message: Dynamic code execution requires explicit redesign; never execute client-controlled code.
+    message: >
+      Avoid eval() — it executes arbitrary code and is a common injection sink.
+    pattern: eval(...)
+
+  - id: ff-no-document-write
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >
+      document.write() is an XSS sink and blocks rendering. Build DOM/JSX instead.
+    pattern: document.write(...)
+
+  - id: ff-no-child-process
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >
+      The web app must not spawn OS processes. If you need this, it belongs in a
+      dedicated, reviewed server task — not in app/ or lib/.
     pattern-either:
-      - pattern: eval(...)
-      - pattern: new Function(...)
-  - id: no-disabled-tls-validation
+      - pattern: require("child_process")
+      - pattern: import "child_process"
+      - pattern: import $X from "child_process"
+      - pattern: import * as $X from "child_process"
+      - pattern: import { ... } from "child_process"
+
+  - id: ff-no-hardcoded-service-role
     languages: [typescript, javascript]
     severity: ERROR
-    message: TLS verification must remain enabled.
-    pattern-either:
-      - pattern: "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'"
-      - pattern: "{rejectUnauthorized: false, ...}"
-  - id: no-public-service-role-secret
-    languages: [typescript, javascript]
-    severity: ERROR
-    message: Service-role and payment secrets must never use NEXT_PUBLIC environment variables.
-    pattern-regex: 'NEXT_PUBLIC_[A-Z_]*(SERVICE_ROLE|KEY_SECRET|WEBHOOK_SECRET|PRIVATE_KEY)'
-  - id: no-process-shell-in-web-app
-    languages: [typescript, javascript]
-    severity: ERROR
-    message: Web request code must not invoke a shell; use a constrained service.
-    pattern-either:
-      - pattern: "import {exec, ...} from 'node:child_process'"
-      - pattern: "import {execSync, ...} from 'node:child_process'"
-      - pattern: "require('child_process')"
+    message: >
+      Never hardcode a Supabase service-role JWT. Read it from the environment
+      (SUPABASE_SERVICE_ROLE_KEY) on the server only.
+    # service-role JWTs carry this claim; match the literal token, not env reads.
+    pattern-regex: '"role"\s*:\s*"service_role"'

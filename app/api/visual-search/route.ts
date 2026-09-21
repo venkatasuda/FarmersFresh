@@ -32,6 +32,31 @@ const PROVIDER =
   process.env.VISION_PROVIDER ??
   (process.env.GOOGLE_VISION_API_KEY ? "google" : process.env.VISION_ENDPOINT_URL ? "custom" : "");
 
+// --- Abuse limits -------------------------------------------------------
+// Each call hits a paid vision API, so bound the per-request cost (size/type)
+// and the per-caller rate before we forward anything upstream.
+const MAX_B64_CHARS = 7_000_000;              // ~5 MB decoded image
+const ALLOWED_TYPES = /^data:image\/(jpe?g|png|webp);base64,/i;
+const B64_ONLY = /^[A-Za-z0-9+/=\s]+$/;       // reject non-base64 junk
+const RATE_MAX = 10;                          // requests…
+const RATE_WINDOW_MS = 60_000;                // …per IP per minute
+
+// ponytail: per-instance in-memory window — good enough for a single warm
+// serverless instance; move to Upstash/Redis or a DB counter if a distributed
+// limit is needed. Bounded map so it can't grow without limit.
+const hits = new Map<string, { n: number; reset: number }>();
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const h = hits.get(ip);
+  if (!h || now > h.reset) {
+    if (hits.size > 5000) hits.clear();
+    hits.set(ip, { n: 1, reset: now + RATE_WINDOW_MS });
+    return false;
+  }
+  h.n += 1;
+  return h.n > RATE_MAX;
+}
+
 async function recogniseGoogle(raw: string): Promise<string[]> {
   const key = process.env.GOOGLE_VISION_API_KEY!;
   const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${key}`, {
@@ -87,6 +112,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Visual search isn't set up yet." }, { status: 503 });
   }
 
+  const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  if (rateLimited(ip)) {
+    return NextResponse.json({ error: "Too many searches. Please wait a minute." }, { status: 429 });
+  }
+
   let body: { image?: string };
   try {
     body = await request.json();
@@ -94,8 +124,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
   }
 
-  const raw = (body.image ?? "").replace(/^data:image\/\w+;base64,/, "");
+  const input = body.image ?? "";
+  if (input.length > MAX_B64_CHARS) {
+    return NextResponse.json({ error: "That image is too large (max ~5 MB)." }, { status: 413 });
+  }
+  // If a data-url prefix is present it must be an allowed image type; a bare
+  // base64 string (the documented custom-model contract) is accepted too.
+  const hasPrefix = input.startsWith("data:");
+  if (hasPrefix && !ALLOWED_TYPES.test(input)) {
+    return NextResponse.json({ error: "Only JPEG, PNG or WebP images are supported." }, { status: 415 });
+  }
+
+  const raw = input.replace(/^data:image\/\w+;base64,/, "");
   if (!raw) return NextResponse.json({ error: "No image." }, { status: 400 });
+  if (!B64_ONLY.test(raw)) {
+    return NextResponse.json({ error: "That doesn't look like an image." }, { status: 400 });
+  }
 
   let candidates: string[];
   try {

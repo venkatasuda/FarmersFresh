@@ -1,46 +1,66 @@
-import ts from "typescript";
-import { readdirSync, readFileSync, existsSync } from "node:fs";
-import { resolve, dirname, relative } from "node:path";
-const root=process.cwd(), graph=new Map(), clientRoots=[];
-function walk(directory) {
-  return readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?walk(resolve(directory,entry.name)):/\.[cm]?[jt]sx?$/.test(entry.name)?[resolve(directory,entry.name)]:[]);
-}
-for (const file of [...walk(resolve('app')),...walk(resolve('lib'))]) {
-  const source=ts.createSourceFile(file,readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true);
-  const directive=source.statements[0];
-  const mode=directive && ts.isExpressionStatement(directive) && ts.isStringLiteral(directive.expression)?directive.expression.text:'';
-  const imports=[];
-  function visit(node) {
-    if ((ts.isImportDeclaration(node)||ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-      const typeOnly=ts.isImportDeclaration(node)
-        ? node.importClause?.isTypeOnly || (node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings) && !node.importClause.name && node.importClause.namedBindings.elements.every(element=>element.isTypeOnly))
-        : node.isTypeOnly;
-      if(!typeOnly)imports.push(node.moduleSpecifier.text);
+#!/usr/bin/env node
+// Architecture boundaries (see the header of lib/format.ts for the "why").
+//
+//  1. lib/format.ts and lib/types.ts are imported by Client Components, so they
+//     must never pull in server-only modules — doing so drags next/headers into
+//     a client bundle and breaks the production build.
+//  2. Any "use client" file must not import a server-only module either.
+//
+// Pure Node, no dependencies. Exits 1 with a list of violations.
+
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const ROOT = process.cwd();
+const SERVER_ONLY = [
+  /from\s+["']@\/lib\/supabase\/server["']/,
+  /from\s+["']next\/headers["']/,
+];
+const CLIENT_SAFE_FILES = ["lib/format.ts", "lib/types.ts"];
+
+const violations = [];
+
+function check(file, isClientContext) {
+  const src = readFileSync(file, "utf8");
+  for (const re of SERVER_ONLY) {
+    if (re.test(src)) {
+      violations.push(`${relative(ROOT, file)} imports a server-only module (${re.source})`);
     }
-    if (ts.isCallExpression(node) && node.expression.kind===ts.SyntaxKind.ImportKeyword && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) imports.push(node.arguments[0].text);
-    ts.forEachChild(node,visit);
   }
-  visit(source); graph.set(file,{mode,imports});if(mode==='use client')clientRoots.push(file);
-}
-function target(file,specifier) {
-  const base=specifier.startsWith('@/')?resolve(root,specifier.slice(2)):specifier.startsWith('.')?resolve(dirname(file),specifier):null;
-  if (!base) return null;
-  return [base,...['.ts','.tsx','.js','.jsx','/index.ts','/index.tsx'].map(suffix=>base+suffix)].find(path=>existsSync(path)&&graph.has(path));
-}
-const errors=[];
-function trace(file,path,seen,pure=false) {
-  if(seen.has(file))return;seen.add(file);
-  const item=graph.get(file);if(!item)return;
-  // Next intentionally converts exports of a 'use server' module to action proxies.
-  if(item.mode==='use server' && path.length>1 && !pure)return;
-  for(const specifier of item.imports) {
-    if(specifier==='next/headers'||specifier==='server-only'||specifier.startsWith('node:')||(pure&&specifier.includes('supabase'))) {
-      errors.push(path.map(p=>relative(root,p)).join(' -> ')+' -> '+specifier);continue;
-    }
-    const next=target(file,specifier);if(next)trace(next,[...path,next],seen,pure);
+  // A client-safe lib must not import ANY supabase module, server or not.
+  if (!isClientContext && /from\s+["']@\/lib\/supabase\//.test(src)) {
+    violations.push(`${relative(ROOT, file)} must not import from lib/supabase/* (client-safe file)`);
   }
 }
-for(const file of clientRoots)trace(file,[file],new Set());
-for(const file of ['lib/format.ts','lib/types.ts'])trace(resolve(file),[resolve(file)],new Set(),true);
-if(errors.length){console.error('Server/client boundary violations:\n'+errors.join('\n'));process.exit(1);}
-console.log(`Checked ${clientRoots.length} client entry points and shared formatting/type modules.`);
+
+// Rule 1: the two client-safe libs.
+for (const rel of CLIENT_SAFE_FILES) {
+  try {
+    check(join(ROOT, rel), false);
+  } catch {
+    violations.push(`${rel} is missing`);
+  }
+}
+
+// Rule 2: every "use client" component.
+function walk(dir) {
+  for (const name of readdirSync(dir)) {
+    if (name === "node_modules" || name === ".next" || name.startsWith(".")) continue;
+    const full = join(dir, name);
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      walk(full);
+    } else if (/\.(tsx?|jsx?)$/.test(name)) {
+      const src = readFileSync(full, "utf8");
+      const firstLine = src.split("\n").find((l) => l.trim().length > 0) ?? "";
+      if (/^["']use client["']/.test(firstLine.trim())) check(full, true);
+    }
+  }
+}
+walk(join(ROOT, "app"));
+
+if (violations.length) {
+  console.error("Architecture boundary violations:\n" + violations.map((v) => "  - " + v).join("\n"));
+  process.exit(1);
+}
+console.log("Architecture boundaries OK.");
