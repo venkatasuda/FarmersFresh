@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/app/(shop)/cart-context";
 import { CartDrawer } from "@/app/(shop)/cart-drawer";
 import { CartToast } from "@/app/(shop)/cart-toast";
@@ -8,13 +8,22 @@ import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
 import { getStoreSettings } from "@/lib/settings";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Body: a warm, humanist grotesk — readable and distinct from the default look.
+const sans = Hanken_Grotesk({
+  variable: "--font-sans-base",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Headings: an organic serif that suits a farm/food brand and gives the pages a
+// recognisable voice rather than the generic geometric-sans template feel.
+const display = Fraunces({
+  variable: "--font-display-base",
+  subsets: ["latin"],
+  axes: ["opsz"],
+});
+
+const mono = Geist_Mono({
+  variable: "--font-mono-base",
   subsets: ["latin"],
 });
 
@@ -73,7 +82,7 @@ export default async function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {/* The basket must survive navigation between product pages, so the

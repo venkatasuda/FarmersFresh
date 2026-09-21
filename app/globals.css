@@ -33,8 +33,9 @@
   --color-ink: #14231a;
   --color-ink-soft: #5c6b62;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-sans-base), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-base), ui-monospace, monospace;
+  --font-display: var(--font-display-base), Georgia, "Times New Roman", serif;
 
   /* Soft, layered shadows — the single biggest "designed by a pro" tell.
      Tinted with the ink colour so shadows feel part of the palette, not grey
@@ -59,13 +60,22 @@ body {
   background-image: radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, var(--color-canvas) 60%);
   background-attachment: fixed;
   color: var(--color-ink);
-  /* The layout sets the Geist font variables; use them rather than
-     hard-coding Arial, which silently overrode them before. */
+  /* The layout sets the font variables; use them rather than hard-coding a
+     fallback, which silently overrode them before. */
   font-family: var(--font-sans);
   /* Sharper type — the difference a veteran notices and a novice doesn't. */
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: "kern", "liga";
+}
+
+/* Page headings wear the serif display face — a distinct brand voice. Scoped to
+   h1 (and an opt-in .font-display) so UI labels and dashboard headers stay in the
+   clean sans. */
+h1,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 /* Brand-tinted text selection instead of the browser's default blue. */
