@@ -10,7 +10,6 @@ import {
   deliveryFeeFor,
   FREE_DELIVERY_OVER,
   type Category,
-  type OrderStatus,
 } from "@/lib/types";
 
 describe("isLoose", () => {

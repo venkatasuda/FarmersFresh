@@ -1,0 +1,4 @@
+{
+  "//": "For the Supabase edge functions only. The repo has a package.json, which makes Deno expect npm deps in node_modules (byonm mode); 'auto' lets `deno check` install npm: specifiers (web-push) itself. Node/Next tooling ignores this file.",
+  "nodeModulesDir": "auto"
+}

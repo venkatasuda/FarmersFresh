@@ -39,9 +39,7 @@ function loadLeaflet(): Promise<any> {
 
 export function RiderMap({ lat, lng }: { lat: number; lng: number }) {
   const elRef = useRef<HTMLDivElement | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markerRef = useRef<any>(null);
 
   useEffect(() => {

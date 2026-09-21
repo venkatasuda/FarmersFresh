@@ -212,7 +212,6 @@ export function CheckoutClient({
       if (el && pin && !el.value) el.value = pin;
       if (pin) void onPincodeBlur(pin);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reaching checkout with items is a strong signal — remember the basket so a

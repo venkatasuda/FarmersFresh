@@ -38,6 +38,11 @@ if (-not (Test-Path $tmp) -or (Get-Item $tmp).Length -lt 1000) {
   throw "The dump produced an empty or truncated file. Aborting without changing anything."
 }
 
+# pg_dump 17 wraps the dump in \restrict / \unrestrict psql meta-commands, which
+# the SQL migration runner can't parse. Strip just those wrapper lines.
+(Get-Content $tmp) | Where-Object { $_ -notmatch '^\\(restrict|unrestrict)\b' } |
+  Set-Content $tmp -Encoding utf8
+
 # 2) Dump is good — now it is safe to move things.
 Write-Host "==> Archiving the old numbered migrations (kept in git history)"
 New-Item -ItemType Directory -Force -Path $archive | Out-Null

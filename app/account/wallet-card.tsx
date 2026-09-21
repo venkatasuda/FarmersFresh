@@ -74,7 +74,6 @@ export function WalletCard({
           <div className="shrink-0 rounded-xl bg-white p-2">
             <div
               className="size-20 [&>svg]:size-full"
-              // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: qrSvg }}
               aria-label="Your loyalty card QR code"
             />

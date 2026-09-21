@@ -19,7 +19,7 @@ export function ColdChainClient({
   locationId: string | null;
 }) {
   const [data, setData] = useState(initial);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   function refresh() {
     startTransition(async () => setData(await getColdChain(7)));

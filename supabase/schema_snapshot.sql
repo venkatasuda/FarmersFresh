@@ -1,8 +1,7 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
-\restrict 6qGtetGcb8wTfi0g6hKHGp7qujZ1y9Ex9UIQ9Ky7ZB5YFlfNhkv3q9mdBDcweD5
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.11
@@ -314,7 +313,7 @@ begin
   if p.id is null then raise exception 'Product not found.'; end if;
   if coalesce(p_price,0) <= 0 then raise exception 'Enter a clearance price.'; end if;
   if p.last_cost is not null and p_price < p.last_cost then
-    raise exception 'Clearance price is below cost — you would lose money.';
+    raise exception 'Clearance price is below cost â€” you would lose money.';
   end if;
   if p_price >= p.sale_price then raise exception 'Clearance must be below the current price.'; end if;
 
@@ -1034,7 +1033,7 @@ begin
   insert into public.support_tickets (org_id, user_id, order_number, subject, message)
   values (v_org, v_uid, nullif(trim(coalesce(p_order_number,'')),''),
           left(trim(p_subject), 200), left(trim(p_message), 2000));
-  return jsonb_build_object('ok', true, 'message', 'Thanks — we''ve got your message and will reply soon.');
+  return jsonb_build_object('ok', true, 'message', 'Thanks â€” we''ve got your message and will reply soon.');
 end $$;
 
 
@@ -2141,7 +2140,7 @@ begin
   insert into public.stock_movements
     (org_id, location_id, product_id, delta, reason, ref_type, actor_id, note)
   values (v_org, p_location, p_product, -p_qty, 'waste', 'wastage', auth.uid(),
-          p_reason || coalesce(' — ' || nullif(trim(coalesce(p_note,'')),''), ''));
+          p_reason || coalesce(' â€” ' || nullif(trim(coalesce(p_note,'')),''), ''));
 
   insert into public.wastage_log
     (org_id, location_id, product_id, product_name, quantity, reason, unit_cost, note, actor_id)
@@ -2207,7 +2206,7 @@ begin
     insert into public.events (org_id, event_type, entity_type, entity_id, payload)
     values (v_org, 'order.paid_after_cancel', 'order', p_order_id,
             jsonb_build_object('razorpay_payment', p_razorpay_payment,
-                               'note', 'Paid after cancellation — needs reconciliation'));
+                               'note', 'Paid after cancellation â€” needs reconciliation'));
     return;
   end if;
 
@@ -2223,7 +2222,7 @@ begin
 
   select o.notify_email, o.notify_phone into v_notify_email, v_notify_phone
     from public.organizations o where o.id = v_org;
-  select string_agg(oi.product_name || ' × ' || oi.quantity, ', ')
+  select string_agg(oi.product_name || ' Ã— ' || oi.quantity, ', ')
     into v_items from public.order_items oi where oi.order_id = p_order_id;
 
   if v_notify_email is not null then
@@ -2799,7 +2798,7 @@ begin
   end loop;
 
   select coalesce(sum(oi.line_total), 0),
-         string_agg(oi.product_name || ' × ' || oi.quantity, ', ')
+         string_agg(oi.product_name || ' Ã— ' || oi.quantity, ', ')
     into v_subtotal, v_items
     from public.order_items oi where oi.order_id = v_order_id;
   if v_subtotal <= 0 then raise exception 'None of those items are available right now.'; end if;
@@ -2814,7 +2813,7 @@ begin
     update public.coupons set used_count = used_count + 1
       where org_id = p_org_id and upper(code) = upper(v_coupon)
         and (usage_limit is null or used_count < usage_limit);
-    if not found then raise exception 'Sorry — that code was just fully used.'; end if;
+    if not found then raise exception 'Sorry â€” that code was just fully used.'; end if;
   end if;
 
   if v_uid is not null then
@@ -3069,7 +3068,7 @@ begin
     return jsonb_build_object('ok', false, 'message', 'You can rate once it''s delivered.');
   end if;
   if v_o.delivery_rating is not null then
-    return jsonb_build_object('ok', true, 'message', 'Thanks — you already rated this delivery.');
+    return jsonb_build_object('ok', true, 'message', 'Thanks â€” you already rated this delivery.');
   end if;
 
   update public.orders
@@ -3332,7 +3331,7 @@ begin
   end if;
 
   v_count := coalesce(array_length(p_lines, 1), 0);
-  if v_count = 0 then raise exception 'Nothing to sell — the cart is empty.'; end if;
+  if v_count = 0 then raise exception 'Nothing to sell â€” the cart is empty.'; end if;
 
   insert into public.sales (org_id, location_id, customer_id, total, created_by)
   values (v_org, p_location, p_customer_id, 0, auth.uid())
@@ -3367,7 +3366,7 @@ begin
 
   update public.sales s set total = v_total where s.id = v_sale;
 
-  -- Redeem loyalty points as a tender (1 point = ₹1), capped at the balance
+  -- Redeem loyalty points as a tender (1 point = â‚¹1), capped at the balance
   -- and the sale total. Debits the points ledger.
   if p_loyalty_user is not null and coalesce(p_points_redeem,0) > 0 then
     v_redeem := least(floor(p_points_redeem), public.wallet_balance(p_loyalty_user), v_total);
@@ -3393,7 +3392,7 @@ begin
             coalesce(p_method, 'cash'), auth.uid());
   end if;
 
-  -- Earn points on the net amount spent (after any redemption): 1 per ₹100.
+  -- Earn points on the net amount spent (after any redemption): 1 per â‚¹100.
   if p_loyalty_user is not null then
     v_earn := floor(v_owed / 100);
     if v_earn > 0 then
@@ -3518,7 +3517,7 @@ begin
 
   insert into public.wallet_ledger (org_id, user_id, amount, reason, ref)
   values (v_org, v_uid, 50, 'referral_welcome', v_mine.code);
-  return jsonb_build_object('ok', true, 'message', '₹50 added to your wallet!');
+  return jsonb_build_object('ok', true, 'message', 'â‚¹50 added to your wallet!');
 end $$;
 
 
@@ -3746,12 +3745,12 @@ begin
   end if;
 
   if exists (select 1 from public.returns r where r.order_id = v_o.id and r.status = 'requested') then
-    return jsonb_build_object('ok', true, 'message', 'We already have your request — we''re on it.');
+    return jsonb_build_object('ok', true, 'message', 'We already have your request â€” we''re on it.');
   end if;
 
   insert into public.returns (org_id, order_id, order_number, user_id, reason)
   values (v_o.org_id, v_o.id, v_o.order_number, v_o.user_id, left(trim(p_reason), 1000));
-  return jsonb_build_object('ok', true, 'message', 'Thanks — we''ve logged it and will get back to you.');
+  return jsonb_build_object('ok', true, 'message', 'Thanks â€” we''ve logged it and will get back to you.');
 end $_$;
 
 
@@ -4987,7 +4986,7 @@ begin
 
   insert into public.stock_alerts (org_id, product_id, user_id, email, phone)
   values (v_org, p_product, v_uid, v_email, v_phone);
-  return jsonb_build_object('ok', true, 'message', 'Done — we''ll let you know when it''s back.');
+  return jsonb_build_object('ok', true, 'message', 'Done â€” we''ll let you know when it''s back.');
 end $_$;
 
 
@@ -5014,13 +5013,13 @@ begin
   insert into public.stock_movements
     (org_id, location_id, product_id, delta, reason, ref_type, ref_id, actor_id, note, batch_id)
   values (v_org, b.location_id, b.product_id, -b.remaining_qty, 'waste', 'wastage', p_batch, auth.uid(),
-          p_reason || ' — batch ' || b.batch_code || coalesce(' — ' || nullif(trim(coalesce(p_note,'')),''), ''),
+          p_reason || ' â€” batch ' || b.batch_code || coalesce(' â€” ' || nullif(trim(coalesce(p_note,'')),''), ''),
           p_batch);
 
   insert into public.wastage_log
     (org_id, location_id, product_id, product_name, quantity, reason, unit_cost, note, actor_id)
   select v_org, b.location_id, b.product_id, p.name, b.remaining_qty, p_reason, b.unit_cost,
-         'Batch ' || b.batch_code || coalesce(' — ' || nullif(trim(coalesce(p_note,'')),''), ''), auth.uid()
+         'Batch ' || b.batch_code || coalesce(' â€” ' || nullif(trim(coalesce(p_note,'')),''), ''), auth.uid()
   from public.products p where p.id = b.product_id;
 end $$;
 
@@ -9504,8 +9503,2135 @@ CREATE POLICY zone_staff_read ON public.delivery_zones FOR SELECT TO authenticat
 
 
 --
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
+--
+
+GRANT USAGE ON SCHEMA public TO postgres;
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO service_role;
+
+
+--
+-- Name: FUNCTION activate_membership(p_id uuid, p_rp_order text, p_rp_payment text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.activate_membership(p_id uuid, p_rp_order text, p_rp_payment text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.activate_membership(p_id uuid, p_rp_order text, p_rp_payment text) TO service_role;
+
+
+--
+-- Name: FUNCTION active_banners(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.active_banners() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.active_banners() TO anon;
+GRANT ALL ON FUNCTION public.active_banners() TO authenticated;
+GRANT ALL ON FUNCTION public.active_banners() TO service_role;
+
+
+--
+-- Name: FUNCTION add_batch(p_product uuid, p_farm uuid, p_batch_code text, p_source_date date, p_quantity numeric, p_notes text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_batch(p_product uuid, p_farm uuid, p_batch_code text, p_source_date date, p_quantity numeric, p_notes text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_batch(p_product uuid, p_farm uuid, p_batch_code text, p_source_date date, p_quantity numeric, p_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.add_batch(p_product uuid, p_farm uuid, p_batch_code text, p_source_date date, p_quantity numeric, p_notes text) TO service_role;
+
+
+--
+-- Name: FUNCTION add_farm(p_name text, p_location text, p_kind text, p_contact text, p_notes text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_farm(p_name text, p_location text, p_kind text, p_contact text, p_notes text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_farm(p_name text, p_location text, p_kind text, p_contact text, p_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.add_farm(p_name text, p_location text, p_kind text, p_contact text, p_notes text) TO service_role;
+
+
+--
+-- Name: FUNCTION add_po_item(p_po uuid, p_product uuid, p_qty numeric, p_unit_cost numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_po_item(p_po uuid, p_product uuid, p_qty numeric, p_unit_cost numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_po_item(p_po uuid, p_product uuid, p_qty numeric, p_unit_cost numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.add_po_item(p_po uuid, p_product uuid, p_qty numeric, p_unit_cost numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION add_recipe_item(p_recipe uuid, p_product uuid, p_qty numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_recipe_item(p_recipe uuid, p_product uuid, p_qty numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_recipe_item(p_recipe uuid, p_product uuid, p_qty numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.add_recipe_item(p_recipe uuid, p_product uuid, p_qty numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION add_review(p_product uuid, p_name text, p_rating integer, p_body text, p_contact text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_review(p_product uuid, p_name text, p_rating integer, p_body text, p_contact text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_review(p_product uuid, p_name text, p_rating integer, p_body text, p_contact text) TO anon;
+GRANT ALL ON FUNCTION public.add_review(p_product uuid, p_name text, p_rating integer, p_body text, p_contact text) TO authenticated;
+GRANT ALL ON FUNCTION public.add_review(p_product uuid, p_name text, p_rating integer, p_body text, p_contact text) TO service_role;
+
+
+--
+-- Name: FUNCTION add_to_order(p_number text, p_lines public.cart_line[]); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.add_to_order(p_number text, p_lines public.cart_line[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.add_to_order(p_number text, p_lines public.cart_line[]) TO authenticated;
+GRANT ALL ON FUNCTION public.add_to_order(p_number text, p_lines public.cart_line[]) TO service_role;
+
+
+--
+-- Name: FUNCTION apply_markdown(p_product uuid, p_price numeric, p_ends date, p_reason text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.apply_markdown(p_product uuid, p_price numeric, p_ends date, p_reason text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.apply_markdown(p_product uuid, p_price numeric, p_ends date, p_reason text) TO authenticated;
+GRANT ALL ON FUNCTION public.apply_markdown(p_product uuid, p_price numeric, p_ends date, p_reason text) TO service_role;
+
+
+--
+-- Name: FUNCTION approve_return(p_id uuid, p_refund_points numeric, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.approve_return(p_id uuid, p_refund_points numeric, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.approve_return(p_id uuid, p_refund_points numeric, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.approve_return(p_id uuid, p_refund_points numeric, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION attach_order_location(p_order_id uuid, p_lat double precision, p_lng double precision); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.attach_order_location(p_order_id uuid, p_lat double precision, p_lng double precision) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.attach_order_location(p_order_id uuid, p_lat double precision, p_lng double precision) TO anon;
+GRANT ALL ON FUNCTION public.attach_order_location(p_order_id uuid, p_lat double precision, p_lng double precision) TO authenticated;
+GRANT ALL ON FUNCTION public.attach_order_location(p_order_id uuid, p_lat double precision, p_lng double precision) TO service_role;
+
+
+--
+-- Name: FUNCTION auto_assign_deliveries(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.auto_assign_deliveries() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.auto_assign_deliveries() TO authenticated;
+GRANT ALL ON FUNCTION public.auto_assign_deliveries() TO service_role;
+
+
+--
+-- Name: FUNCTION auto_draft_reorder(p_lookback integer, p_horizon integer, p_lead integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.auto_draft_reorder(p_lookback integer, p_horizon integer, p_lead integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.auto_draft_reorder(p_lookback integer, p_horizon integer, p_lead integer) TO service_role;
+
+
+--
+-- Name: FUNCTION batches_for_product(p_product uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.batches_for_product(p_product uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.batches_for_product(p_product uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.batches_for_product(p_product uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION bestseller_ids(p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.bestseller_ids(p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.bestseller_ids(p_limit integer) TO anon;
+GRANT ALL ON FUNCTION public.bestseller_ids(p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.bestseller_ids(p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION block_mutation(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.block_mutation() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.block_mutation() TO service_role;
+
+
+--
+-- Name: FUNCTION business_overview(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.business_overview() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.business_overview() TO authenticated;
+GRANT ALL ON FUNCTION public.business_overview() TO service_role;
+
+
+--
+-- Name: FUNCTION cancel_order(p_order_id uuid, p_reason text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cancel_order(p_order_id uuid, p_reason text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cancel_order(p_order_id uuid, p_reason text) TO authenticated;
+GRANT ALL ON FUNCTION public.cancel_order(p_order_id uuid, p_reason text) TO service_role;
+
+
+--
+-- Name: FUNCTION cancel_purchase_order(p_po uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cancel_purchase_order(p_po uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cancel_purchase_order(p_po uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.cancel_purchase_order(p_po uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION cancel_stale_unpaid_orders(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cancel_stale_unpaid_orders() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cancel_stale_unpaid_orders() TO service_role;
+
+
+--
+-- Name: FUNCTION cart_recommendations(p_products uuid[], p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.cart_recommendations(p_products uuid[], p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.cart_recommendations(p_products uuid[], p_limit integer) TO anon;
+GRANT ALL ON FUNCTION public.cart_recommendations(p_products uuid[], p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.cart_recommendations(p_products uuid[], p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION catalogue_by_category(p_slug text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.catalogue_by_category(p_slug text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.catalogue_by_category(p_slug text) TO anon;
+GRANT ALL ON FUNCTION public.catalogue_by_category(p_slug text) TO authenticated;
+GRANT ALL ON FUNCTION public.catalogue_by_category(p_slug text) TO service_role;
+
+
+--
+-- Name: FUNCTION catalogue_categories(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.catalogue_categories() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.catalogue_categories() TO anon;
+GRANT ALL ON FUNCTION public.catalogue_categories() TO authenticated;
+GRANT ALL ON FUNCTION public.catalogue_categories() TO service_role;
+
+
+--
+-- Name: FUNCTION catalogue_stock(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.catalogue_stock() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.catalogue_stock() TO anon;
+GRANT ALL ON FUNCTION public.catalogue_stock() TO authenticated;
+GRANT ALL ON FUNCTION public.catalogue_stock() TO service_role;
+
+
+--
+-- Name: FUNCTION check_category_depth(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.check_category_depth() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.check_category_depth() TO service_role;
+
+
+--
+-- Name: FUNCTION claim_delivery(p_order_id uuid, p_take boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.claim_delivery(p_order_id uuid, p_take boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.claim_delivery(p_order_id uuid, p_take boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.claim_delivery(p_order_id uuid, p_take boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION claim_notifications(p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.claim_notifications(p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.claim_notifications(p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION clear_cart(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.clear_cart() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.clear_cart() TO authenticated;
+GRANT ALL ON FUNCTION public.clear_cart() TO service_role;
+
+
+--
+-- Name: FUNCTION create_purchase_order(p_location uuid, p_supplier uuid, p_notes text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.create_purchase_order(p_location uuid, p_supplier uuid, p_notes text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.create_purchase_order(p_location uuid, p_supplier uuid, p_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.create_purchase_order(p_location uuid, p_supplier uuid, p_notes text) TO service_role;
+
+
+--
+-- Name: FUNCTION create_recipe(p_name text, p_cuisine text, p_is_diet boolean, p_servings integer, p_description text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.create_recipe(p_name text, p_cuisine text, p_is_diet boolean, p_servings integer, p_description text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.create_recipe(p_name text, p_cuisine text, p_is_diet boolean, p_servings integer, p_description text) TO authenticated;
+GRANT ALL ON FUNCTION public.create_recipe(p_name text, p_cuisine text, p_is_diet boolean, p_servings integer, p_description text) TO service_role;
+
+
+--
+-- Name: FUNCTION create_support_ticket(p_subject text, p_message text, p_order_number text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.create_support_ticket(p_subject text, p_message text, p_order_number text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.create_support_ticket(p_subject text, p_message text, p_order_number text) TO authenticated;
+GRANT ALL ON FUNCTION public.create_support_ticket(p_subject text, p_message text, p_order_number text) TO service_role;
+
+
+--
+-- Name: FUNCTION current_org_id(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.current_org_id() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.current_org_id() TO authenticated;
+GRANT ALL ON FUNCTION public.current_org_id() TO service_role;
+
+
+--
+-- Name: FUNCTION delete_push_subscription(p_endpoint text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.delete_push_subscription(p_endpoint text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.delete_push_subscription(p_endpoint text) TO authenticated;
+GRANT ALL ON FUNCTION public.delete_push_subscription(p_endpoint text) TO service_role;
+
+
+--
+-- Name: FUNCTION delivers_to(p_org uuid, p_pincode text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.delivers_to(p_org uuid, p_pincode text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.delivers_to(p_org uuid, p_pincode text) TO anon;
+GRANT ALL ON FUNCTION public.delivers_to(p_org uuid, p_pincode text) TO authenticated;
+GRANT ALL ON FUNCTION public.delivers_to(p_org uuid, p_pincode text) TO service_role;
+
+
+--
+-- Name: FUNCTION demand_insights(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.demand_insights() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.demand_insights() TO authenticated;
+GRANT ALL ON FUNCTION public.demand_insights() TO service_role;
+
+
+--
+-- Name: FUNCTION demand_series(p_product uuid, p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.demand_series(p_product uuid, p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.demand_series(p_product uuid, p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.demand_series(p_product uuid, p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION enqueue_customer_notification(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.enqueue_customer_notification() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.enqueue_customer_notification() TO service_role;
+
+
+--
+-- Name: FUNCTION expire_markdowns(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.expire_markdowns() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.expire_markdowns() TO service_role;
+
+
+--
+-- Name: FUNCTION expire_old_batches(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.expire_old_batches() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.expire_old_batches() TO service_role;
+
+
+--
+-- Name: FUNCTION expiring_batches(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.expiring_batches(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.expiring_batches(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.expiring_batches(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION financials_overview(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.financials_overview(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.financials_overview(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.financials_overview(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION frequently_bought_together(p_product uuid, p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.frequently_bought_together(p_product uuid, p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.frequently_bought_together(p_product uuid, p_limit integer) TO anon;
+GRANT ALL ON FUNCTION public.frequently_bought_together(p_product uuid, p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.frequently_bought_together(p_product uuid, p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION get_admin_recipes(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_admin_recipes() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_admin_recipes() TO authenticated;
+GRANT ALL ON FUNCTION public.get_admin_recipes() TO service_role;
+
+
+--
+-- Name: FUNCTION get_batches(p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_batches(p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_batches(p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.get_batches(p_limit integer) TO service_role;
+
+
+--
+-- Name: TABLE farms; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.farms TO anon;
+GRANT ALL ON TABLE public.farms TO authenticated;
+GRANT ALL ON TABLE public.farms TO service_role;
+
+
+--
+-- Name: FUNCTION get_farms(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_farms() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_farms() TO authenticated;
+GRANT ALL ON FUNCTION public.get_farms() TO service_role;
+
+
+--
+-- Name: FUNCTION get_hamper(p_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_hamper(p_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_hamper(p_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_hamper(p_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_hamper(p_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION get_hampers(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_hampers() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_hampers() TO anon;
+GRANT ALL ON FUNCTION public.get_hampers() TO authenticated;
+GRANT ALL ON FUNCTION public.get_hampers() TO service_role;
+
+
+--
+-- Name: TABLE membership_plans; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.membership_plans TO anon;
+GRANT ALL ON TABLE public.membership_plans TO authenticated;
+GRANT ALL ON TABLE public.membership_plans TO service_role;
+
+
+--
+-- Name: FUNCTION get_membership_plans(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_membership_plans() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_membership_plans() TO anon;
+GRANT ALL ON FUNCTION public.get_membership_plans() TO authenticated;
+GRANT ALL ON FUNCTION public.get_membership_plans() TO service_role;
+
+
+--
+-- Name: FUNCTION get_order_receipt(p_number text, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_order_receipt(p_number text, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_order_receipt(p_number text, p_phone text) TO anon;
+GRANT ALL ON FUNCTION public.get_order_receipt(p_number text, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.get_order_receipt(p_number text, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION get_product_reviews(p_product uuid, p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_product_reviews(p_product uuid, p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_product_reviews(p_product uuid, p_limit integer) TO anon;
+GRANT ALL ON FUNCTION public.get_product_reviews(p_product uuid, p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.get_product_reviews(p_product uuid, p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION get_purchase_order(p_po uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_purchase_order(p_po uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_purchase_order(p_po uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_purchase_order(p_po uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION get_recipe(p_id uuid, p_servings integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_recipe(p_id uuid, p_servings integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_recipe(p_id uuid, p_servings integer) TO anon;
+GRANT ALL ON FUNCTION public.get_recipe(p_id uuid, p_servings integer) TO authenticated;
+GRANT ALL ON FUNCTION public.get_recipe(p_id uuid, p_servings integer) TO service_role;
+
+
+--
+-- Name: FUNCTION get_recipe_cuisines(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_recipe_cuisines() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_recipe_cuisines() TO anon;
+GRANT ALL ON FUNCTION public.get_recipe_cuisines() TO authenticated;
+GRANT ALL ON FUNCTION public.get_recipe_cuisines() TO service_role;
+
+
+--
+-- Name: FUNCTION get_recipes(p_cuisine text, p_diet text, p_servings integer, p_max_budget numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_recipes(p_cuisine text, p_diet text, p_servings integer, p_max_budget numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_recipes(p_cuisine text, p_diet text, p_servings integer, p_max_budget numeric) TO anon;
+GRANT ALL ON FUNCTION public.get_recipes(p_cuisine text, p_diet text, p_servings integer, p_max_budget numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.get_recipes(p_cuisine text, p_diet text, p_servings integer, p_max_budget numeric) TO service_role;
+
+
+--
+-- Name: TABLE returns; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.returns TO anon;
+GRANT ALL ON TABLE public.returns TO authenticated;
+GRANT ALL ON TABLE public.returns TO service_role;
+
+
+--
+-- Name: FUNCTION get_returns(p_all boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_returns(p_all boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_returns(p_all boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.get_returns(p_all boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION get_store_admin_settings(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_store_admin_settings() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_store_admin_settings() TO authenticated;
+GRANT ALL ON FUNCTION public.get_store_admin_settings() TO service_role;
+
+
+--
+-- Name: FUNCTION get_store_settings(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_store_settings() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_store_settings() TO anon;
+GRANT ALL ON FUNCTION public.get_store_settings() TO authenticated;
+GRANT ALL ON FUNCTION public.get_store_settings() TO service_role;
+
+
+--
+-- Name: TABLE support_tickets; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.support_tickets TO anon;
+GRANT ALL ON TABLE public.support_tickets TO authenticated;
+GRANT ALL ON TABLE public.support_tickets TO service_role;
+
+
+--
+-- Name: FUNCTION get_support_tickets(p_all boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.get_support_tickets(p_all boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.get_support_tickets(p_all boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.get_support_tickets(p_all boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION grant_personal_coupon(p_phone text, p_kind text, p_value numeric, p_min numeric, p_days integer, p_max numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.grant_personal_coupon(p_phone text, p_kind text, p_value numeric, p_min numeric, p_days integer, p_max numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.grant_personal_coupon(p_phone text, p_kind text, p_value numeric, p_min numeric, p_days integer, p_max numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.grant_personal_coupon(p_phone text, p_kind text, p_value numeric, p_min numeric, p_days integer, p_max numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION has_location(loc uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.has_location(loc uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.has_location(loc uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.has_location(loc uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION has_permission(p_capability text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.has_permission(p_capability text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.has_permission(p_capability text) TO authenticated;
+GRANT ALL ON FUNCTION public.has_permission(p_capability text) TO service_role;
+
+
+--
+-- Name: FUNCTION hash_card_uid(p_uid text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.hash_card_uid(p_uid text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.hash_card_uid(p_uid text) TO service_role;
+
+
+--
+-- Name: FUNCTION in_stock_products(p_org uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.in_stock_products(p_org uuid) TO anon;
+GRANT ALL ON FUNCTION public.in_stock_products(p_org uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.in_stock_products(p_org uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION instant_refund(p_order_id uuid, p_points numeric, p_reason text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.instant_refund(p_order_id uuid, p_points numeric, p_reason text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.instant_refund(p_order_id uuid, p_points numeric, p_reason text) TO authenticated;
+GRANT ALL ON FUNCTION public.instant_refund(p_order_id uuid, p_points numeric, p_reason text) TO service_role;
+
+
+--
+-- Name: FUNCTION is_org_owner(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.is_org_owner() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.is_org_owner() TO authenticated;
+GRANT ALL ON FUNCTION public.is_org_owner() TO service_role;
+
+
+--
+-- Name: FUNCTION is_storefront_org(p_org uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.is_storefront_org(p_org uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.is_storefront_org(p_org uuid) TO anon;
+GRANT ALL ON FUNCTION public.is_storefront_org(p_org uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.is_storefront_org(p_org uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION issue_gift_card(p_value numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.issue_gift_card(p_value numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.issue_gift_card(p_value numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.issue_gift_card(p_value numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION list_purchase_orders(p_status text, p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.list_purchase_orders(p_status text, p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.list_purchase_orders(p_status text, p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.list_purchase_orders(p_status text, p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION list_suppliers(p_include_inactive boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.list_suppliers(p_include_inactive boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.list_suppliers(p_include_inactive boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.list_suppliers(p_include_inactive boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION list_wastage(p_days integer, p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.list_wastage(p_days integer, p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.list_wastage(p_days integer, p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.list_wastage(p_days integer, p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION log_temperature(p_location uuid, p_area text, p_temp numeric, p_min numeric, p_max numeric, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.log_temperature(p_location uuid, p_area text, p_temp numeric, p_min numeric, p_max numeric, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.log_temperature(p_location uuid, p_area text, p_temp numeric, p_min numeric, p_max numeric, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.log_temperature(p_location uuid, p_area text, p_temp numeric, p_min numeric, p_max numeric, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION log_wastage(p_location uuid, p_product uuid, p_qty numeric, p_reason text, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.log_wastage(p_location uuid, p_product uuid, p_qty numeric, p_reason text, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.log_wastage(p_location uuid, p_product uuid, p_qty numeric, p_reason text, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.log_wastage(p_location uuid, p_product uuid, p_qty numeric, p_reason text, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION margin_by_product(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.margin_by_product(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.margin_by_product(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.margin_by_product(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION mark_order_paid(p_order_id uuid, p_razorpay_order text, p_razorpay_payment text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.mark_order_paid(p_order_id uuid, p_razorpay_order text, p_razorpay_payment text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.mark_order_paid(p_order_id uuid, p_razorpay_order text, p_razorpay_payment text) TO service_role;
+
+
+--
+-- Name: FUNCTION mark_po_ordered(p_po uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.mark_po_ordered(p_po uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.mark_po_ordered(p_po uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.mark_po_ordered(p_po uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION my_checkout_prefill(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_checkout_prefill() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_checkout_prefill() TO authenticated;
+GRANT ALL ON FUNCTION public.my_checkout_prefill() TO service_role;
+
+
+--
+-- Name: FUNCTION my_coupons(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_coupons() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_coupons() TO authenticated;
+GRANT ALL ON FUNCTION public.my_coupons() TO service_role;
+
+
+--
+-- Name: FUNCTION my_membership(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_membership() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_membership() TO authenticated;
+GRANT ALL ON FUNCTION public.my_membership() TO service_role;
+
+
+--
+-- Name: FUNCTION my_orders(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_orders() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_orders() TO authenticated;
+GRANT ALL ON FUNCTION public.my_orders() TO service_role;
+
+
+--
+-- Name: FUNCTION my_reorder_products(p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_reorder_products(p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_reorder_products(p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.my_reorder_products(p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION my_savings(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_savings() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_savings() TO authenticated;
+GRANT ALL ON FUNCTION public.my_savings() TO service_role;
+
+
+--
+-- Name: FUNCTION my_scratch_cards(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_scratch_cards() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_scratch_cards() TO authenticated;
+GRANT ALL ON FUNCTION public.my_scratch_cards() TO service_role;
+
+
+--
+-- Name: FUNCTION my_shift(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_shift() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_shift() TO authenticated;
+GRANT ALL ON FUNCTION public.my_shift() TO service_role;
+
+
+--
+-- Name: FUNCTION my_tier(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_tier() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_tier() TO authenticated;
+GRANT ALL ON FUNCTION public.my_tier() TO service_role;
+
+
+--
+-- Name: FUNCTION my_wallet(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.my_wallet() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.my_wallet() TO authenticated;
+GRANT ALL ON FUNCTION public.my_wallet() TO service_role;
+
+
+--
+-- Name: FUNCTION next_order_number(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.next_order_number() TO anon;
+GRANT ALL ON FUNCTION public.next_order_number() TO authenticated;
+GRANT ALL ON FUNCTION public.next_order_number() TO service_role;
+
+
+--
+-- Name: FUNCTION notify_on_restock(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.notify_on_restock() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.notify_on_restock() TO service_role;
+
+
+--
+-- Name: FUNCTION one_default_address(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.one_default_address() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.one_default_address() TO service_role;
+
+
+--
+-- Name: FUNCTION payment_reconciliation(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.payment_reconciliation(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.payment_reconciliation(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.payment_reconciliation(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION personalized_products(p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.personalized_products(p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.personalized_products(p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.personalized_products(p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION place_order(p_org_id uuid, p_contact_name text, p_contact_phone text, p_address_line text, p_city text, p_pincode text, p_landmark text, p_delivery_slot text, p_notes text, p_lines public.cart_line[], p_contact_email text, p_coupon_code text, p_use_credit boolean, p_payment_method text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.place_order(p_org_id uuid, p_contact_name text, p_contact_phone text, p_address_line text, p_city text, p_pincode text, p_landmark text, p_delivery_slot text, p_notes text, p_lines public.cart_line[], p_contact_email text, p_coupon_code text, p_use_credit boolean, p_payment_method text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.place_order(p_org_id uuid, p_contact_name text, p_contact_phone text, p_address_line text, p_city text, p_pincode text, p_landmark text, p_delivery_slot text, p_notes text, p_lines public.cart_line[], p_contact_email text, p_coupon_code text, p_use_credit boolean, p_payment_method text) TO anon;
+GRANT ALL ON FUNCTION public.place_order(p_org_id uuid, p_contact_name text, p_contact_phone text, p_address_line text, p_city text, p_pincode text, p_landmark text, p_delivery_slot text, p_notes text, p_lines public.cart_line[], p_contact_email text, p_coupon_code text, p_use_credit boolean, p_payment_method text) TO authenticated;
+GRANT ALL ON FUNCTION public.place_order(p_org_id uuid, p_contact_name text, p_contact_phone text, p_address_line text, p_city text, p_pincode text, p_landmark text, p_delivery_slot text, p_notes text, p_lines public.cart_line[], p_contact_email text, p_coupon_code text, p_use_credit boolean, p_payment_method text) TO service_role;
+
+
+--
+-- Name: FUNCTION pos_loyalty_lookup(p_code text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.pos_loyalty_lookup(p_code text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.pos_loyalty_lookup(p_code text) TO authenticated;
+GRANT ALL ON FUNCTION public.pos_loyalty_lookup(p_code text) TO service_role;
+
+
+--
+-- Name: FUNCTION preview_coupon(p_org uuid, p_code text, p_subtotal numeric, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.preview_coupon(p_org uuid, p_code text, p_subtotal numeric, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.preview_coupon(p_org uuid, p_code text, p_subtotal numeric, p_phone text) TO anon;
+GRANT ALL ON FUNCTION public.preview_coupon(p_org uuid, p_code text, p_subtotal numeric, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.preview_coupon(p_org uuid, p_code text, p_subtotal numeric, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION price_check(p_threshold numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.price_check(p_threshold numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.price_check(p_threshold numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.price_check(p_threshold numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION procurement_overview(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.procurement_overview() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.procurement_overview() TO authenticated;
+GRANT ALL ON FUNCTION public.procurement_overview() TO service_role;
+
+
+--
+-- Name: FUNCTION product_department(p_product uuid); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.product_department(p_product uuid) TO anon;
+GRANT ALL ON FUNCTION public.product_department(p_product uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.product_department(p_product uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION product_ratings(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.product_ratings() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.product_ratings() TO anon;
+GRANT ALL ON FUNCTION public.product_ratings() TO authenticated;
+GRANT ALL ON FUNCTION public.product_ratings() TO service_role;
+
+
+--
+-- Name: FUNCTION rate_delivery(p_number text, p_phone text, p_rating integer, p_comment text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.rate_delivery(p_number text, p_phone text, p_rating integer, p_comment text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.rate_delivery(p_number text, p_phone text, p_rating integer, p_comment text) TO anon;
+GRANT ALL ON FUNCTION public.rate_delivery(p_number text, p_phone text, p_rating integer, p_comment text) TO authenticated;
+GRANT ALL ON FUNCTION public.rate_delivery(p_number text, p_phone text, p_rating integer, p_comment text) TO service_role;
+
+
+--
+-- Name: FUNCTION recalc_sale_payment(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.recalc_sale_payment() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.recalc_sale_payment() TO service_role;
+
+
+--
+-- Name: FUNCTION recall_trace(p_product uuid, p_from date, p_to date); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.recall_trace(p_product uuid, p_from date, p_to date) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.recall_trace(p_product uuid, p_from date, p_to date) TO authenticated;
+GRANT ALL ON FUNCTION public.recall_trace(p_product uuid, p_from date, p_to date) TO service_role;
+
+
+--
+-- Name: FUNCTION receive_purchase_order(p_po uuid, p_items jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.receive_purchase_order(p_po uuid, p_items jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.receive_purchase_order(p_po uuid, p_items jsonb) TO authenticated;
+GRANT ALL ON FUNCTION public.receive_purchase_order(p_po uuid, p_items jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION recent_temperature(p_days integer, p_limit integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.recent_temperature(p_days integer, p_limit integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.recent_temperature(p_days integer, p_limit integer) TO authenticated;
+GRANT ALL ON FUNCTION public.recent_temperature(p_days integer, p_limit integer) TO service_role;
+
+
+--
+-- Name: FUNCTION record_account_payment(p_customer_id uuid, p_amount numeric, p_method text, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.record_account_payment(p_customer_id uuid, p_amount numeric, p_method text, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.record_account_payment(p_customer_id uuid, p_amount numeric, p_method text, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.record_account_payment(p_customer_id uuid, p_amount numeric, p_method text, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION record_production(p_location uuid, p_product uuid, p_qty numeric, p_expiry date, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.record_production(p_location uuid, p_product uuid, p_qty numeric, p_expiry date, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.record_production(p_location uuid, p_product uuid, p_qty numeric, p_expiry date, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.record_production(p_location uuid, p_product uuid, p_qty numeric, p_expiry date, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION record_sale(p_location uuid, p_customer_id uuid, p_lines public.sale_line[], p_method text, p_amount_paid numeric, p_note text, p_loyalty_user uuid, p_points_redeem numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.record_sale(p_location uuid, p_customer_id uuid, p_lines public.sale_line[], p_method text, p_amount_paid numeric, p_note text, p_loyalty_user uuid, p_points_redeem numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.record_sale(p_location uuid, p_customer_id uuid, p_lines public.sale_line[], p_method text, p_amount_paid numeric, p_note text, p_loyalty_user uuid, p_points_redeem numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.record_sale(p_location uuid, p_customer_id uuid, p_lines public.sale_line[], p_method text, p_amount_paid numeric, p_note text, p_loyalty_user uuid, p_points_redeem numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION record_stock(p_location uuid, p_product uuid, p_delta numeric, p_reason text, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.record_stock(p_location uuid, p_product uuid, p_delta numeric, p_reason text, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.record_stock(p_location uuid, p_product uuid, p_delta numeric, p_reason text, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.record_stock(p_location uuid, p_product uuid, p_delta numeric, p_reason text, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION redeem_gift_card(p_code text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.redeem_gift_card(p_code text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.redeem_gift_card(p_code text) TO authenticated;
+GRANT ALL ON FUNCTION public.redeem_gift_card(p_code text) TO service_role;
+
+
+--
+-- Name: FUNCTION redeem_referral(p_code text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.redeem_referral(p_code text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.redeem_referral(p_code text) TO authenticated;
+GRANT ALL ON FUNCTION public.redeem_referral(p_code text) TO service_role;
+
+
+--
+-- Name: FUNCTION refill_suggestions(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.refill_suggestions() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.refill_suggestions() TO authenticated;
+GRANT ALL ON FUNCTION public.refill_suggestions() TO service_role;
+
+
+--
+-- Name: FUNCTION reject_return(p_id uuid, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.reject_return(p_id uuid, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.reject_return(p_id uuid, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.reject_return(p_id uuid, p_note text) TO service_role;
+
+
+--
+-- Name: FUNCTION remind_abandoned_carts(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.remind_abandoned_carts() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.remind_abandoned_carts() TO service_role;
+
+
+--
+-- Name: FUNCTION remove_po_item(p_item uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.remove_po_item(p_item uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.remove_po_item(p_item uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.remove_po_item(p_item uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION reorder_suggestions(p_lookback integer, p_horizon integer, p_lead integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.reorder_suggestions(p_lookback integer, p_horizon integer, p_lead integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.reorder_suggestions(p_lookback integer, p_horizon integer, p_lead integer) TO authenticated;
+GRANT ALL ON FUNCTION public.reorder_suggestions(p_lookback integer, p_horizon integer, p_lead integer) TO service_role;
+
+
+--
+-- Name: FUNCTION request_return(p_number text, p_reason text, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.request_return(p_number text, p_reason text, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.request_return(p_number text, p_reason text, p_phone text) TO anon;
+GRANT ALL ON FUNCTION public.request_return(p_number text, p_reason text, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.request_return(p_number text, p_reason text, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION require_permission(p_capability text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.require_permission(p_capability text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.require_permission(p_capability text) TO authenticated;
+GRANT ALL ON FUNCTION public.require_permission(p_capability text) TO service_role;
+
+
+--
+-- Name: FUNCTION resolve_card(p_uid text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.resolve_card(p_uid text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.resolve_card(p_uid text) TO authenticated;
+GRANT ALL ON FUNCTION public.resolve_card(p_uid text) TO service_role;
+
+
+--
+-- Name: FUNCTION resolve_support_ticket(p_id uuid, p_reply text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.resolve_support_ticket(p_id uuid, p_reply text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.resolve_support_ticket(p_id uuid, p_reply text) TO authenticated;
+GRANT ALL ON FUNCTION public.resolve_support_ticket(p_id uuid, p_reply text) TO service_role;
+
+
+--
+-- Name: FUNCTION retire_product(p_id uuid, p_reason text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.retire_product(p_id uuid, p_reason text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.retire_product(p_id uuid, p_reason text) TO authenticated;
+GRANT ALL ON FUNCTION public.retire_product(p_id uuid, p_reason text) TO service_role;
+
+
+--
+-- Name: FUNCTION reveal_scratch_card(p_id uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.reveal_scratch_card(p_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.reveal_scratch_card(p_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.reveal_scratch_card(p_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION revert_markdown(p_product uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.revert_markdown(p_product uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.revert_markdown(p_product uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.revert_markdown(p_product uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION reward_on_delivery(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.reward_on_delivery() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.reward_on_delivery() TO service_role;
+
+
+--
+-- Name: FUNCTION rls_auto_enable(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.rls_auto_enable() TO anon;
+GRANT ALL ON FUNCTION public.rls_auto_enable() TO authenticated;
+GRANT ALL ON FUNCTION public.rls_auto_enable() TO service_role;
+
+
+--
+-- Name: FUNCTION run_due_subscriptions(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.run_due_subscriptions() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.run_due_subscriptions() TO service_role;
+
+
+--
+-- Name: FUNCTION run_one_subscription(p_sub uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.run_one_subscription(p_sub uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.run_one_subscription(p_sub uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION run_winback(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.run_winback(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.run_winback(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION sales_by_payment(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.sales_by_payment(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.sales_by_payment(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.sales_by_payment(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION sales_summary(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.sales_summary() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.sales_summary() TO authenticated;
+GRANT ALL ON FUNCTION public.sales_summary() TO service_role;
+
+
+--
+-- Name: FUNCTION save_cart(p_item_count integer, p_subtotal numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.save_cart(p_item_count integer, p_subtotal numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.save_cart(p_item_count integer, p_subtotal numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.save_cart(p_item_count integer, p_subtotal numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION save_product(p_id uuid, p_name text, p_category_id uuid, p_brand_id uuid, p_sale_price numeric, p_compare_at_price numeric, p_description text, p_pack_size numeric, p_pack_unit text, p_badge text, p_image_path text, p_is_published boolean, p_sort_order integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.save_product(p_id uuid, p_name text, p_category_id uuid, p_brand_id uuid, p_sale_price numeric, p_compare_at_price numeric, p_description text, p_pack_size numeric, p_pack_unit text, p_badge text, p_image_path text, p_is_published boolean, p_sort_order integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.save_product(p_id uuid, p_name text, p_category_id uuid, p_brand_id uuid, p_sale_price numeric, p_compare_at_price numeric, p_description text, p_pack_size numeric, p_pack_unit text, p_badge text, p_image_path text, p_is_published boolean, p_sort_order integer) TO authenticated;
+GRANT ALL ON FUNCTION public.save_product(p_id uuid, p_name text, p_category_id uuid, p_brand_id uuid, p_sale_price numeric, p_compare_at_price numeric, p_description text, p_pack_size numeric, p_pack_unit text, p_badge text, p_image_path text, p_is_published boolean, p_sort_order integer) TO service_role;
+
+
+--
+-- Name: FUNCTION save_push_subscription(p_endpoint text, p_p256dh text, p_auth text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text) TO authenticated;
+GRANT ALL ON FUNCTION public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text) TO service_role;
+
+
+--
+-- Name: FUNCTION served_areas(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.served_areas() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.served_areas() TO anon;
+GRANT ALL ON FUNCTION public.served_areas() TO authenticated;
+GRANT ALL ON FUNCTION public.served_areas() TO service_role;
+
+
+--
+-- Name: FUNCTION set_member_owner(p_user uuid, p_is_owner boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_member_owner(p_user uuid, p_is_owner boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_member_owner(p_user uuid, p_is_owner boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.set_member_owner(p_user uuid, p_is_owner boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION set_my_shift(p_on boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_my_shift(p_on boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_my_shift(p_on boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.set_my_shift(p_on boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION set_recipe_image(p_recipe uuid, p_path text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_recipe_image(p_recipe uuid, p_path text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_recipe_image(p_recipe uuid, p_path text) TO authenticated;
+GRANT ALL ON FUNCTION public.set_recipe_image(p_recipe uuid, p_path text) TO service_role;
+
+
+--
+-- Name: FUNCTION set_recipe_video(p_recipe uuid, p_url text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_recipe_video(p_recipe uuid, p_url text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_recipe_video(p_recipe uuid, p_url text) TO authenticated;
+GRANT ALL ON FUNCTION public.set_recipe_video(p_recipe uuid, p_url text) TO service_role;
+
+
+--
+-- Name: FUNCTION set_supplier_active(p_id uuid, p_active boolean); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_supplier_active(p_id uuid, p_active boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_supplier_active(p_id uuid, p_active boolean) TO authenticated;
+GRANT ALL ON FUNCTION public.set_supplier_active(p_id uuid, p_active boolean) TO service_role;
+
+
+--
+-- Name: FUNCTION set_updated_at(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.set_updated_at() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.set_updated_at() TO service_role;
+
+
+--
+-- Name: FUNCTION settle_razorpay_payment(p_payment_id text, p_rp_order text, p_amount integer, p_event text, p_raw jsonb); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.settle_razorpay_payment(p_payment_id text, p_rp_order text, p_amount integer, p_event text, p_raw jsonb) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.settle_razorpay_payment(p_payment_id text, p_rp_order text, p_amount integer, p_event text, p_raw jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION slugify(p_text text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.slugify(p_text text) TO anon;
+GRANT ALL ON FUNCTION public.slugify(p_text text) TO authenticated;
+GRANT ALL ON FUNCTION public.slugify(p_text text) TO service_role;
+
+
+--
+-- Name: FUNCTION start_membership(p_plan uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.start_membership(p_plan uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.start_membership(p_plan uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.start_membership(p_plan uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION stock_available(p_location uuid, p_product uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.stock_available(p_location uuid, p_product uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.stock_available(p_location uuid, p_product uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.stock_available(p_location uuid, p_product uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION storefront_org_id(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.storefront_org_id() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.storefront_org_id() TO anon;
+GRANT ALL ON FUNCTION public.storefront_org_id() TO authenticated;
+GRANT ALL ON FUNCTION public.storefront_org_id() TO service_role;
+
+
+--
+-- Name: FUNCTION subscription_discount_pct(); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.subscription_discount_pct() FROM PUBLIC;
+GRANT ALL ON FUNCTION public.subscription_discount_pct() TO anon;
+GRANT ALL ON FUNCTION public.subscription_discount_pct() TO authenticated;
+GRANT ALL ON FUNCTION public.subscription_discount_pct() TO service_role;
+
+
+--
+-- Name: FUNCTION tip_delivery(p_number text, p_points integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.tip_delivery(p_number text, p_points integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.tip_delivery(p_number text, p_points integer) TO authenticated;
+GRANT ALL ON FUNCTION public.tip_delivery(p_number text, p_points integer) TO service_role;
+
+
+--
+-- Name: FUNCTION track_order(p_number text, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.track_order(p_number text, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.track_order(p_number text, p_phone text) TO anon;
+GRANT ALL ON FUNCTION public.track_order(p_number text, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.track_order(p_number text, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION trg_stock_batch(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.trg_stock_batch() TO anon;
+GRANT ALL ON FUNCTION public.trg_stock_batch() TO authenticated;
+GRANT ALL ON FUNCTION public.trg_stock_batch() TO service_role;
+
+
+--
+-- Name: FUNCTION unit_price(p_sale numeric, p_size numeric, p_unit text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.unit_price(p_sale numeric, p_size numeric, p_unit text) TO anon;
+GRANT ALL ON FUNCTION public.unit_price(p_sale numeric, p_size numeric, p_unit text) TO authenticated;
+GRANT ALL ON FUNCTION public.unit_price(p_sale numeric, p_size numeric, p_unit text) TO service_role;
+
+
+--
+-- Name: FUNCTION update_rider_location(p_order_id uuid, p_lat double precision, p_lng double precision, p_eta integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.update_rider_location(p_order_id uuid, p_lat double precision, p_lng double precision, p_eta integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.update_rider_location(p_order_id uuid, p_lat double precision, p_lng double precision, p_eta integer) TO authenticated;
+GRANT ALL ON FUNCTION public.update_rider_location(p_order_id uuid, p_lat double precision, p_lng double precision, p_eta integer) TO service_role;
+
+
+--
+-- Name: FUNCTION update_store_settings(p_name text, p_support_email text, p_support_phone text, p_notify_email text, p_notify_phone text, p_free_delivery_threshold numeric, p_delivery_fee numeric, p_gstin text, p_business_address text, p_max_discount_percent numeric, p_subscription_discount_percent numeric); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.update_store_settings(p_name text, p_support_email text, p_support_phone text, p_notify_email text, p_notify_phone text, p_free_delivery_threshold numeric, p_delivery_fee numeric, p_gstin text, p_business_address text, p_max_discount_percent numeric, p_subscription_discount_percent numeric) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.update_store_settings(p_name text, p_support_email text, p_support_phone text, p_notify_email text, p_notify_phone text, p_free_delivery_threshold numeric, p_delivery_fee numeric, p_gstin text, p_business_address text, p_max_discount_percent numeric, p_subscription_discount_percent numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.update_store_settings(p_name text, p_support_email text, p_support_phone text, p_notify_email text, p_notify_phone text, p_free_delivery_threshold numeric, p_delivery_fee numeric, p_gstin text, p_business_address text, p_max_discount_percent numeric, p_subscription_discount_percent numeric) TO service_role;
+
+
+--
+-- Name: FUNCTION upsert_customer(p_location uuid, p_name text, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.upsert_customer(p_location uuid, p_name text, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.upsert_customer(p_location uuid, p_name text, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.upsert_customer(p_location uuid, p_name text, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION upsert_supplier(p_id uuid, p_name text, p_contact text, p_phone text, p_email text, p_address text, p_notes text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.upsert_supplier(p_id uuid, p_name text, p_contact text, p_phone text, p_email text, p_address text, p_notes text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.upsert_supplier(p_id uuid, p_name text, p_contact text, p_phone text, p_email text, p_address text, p_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.upsert_supplier(p_id uuid, p_name text, p_contact text, p_phone text, p_email text, p_address text, p_notes text) TO service_role;
+
+
+--
+-- Name: FUNCTION wallet_balance(p_user uuid); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.wallet_balance(p_user uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.wallet_balance(p_user uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.wallet_balance(p_user uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION wastage_summary(p_days integer); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.wastage_summary(p_days integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.wastage_summary(p_days integer) TO authenticated;
+GRANT ALL ON FUNCTION public.wastage_summary(p_days integer) TO service_role;
+
+
+--
+-- Name: FUNCTION watch_stock(p_product uuid, p_email text, p_phone text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.watch_stock(p_product uuid, p_email text, p_phone text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.watch_stock(p_product uuid, p_email text, p_phone text) TO anon;
+GRANT ALL ON FUNCTION public.watch_stock(p_product uuid, p_email text, p_phone text) TO authenticated;
+GRANT ALL ON FUNCTION public.watch_stock(p_product uuid, p_email text, p_phone text) TO service_role;
+
+
+--
+-- Name: FUNCTION write_off_batch(p_batch uuid, p_reason text, p_note text); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.write_off_batch(p_batch uuid, p_reason text, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.write_off_batch(p_batch uuid, p_reason text, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.write_off_batch(p_batch uuid, p_reason text, p_note text) TO service_role;
+
+
+--
+-- Name: TABLE banners; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.banners TO anon;
+GRANT ALL ON TABLE public.banners TO authenticated;
+GRANT ALL ON TABLE public.banners TO service_role;
+
+
+--
+-- Name: SEQUENCE batch_code_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.batch_code_seq TO anon;
+GRANT ALL ON SEQUENCE public.batch_code_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.batch_code_seq TO service_role;
+
+
+--
+-- Name: TABLE brands; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.brands TO anon;
+GRANT ALL ON TABLE public.brands TO authenticated;
+GRANT ALL ON TABLE public.brands TO service_role;
+
+
+--
+-- Name: TABLE categories; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.categories TO anon;
+GRANT ALL ON TABLE public.categories TO authenticated;
+GRANT ALL ON TABLE public.categories TO service_role;
+
+
+--
+-- Name: TABLE category_affinity; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.category_affinity TO anon;
+GRANT ALL ON TABLE public.category_affinity TO authenticated;
+GRANT ALL ON TABLE public.category_affinity TO service_role;
+
+
+--
+-- Name: TABLE cities; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.cities TO anon;
+GRANT ALL ON TABLE public.cities TO authenticated;
+GRANT ALL ON TABLE public.cities TO service_role;
+
+
+--
+-- Name: TABLE cold_chain_logs; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.cold_chain_logs TO anon;
+GRANT ALL ON TABLE public.cold_chain_logs TO authenticated;
+GRANT ALL ON TABLE public.cold_chain_logs TO service_role;
+
+
+--
+-- Name: TABLE coupons; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.coupons TO anon;
+GRANT ALL ON TABLE public.coupons TO authenticated;
+GRANT ALL ON TABLE public.coupons TO service_role;
+
+
+--
+-- Name: TABLE customer_addresses; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.customer_addresses TO anon;
+GRANT ALL ON TABLE public.customer_addresses TO authenticated;
+GRANT ALL ON TABLE public.customer_addresses TO service_role;
+
+
+--
+-- Name: TABLE customers; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.customers TO anon;
+GRANT ALL ON TABLE public.customers TO authenticated;
+GRANT ALL ON TABLE public.customers TO service_role;
+
+
+--
+-- Name: TABLE payments; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.payments TO anon;
+GRANT ALL ON TABLE public.payments TO authenticated;
+GRANT ALL ON TABLE public.payments TO service_role;
+
+
+--
+-- Name: TABLE sales; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.sales TO anon;
+GRANT ALL ON TABLE public.sales TO authenticated;
+GRANT ALL ON TABLE public.sales TO service_role;
+
+
+--
+-- Name: TABLE customer_balances; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.customer_balances TO anon;
+GRANT ALL ON TABLE public.customer_balances TO authenticated;
+GRANT ALL ON TABLE public.customer_balances TO service_role;
+
+
+--
+-- Name: TABLE delivery_zones; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.delivery_zones TO anon;
+GRANT ALL ON TABLE public.delivery_zones TO authenticated;
+GRANT ALL ON TABLE public.delivery_zones TO service_role;
+
+
+--
+-- Name: TABLE events; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.events TO anon;
+GRANT ALL ON TABLE public.events TO authenticated;
+GRANT ALL ON TABLE public.events TO service_role;
+
+
+--
+-- Name: SEQUENCE events_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.events_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.events_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.events_id_seq TO service_role;
+
+
+--
+-- Name: TABLE gift_cards; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.gift_cards TO anon;
+GRANT ALL ON TABLE public.gift_cards TO authenticated;
+GRANT ALL ON TABLE public.gift_cards TO service_role;
+
+
+--
+-- Name: TABLE hamper_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.hamper_items TO anon;
+GRANT ALL ON TABLE public.hamper_items TO authenticated;
+GRANT ALL ON TABLE public.hamper_items TO service_role;
+
+
+--
+-- Name: TABLE hampers; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.hampers TO anon;
+GRANT ALL ON TABLE public.hampers TO authenticated;
+GRANT ALL ON TABLE public.hampers TO service_role;
+
+
+--
+-- Name: TABLE location_daily_sales; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.location_daily_sales TO anon;
+GRANT ALL ON TABLE public.location_daily_sales TO authenticated;
+GRANT ALL ON TABLE public.location_daily_sales TO service_role;
+
+
+--
+-- Name: TABLE locations; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.locations TO anon;
+GRANT ALL ON TABLE public.locations TO authenticated;
+GRANT ALL ON TABLE public.locations TO service_role;
+
+
+--
+-- Name: TABLE markdowns; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.markdowns TO anon;
+GRANT ALL ON TABLE public.markdowns TO authenticated;
+GRANT ALL ON TABLE public.markdowns TO service_role;
+
+
+--
+-- Name: TABLE memberships; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.memberships TO anon;
+GRANT ALL ON TABLE public.memberships TO authenticated;
+GRANT ALL ON TABLE public.memberships TO service_role;
+
+
+--
+-- Name: TABLE notifications; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.notifications TO anon;
+GRANT ALL ON TABLE public.notifications TO authenticated;
+GRANT ALL ON TABLE public.notifications TO service_role;
+
+
+--
+-- Name: SEQUENCE notifications_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.notifications_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.notifications_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.notifications_id_seq TO service_role;
+
+
+--
+-- Name: TABLE shifts; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.shifts TO anon;
+GRANT ALL ON TABLE public.shifts TO authenticated;
+GRANT ALL ON TABLE public.shifts TO service_role;
+
+
+--
+-- Name: TABLE staff_members; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.staff_members TO anon;
+GRANT ALL ON TABLE public.staff_members TO authenticated;
+GRANT ALL ON TABLE public.staff_members TO service_role;
+
+
+--
+-- Name: TABLE open_shifts; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.open_shifts TO anon;
+GRANT ALL ON TABLE public.open_shifts TO authenticated;
+GRANT ALL ON TABLE public.open_shifts TO service_role;
+
+
+--
+-- Name: TABLE order_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.order_items TO anon;
+GRANT ALL ON TABLE public.order_items TO authenticated;
+GRANT ALL ON TABLE public.order_items TO service_role;
+
+
+--
+-- Name: SEQUENCE order_number_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.order_number_seq TO anon;
+GRANT ALL ON SEQUENCE public.order_number_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.order_number_seq TO service_role;
+
+
+--
+-- Name: TABLE order_queue; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.order_queue TO anon;
+GRANT ALL ON TABLE public.order_queue TO authenticated;
+GRANT ALL ON TABLE public.order_queue TO service_role;
+
+
+--
+-- Name: TABLE orders; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.orders TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.orders TO authenticated;
+GRANT ALL ON TABLE public.orders TO service_role;
+
+
+--
+-- Name: COLUMN orders.status; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(status) ON TABLE public.orders TO authenticated;
+
+
+--
+-- Name: COLUMN orders.confirmed_at; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(confirmed_at) ON TABLE public.orders TO authenticated;
+
+
+--
+-- Name: COLUMN orders.delivered_at; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(delivered_at) ON TABLE public.orders TO authenticated;
+
+
+--
+-- Name: COLUMN orders.updated_at; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(updated_at) ON TABLE public.orders TO authenticated;
+
+
+--
+-- Name: TABLE organizations; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.organizations TO anon;
+GRANT ALL ON TABLE public.organizations TO authenticated;
+GRANT ALL ON TABLE public.organizations TO service_role;
+
+
+--
+-- Name: TABLE pass_memberships; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.pass_memberships TO anon;
+GRANT ALL ON TABLE public.pass_memberships TO authenticated;
+GRANT ALL ON TABLE public.pass_memberships TO service_role;
+
+
+--
+-- Name: TABLE payment_events; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.payment_events TO anon;
+GRANT ALL ON TABLE public.payment_events TO authenticated;
+GRANT ALL ON TABLE public.payment_events TO service_role;
+
+
+--
+-- Name: SEQUENCE po_number_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.po_number_seq TO anon;
+GRANT ALL ON SEQUENCE public.po_number_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.po_number_seq TO service_role;
+
+
+--
+-- Name: TABLE product_batches; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.product_batches TO anon;
+GRANT ALL ON TABLE public.product_batches TO authenticated;
+GRANT ALL ON TABLE public.product_batches TO service_role;
+
+
+--
+-- Name: TABLE products; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.products TO anon;
+GRANT ALL ON TABLE public.products TO authenticated;
+GRANT ALL ON TABLE public.products TO service_role;
+
+
+--
+-- Name: TABLE profiles; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.profiles TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE public.profiles TO authenticated;
+GRANT ALL ON TABLE public.profiles TO service_role;
+
+
+--
+-- Name: COLUMN profiles.full_name; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(full_name) ON TABLE public.profiles TO authenticated;
+
+
+--
+-- Name: COLUMN profiles.updated_at; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT UPDATE(updated_at) ON TABLE public.profiles TO authenticated;
+
+
+--
+-- Name: TABLE purchase_order_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.purchase_order_items TO anon;
+GRANT ALL ON TABLE public.purchase_order_items TO authenticated;
+GRANT ALL ON TABLE public.purchase_order_items TO service_role;
+
+
+--
+-- Name: TABLE purchase_orders; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.purchase_orders TO anon;
+GRANT ALL ON TABLE public.purchase_orders TO authenticated;
+GRANT ALL ON TABLE public.purchase_orders TO service_role;
+
+
+--
+-- Name: TABLE push_subscriptions; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.push_subscriptions TO anon;
+GRANT ALL ON TABLE public.push_subscriptions TO authenticated;
+GRANT ALL ON TABLE public.push_subscriptions TO service_role;
+
+
+--
+-- Name: TABLE recipe_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.recipe_items TO anon;
+GRANT ALL ON TABLE public.recipe_items TO authenticated;
+GRANT ALL ON TABLE public.recipe_items TO service_role;
+
+
+--
+-- Name: TABLE recipes; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.recipes TO anon;
+GRANT ALL ON TABLE public.recipes TO authenticated;
+GRANT ALL ON TABLE public.recipes TO service_role;
+
+
+--
+-- Name: TABLE referrals; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.referrals TO anon;
+GRANT ALL ON TABLE public.referrals TO authenticated;
+GRANT ALL ON TABLE public.referrals TO service_role;
+
+
+--
+-- Name: TABLE reviews; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.reviews TO anon;
+GRANT ALL ON TABLE public.reviews TO authenticated;
+GRANT ALL ON TABLE public.reviews TO service_role;
+
+
+--
+-- Name: TABLE role_capabilities; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.role_capabilities TO anon;
+GRANT ALL ON TABLE public.role_capabilities TO authenticated;
+GRANT ALL ON TABLE public.role_capabilities TO service_role;
+
+
+--
+-- Name: TABLE sale_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.sale_items TO anon;
+GRANT ALL ON TABLE public.sale_items TO authenticated;
+GRANT ALL ON TABLE public.sale_items TO service_role;
+
+
+--
+-- Name: TABLE saved_carts; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.saved_carts TO anon;
+GRANT ALL ON TABLE public.saved_carts TO authenticated;
+GRANT ALL ON TABLE public.saved_carts TO service_role;
+
+
+--
+-- Name: TABLE scratch_cards; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.scratch_cards TO anon;
+GRANT ALL ON TABLE public.scratch_cards TO authenticated;
+GRANT ALL ON TABLE public.scratch_cards TO service_role;
+
+
+--
+-- Name: TABLE staff_cards; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.staff_cards TO anon;
+GRANT ALL ON TABLE public.staff_cards TO authenticated;
+GRANT ALL ON TABLE public.staff_cards TO service_role;
+
+
+--
+-- Name: TABLE states; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.states TO anon;
+GRANT ALL ON TABLE public.states TO authenticated;
+GRANT ALL ON TABLE public.states TO service_role;
+
+
+--
+-- Name: TABLE stations; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stations TO anon;
+GRANT ALL ON TABLE public.stations TO authenticated;
+GRANT ALL ON TABLE public.stations TO service_role;
+
+
+--
+-- Name: TABLE stock_alerts; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stock_alerts TO anon;
+GRANT ALL ON TABLE public.stock_alerts TO authenticated;
+GRANT ALL ON TABLE public.stock_alerts TO service_role;
+
+
+--
+-- Name: TABLE stock_items; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stock_items TO anon;
+GRANT ALL ON TABLE public.stock_items TO authenticated;
+GRANT ALL ON TABLE public.stock_items TO service_role;
+
+
+--
+-- Name: TABLE stock_movements; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stock_movements TO anon;
+GRANT ALL ON TABLE public.stock_movements TO authenticated;
+GRANT ALL ON TABLE public.stock_movements TO service_role;
+
+
+--
+-- Name: SEQUENCE stock_movements_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.stock_movements_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.stock_movements_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.stock_movements_id_seq TO service_role;
+
+
+--
+-- Name: TABLE stock_on_hand; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.stock_on_hand TO anon;
+GRANT ALL ON TABLE public.stock_on_hand TO authenticated;
+GRANT ALL ON TABLE public.stock_on_hand TO service_role;
+
+
+--
+-- Name: TABLE subscriptions; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.subscriptions TO anon;
+GRANT ALL ON TABLE public.subscriptions TO authenticated;
+GRANT ALL ON TABLE public.subscriptions TO service_role;
+
+
+--
+-- Name: TABLE suppliers; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.suppliers TO anon;
+GRANT ALL ON TABLE public.suppliers TO authenticated;
+GRANT ALL ON TABLE public.suppliers TO service_role;
+
+
+--
+-- Name: TABLE wallet_ledger; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.wallet_ledger TO anon;
+GRANT ALL ON TABLE public.wallet_ledger TO authenticated;
+GRANT ALL ON TABLE public.wallet_ledger TO service_role;
+
+
+--
+-- Name: SEQUENCE wallet_ledger_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.wallet_ledger_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.wallet_ledger_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.wallet_ledger_id_seq TO service_role;
+
+
+--
+-- Name: TABLE wastage_log; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.wastage_log TO anon;
+GRANT ALL ON TABLE public.wastage_log TO authenticated;
+GRANT ALL ON TABLE public.wastage_log TO service_role;
+
+
+--
+-- Name: TABLE winback_log; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.winback_log TO anon;
+GRANT ALL ON TABLE public.winback_log TO authenticated;
+GRANT ALL ON TABLE public.winback_log TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR FUNCTIONS; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: -
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 6qGtetGcb8wTfi0g6hKHGp7qujZ1y9Ex9UIQ9Ky7ZB5YFlfNhkv3q9mdBDcweD5
 

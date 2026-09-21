@@ -2,32 +2,45 @@
 
 import { useEffect, useState } from "react";
 
+type Piece = { left: number; color: string; delay: number; duration: number };
+
+const COLORS = ["#16a34a", "#f59e0b", "#ef4444", "#3b82f6", "#a855f7"];
+
 /**
- * A one-shot confetti burst on order confirmation — a small moment of delight
- * that makes placing an order feel rewarding. Pure CSS, no library.
+ * A one-shot confetti burst on order confirmation — a small moment of delight.
+ * Pure CSS, no library.
  *
- * Rendered only after mount: the random positions must never run during SSR,
- * or the server and client HTML would differ and React would throw a hydration
- * mismatch.
+ * The random positions are generated in an effect (after mount), never during
+ * render: rendering random values on the server and again on the client would
+ * cause a hydration mismatch, and calling Math.random() in render is impure.
  */
 export function Confetti() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  const [pieces, setPieces] = useState<Piece[]>([]);
 
-  const colors = ["#16a34a", "#f59e0b", "#ef4444", "#3b82f6", "#a855f7"];
-  const pieces = Array.from({ length: 28 });
+  useEffect(() => {
+    setPieces(
+      Array.from({ length: 28 }, (_, i) => ({
+        left: Math.random() * 100,
+        color: COLORS[i % COLORS.length],
+        delay: Math.random() * 0.4,
+        duration: 2 + Math.random() * 1.5,
+      }))
+    );
+  }, []);
+
+  if (pieces.length === 0) return null;
+
   return (
     <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden>
-      {pieces.map((_, i) => (
+      {pieces.map((p, i) => (
         <span
           key={i}
           className="ff-confetti"
           style={{
-            left: `${Math.random() * 100}%`,
-            background: colors[i % colors.length],
-            animationDelay: `${Math.random() * 0.4}s`,
-            animationDuration: `${2 + Math.random() * 1.5}s`,
+            left: `${p.left}%`,
+            background: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
           }}
         />
       ))}

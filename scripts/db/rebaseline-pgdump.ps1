@@ -36,13 +36,20 @@ Write-Host "==> Using $pgDump"
 
 if (Test-Path $tmp) { Remove-Item $tmp -Force }
 Write-Host "==> Dumping the live public schema"
-& $pgDump $DbUrl --schema=public --no-owner --no-privileges --schema-only -f $tmp
+& $pgDump $DbUrl --schema=public --no-owner --schema-only -f $tmp
 if ($LASTEXITCODE -ne 0) { throw "pg_dump failed (exit $LASTEXITCODE). Nothing was changed." }
 
 if (-not (Test-Path $tmp) -or (Get-Item $tmp).Length -lt 1000) {
   if (Test-Path $tmp) { Remove-Item $tmp -Force }
   throw "The dump is empty or truncated. Aborting without changes."
 }
+
+# pg_dump 17 wraps the dump in \restrict / \unrestrict psql meta-commands. Those
+# are NOT SQL, so the migration runner (which applies via the SQL protocol, not
+# psql) errors on the backslash. Strip just those wrapper lines.
+Write-Host "==> Stripping psql \restrict/\unrestrict directives"
+(Get-Content $tmp) | Where-Object { $_ -notmatch '^\\(restrict|unrestrict)\b' } |
+  Set-Content $tmp -Encoding utf8
 
 Write-Host "==> Archiving the old numbered migrations (kept in git history)"
 New-Item -ItemType Directory -Force -Path $archive | Out-Null

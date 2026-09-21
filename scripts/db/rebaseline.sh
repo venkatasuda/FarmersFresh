@@ -31,6 +31,10 @@ if [ ! -s "$TMP" ] || [ "$(wc -c < "$TMP")" -lt 1000 ]; then
   exit 1
 fi
 
+# pg_dump 17 wraps the dump in \restrict / \unrestrict psql meta-commands, which
+# the SQL migration runner can't parse. Strip just those wrapper lines.
+grep -vE '^\\(restrict|unrestrict)\b' "$TMP" > "$TMP.clean" && mv "$TMP.clean" "$TMP"
+
 echo "==> Archiving the old numbered migrations (kept in git history)"
 mkdir -p "$ARCHIVE"
 find supabase/migrations -maxdepth 1 -name '[0-9]*.sql' -exec git mv {} "$ARCHIVE"/ \; 2>/dev/null || \

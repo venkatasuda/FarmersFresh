@@ -18,7 +18,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function publicReadLoad() {
   const res = http.get(`${BASE}/login`);
   check(res, { "status is 200": (r) => r.status === 200 });
   sleep(1);

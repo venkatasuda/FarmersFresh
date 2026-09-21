@@ -36,7 +36,7 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? `mailto:${FROM_EMAIL}`;
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   try {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
-  } catch (_e) {
+  } catch {
     // Bad keys — push stays skipped rather than crashing the worker.
   }
 }
