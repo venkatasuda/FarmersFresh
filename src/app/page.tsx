@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { BannerCarousel } from "@/app/(shop)/banner-carousel";
-import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
-import { ProductCard } from "@/app/(shop)/product-card";
-import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { BannerCarousel } from "@/features/shop/banner-carousel";
+import { CategoryIcon, categoryTint } from "@/features/shop/category-icon";
+import { ProductCard } from "@/features/shop/product-card";
+import { RecentlyViewed } from "@/features/shop/recently-viewed";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { getActiveBanners } from "@/server/banners";
 import {
   getCatalogue,

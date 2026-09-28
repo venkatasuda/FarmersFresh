@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { AddToBasket } from "@/app/(shop)/add-to-basket";
-import { ProductCard } from "@/app/(shop)/product-card";
-import { ProductImage } from "@/app/(shop)/product-image";
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { AddToBasket } from "@/features/cart/add-to-basket";
+import { ProductCard } from "@/features/shop/product-card";
+import { ProductImage } from "@/features/shop/product-image";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { getOffers, getPersonalOffers } from "@/server/shop";
-import { DealCountdown } from "./deal-countdown";
+import { DealCountdown } from "@/features/offers/deal-countdown";
 import { formatRupees } from "@/lib/format";
 import { discountPercent } from "@/lib/types";
 

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { LoginClient } from "./login-client";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { LoginClient } from "@/features/auth/login-client";
 
 export const metadata = { title: "Log in · Farmers Fresh" };
 

@@ -1,5 +1,5 @@
-import { Leaf } from "@/app/brand";
-import { signIn } from "./actions";
+import { Leaf } from "@/components/brand";
+import { signIn } from "@/features/auth/actions";
 
 export const metadata = {
   title: "Sign in · Farmers Fresh",

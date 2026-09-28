@@ -1,5 +1,5 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { TrackClient } from "./track-client";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { TrackClient } from "@/features/tracking/track-client";
 
 export const metadata = { title: "Track your order · Farmers Fresh" };
 

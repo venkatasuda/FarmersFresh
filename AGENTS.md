@@ -31,11 +31,17 @@ Full rules in `docs/BRAND.md`. In short:
 | --- | --- | --- | --- |
 | `src/server/` | backend: data reads, auth, the server Supabase client | **yes** | Server Components, server actions, route handlers |
 | `src/lib/` | shared + client-safe: `format.ts`, `types.ts`, `guard.ts`, `search.ts`, browser client | only `lib/supabase/client.ts` | anyone |
-| `src/app/` | routes, pages, co-located UI and `actions.ts` | via `src/server/` | — |
+| `src/features/<name>/` | one business area: its UI components + `actions.ts` (server actions) | via `src/server/` | route files, other features |
+| `src/components/` | shared UI primitives (`brand.tsx`, `ui/dashboard.tsx`) | no | anyone |
+| `src/app/` | **routes only**: `page`, `layout`, `route`, `loading`, `error` | via `src/server/` | — (Next.js) |
 
 Every `src/server/` module starts with `import "server-only"`, so if a Client
 Component reaches it the **build fails** instead of shipping `next/headers` to
 the browser. `npm run ci:boundaries` checks the same rules in CI.
+
+A route file stays thin: fetch with `src/server/*`, render a component from
+`src/features/*`. New UI or actions for a page go in that page's feature folder,
+not next to `page.tsx`. Back-office features live in `src/features/dashboard/<name>/`.
 
 If a Client Component needs a formatter or a type, it goes in `src/lib/format.ts`
 or `src/lib/types.ts` — never re-export a server function through them.

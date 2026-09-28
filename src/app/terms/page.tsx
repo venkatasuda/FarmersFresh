@@ -1,4 +1,4 @@
-import { InfoPage } from "@/app/(shop)/info-layout";
+import { InfoPage } from "@/features/shop/info-layout";
 
 export const metadata = {
   title: "Terms & Conditions · Farmers Fresh",

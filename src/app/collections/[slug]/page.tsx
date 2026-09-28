@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
-import { FilterableGrid } from "@/app/(shop)/filterable-grid";
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { CategoryIcon, categoryTint } from "@/features/shop/category-icon";
+import { FilterableGrid } from "@/features/shop/filterable-grid";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { getCatalogueByCategory, getCategories } from "@/server/shop";
 
 type Props = { params: Promise<{ slug: string }> };

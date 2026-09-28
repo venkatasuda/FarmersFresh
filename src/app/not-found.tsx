@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Leaf } from "@/app/brand";
+import { Leaf } from "@/components/brand";
 
 // A branded 404. The default Next.js one is a black-on-white "404" — fine for
 // a demo, wrong for a shop. This keeps a lost visitor in the store.

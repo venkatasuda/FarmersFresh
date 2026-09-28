@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ProductCard } from "@/app/(shop)/product-card";
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { ProductCard } from "@/features/shop/product-card";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { getCatalogue } from "@/server/shop";
 import { searchItems } from "@/lib/search";
 

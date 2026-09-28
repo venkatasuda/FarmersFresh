@@ -1,4 +1,4 @@
-import { ProductGridSkeleton } from "@/app/(shop)/product-skeleton";
+import { ProductGridSkeleton } from "@/features/shop/product-skeleton";
 
 export default function CollectionLoading() {
   return (

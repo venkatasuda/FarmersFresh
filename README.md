@@ -87,7 +87,11 @@ guard, slaughter), with meat flowing farm → store on the same location model.
 
 ```
 src/
-  app/            routes: (shop)/ storefront, (app)/dashboard back office, api/ webhooks
+  app/            ROUTES ONLY — storefront pages, (dashboard)/dashboard back office, api/ webhooks
+  features/       one folder per business area: UI components + actions.ts
+    cart/ checkout/ account/ auth/ reviews/ search/ shop/ tracking/ wishlist/ …
+    dashboard/    back office: orders/ pos/ stock/ purchasing/ financials/ …
+  components/     shared UI primitives
   server/         backend — the only code that talks to Supabase (import "server-only")
     supabase/     server client + session refresh used by proxy.ts
   lib/            shared, client-safe: format, types, guard, search, browser client

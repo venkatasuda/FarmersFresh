@@ -1,6 +1,6 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getMyMembership, getPlans } from "./actions";
-import { PassClient } from "./pass-client";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { getMyMembership, getPlans } from "@/features/pass/actions";
+import { PassClient } from "@/features/pass/pass-client";
 
 export const metadata = {
   title: "Farmers Fresh Pass — free delivery & member prices",

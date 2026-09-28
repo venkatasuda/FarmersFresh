@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Hanken_Grotesk, Geist_Mono } from "next/font/google";
-import { CartProvider } from "@/app/(shop)/cart-context";
-import { CartDrawer } from "@/app/(shop)/cart-drawer";
-import { CartToast } from "@/app/(shop)/cart-toast";
-import { WishlistProvider } from "@/app/(shop)/wishlist-context";
-import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
+import { CartProvider } from "@/features/cart/cart-context";
+import { CartDrawer } from "@/features/cart/cart-drawer";
+import { CartToast } from "@/features/cart/cart-toast";
+import { WishlistProvider } from "@/features/wishlist/wishlist-context";
+import { ServiceWorkerRegister } from "@/features/shop/sw-register";
 import { getStoreSettings } from "@/server/settings";
 import "./globals.css";
 

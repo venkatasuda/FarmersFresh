@@ -1,6 +1,6 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getCuisines, getRecipes } from "./actions";
-import { RecipesBrowser } from "./recipes-browser";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { getCuisines, getRecipes } from "@/features/recipes/actions";
+import { RecipesBrowser } from "@/features/recipes/recipes-browser";
 
 export const metadata = {
   title: "Recipes — shop the dish · Farmers Fresh",

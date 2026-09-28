@@ -1,5 +1,5 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { CartClient } from "./cart-client";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { CartClient } from "@/features/cart/cart-client";
 
 export const metadata = { title: "Basket · Farmers Fresh" };
 

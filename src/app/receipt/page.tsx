@@ -1,7 +1,7 @@
 import { createClient } from "@/server/supabase/server";
-import { mapReceipt } from "./receipt-types";
-import { ReceiptView } from "./receipt-view";
-import { ReceiptGate } from "./receipt-gate";
+import { mapReceipt } from "@/features/receipt/receipt-types";
+import { ReceiptView } from "@/features/receipt/receipt-view";
+import { ReceiptGate } from "@/features/receipt/receipt-gate";
 
 export const metadata = { title: "Receipt · Farmers Fresh" };
 

@@ -1,7 +1,7 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { getStoreSettings } from "@/server/settings";
 import { createClient } from "@/server/supabase/server";
-import { HelpForm } from "./help-form";
+import { HelpForm } from "@/features/help/help-form";
 
 export const metadata = { title: "Help & support · Farmers Fresh" };
 export const dynamic = "force-dynamic";

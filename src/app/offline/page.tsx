@@ -1,4 +1,4 @@
-import { Leaf } from "@/app/brand";
+import { Leaf } from "@/components/brand";
 
 export const metadata = { title: "Offline · Farmers Fresh" };
 

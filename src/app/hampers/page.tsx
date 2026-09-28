@@ -1,6 +1,6 @@
-import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getHampers } from "./actions";
-import { HampersBrowser } from "./hampers-browser";
+import { ShopShell } from "@/features/shop/shop-shell";
+import { getHampers } from "@/features/hampers/actions";
+import { HampersBrowser } from "@/features/hampers/hampers-browser";
 
 export const metadata = {
   title: "Hampers & kits · Farmers Fresh",

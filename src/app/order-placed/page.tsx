@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ShopShell } from "@/app/(shop)/shop-shell";
+import { ShopShell } from "@/features/shop/shop-shell";
 import { createClient } from "@/server/supabase/server";
 import { formatRupees } from "@/lib/format";
 import { getPersonalizedProducts } from "@/server/shop";
-import { Confetti } from "./confetti";
-import { AddMore } from "./add-more";
+import { Confetti } from "@/features/checkout/confetti";
+import { AddMore } from "@/features/checkout/add-more";
 
 export const metadata = { title: "Order placed · Farmers Fresh" };
 
