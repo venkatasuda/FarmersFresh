@@ -13,7 +13,8 @@
     "test:database": "vitest run --config vitest.database.config.mts",
     "test:e2e": "playwright test",
     "ci:recovery": "node scripts/ci/prepare-recovery.mjs",
-    "ci:boundaries": "node scripts/ci/check-boundaries.mjs"
+    "ci:boundaries": "node scripts/ci/check-boundaries.mjs",
+    "db:types": "supabase gen types typescript --linked > src/lib/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
