@@ -12,12 +12,18 @@
 //     itself fails if a client file reaches it. (supabase/proxy.ts is exempt: it runs
 //     in proxy.ts, outside the React Server Components layer.)
 //  4. src/lib/format.ts and src/lib/types.ts import no Supabase module at all.
+//  5. App code never writes money/stock/order tables directly — those changes go
+//     through database functions so the website, a mobile app and any API client
+//     share one set of rules. (src/app/api/ is exempt: payment plumbing that runs
+//     with the service role and records Razorpay ids.)
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 const SERVER_IMPORT = /from\s+["'](@\/server\/[^"']+|next\/headers)["']/;
+const RULE_TABLES = "orders|order_items|payments|payment_events|wallet_ledger|stock_movements|events|gift_cards|sales|sale_items";
+const DIRECT_WRITE = new RegExp(`\\.from\\(\\s*["'](${RULE_TABLES})["']\\s*\\)\\s*\\.\\s*(insert|update|upsert|delete)\\(`);
 const violations = [];
 
 function walk(dir, out = []) {
@@ -40,6 +46,10 @@ for (const file of walk(join(ROOT, "src"))) {
   }
   if (rel.startsWith("src/server/") && rel !== "src/server/supabase/proxy.ts" && !/^import ["']server-only["'];?$/m.test(src)) {
     violations.push(`${rel} is missing import "server-only"`);
+  }
+  const write = !rel.startsWith("src/app/api/") && src.match(DIRECT_WRITE);
+  if (write) {
+    violations.push(`${rel} writes "${write[1]}" directly — add or use a database function instead`);
   }
   if ((rel === "src/lib/format.ts" || rel === "src/lib/types.ts") && /from\s+["']@\/lib\/supabase\//.test(src)) {
     violations.push(`${rel} must not import any Supabase module`);

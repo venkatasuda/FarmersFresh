@@ -51,6 +51,14 @@ This bit once already: `formatRupees` lived in `lib/shop.ts`, so `app/cart/page.
 
 ## Non-negotiables
 
+- **Business rules live in the database, not in server actions.** Any write that
+  has rules (status changes, money, stock, anything multi-step) is a database
+  function; server actions just call it and map the error. That is what lets a
+  future mobile app reuse the backend unchanged. Plain single-row edits guarded by
+  RLS (banners, zones, addresses, toggles) may stay as table writes.
+  `npm run ci:boundaries` fails if app code writes orders, payments, stock,
+  wallet, events or gift-card tables directly.
+
 - Every change to money or records writes to the `events` table — done inside
   the database functions (`place_order`, `mark_order_paid`, …). The table is
   append-only, enforced by a database trigger.

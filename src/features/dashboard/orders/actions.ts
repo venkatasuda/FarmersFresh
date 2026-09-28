@@ -26,34 +26,14 @@ export async function instantRefund(
   return { ok: true };
 }
 
-const ALLOWED: OrderStatus[] = [
-  "confirmed",
-  "packed",
-  "out_for_delivery",
-  "delivered",
-];
-
+/** Move an order forward. The database enforces the allowed steps (set_order_status). */
 export async function advanceOrder(
   orderId: string,
   to: OrderStatus
 ): Promise<ActionResult> {
-  if (!ALLOWED.includes(to)) {
-    return { ok: false, message: "That status can't be set from here." };
-  }
-
   const supabase = await createClient();
-
-  const patch: Record<string, unknown> = { status: to };
-  if (to === "confirmed") patch.confirmed_at = new Date().toISOString();
-  if (to === "delivered") patch.delivered_at = new Date().toISOString();
-
-  const { error } = await supabase
-    .from("orders")
-    .update(patch)
-    .eq("id", orderId);
-
+  const { error } = await supabase.rpc("set_order_status", { p_order_id: orderId, p_to: to });
   if (error) return { ok: false, message: sanitizeError(error.message) };
-
   revalidatePath("/dashboard/orders");
   return { ok: true };
 }

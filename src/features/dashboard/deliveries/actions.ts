@@ -29,9 +29,7 @@ export async function setDeliveryStatus(
   status: OrderStatus
 ): Promise<Res> {
   const supabase = await createClient();
-  const patch: Record<string, unknown> = { status };
-  if (status === "delivered") patch.delivered_at = new Date().toISOString();
-  const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+  const { error } = await supabase.rpc("set_order_status", { p_order_id: orderId, p_to: status });
   if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/deliveries");
   revalidatePath("/dashboard/orders");
