@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth";
-import { getOrders } from "@/lib/orders";
-import { getDebtors } from "@/lib/credit";
-import { getBusinessOverview } from "@/lib/overview";
+import { requireSession } from "@/server/auth";
+import { getOrders } from "@/server/orders";
+import { getDebtors } from "@/server/credit";
+import { getBusinessOverview } from "@/server/overview";
 import { formatRupees } from "@/lib/format";
 
 export const metadata = {

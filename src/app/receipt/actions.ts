@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { mapReceipt, type Receipt } from "./receipt-types";
 
 // Verify ownership by phone (for guests arriving from an email/SMS link with no

@@ -1,8 +1,9 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  * The owner's sales summary, computed entirely in the database.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 
 export type SalesSummary = {

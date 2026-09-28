@@ -1,8 +1,9 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  * The credit ledger: who owes, how much, and their recent account activity.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { CustomerBalance, LedgerEntry } from "@/lib/types";
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { OrderCard } from "./order-card";
 import { RealtimeOrders } from "./realtime-orders";
-import { getOrders } from "@/lib/orders";
-import { requireSession } from "@/lib/auth";
+import { getOrders } from "@/server/orders";
+import { requireSession } from "@/server/auth";
 
 export const metadata = { title: "Orders · Farmers Fresh" };
 

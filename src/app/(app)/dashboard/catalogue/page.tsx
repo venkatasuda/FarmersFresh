@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CatalogueRow } from "./catalogue-row";
-import { requireSession } from "@/lib/auth";
-import { getAdminCategories, getAdminProducts } from "@/lib/catalogue";
+import { requireSession } from "@/server/auth";
+import { getAdminCategories, getAdminProducts } from "@/server/catalogue";
 
 export const metadata = { title: "Catalogue · Farmers Fresh" };
 export const dynamic = "force-dynamic";

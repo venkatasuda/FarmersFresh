@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/proxy";
+import { updateSession } from "@/server/supabase/proxy";
 
 // Next.js 16 renamed `middleware.ts` to `proxy.ts` and the exported function
 // from `middleware` to `proxy`. The runtime is nodejs and is not configurable.

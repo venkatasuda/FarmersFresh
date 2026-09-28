@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import { searchItems } from "@/lib/search";
 

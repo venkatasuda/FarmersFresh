@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
-import { getStorefrontLocationId } from "@/lib/stock";
+import { requireSession } from "@/server/auth";
+import { getStorefrontLocationId } from "@/server/stock";
 import { getColdChain } from "./actions";
 import { ColdChainClient } from "./coldchain-client";
 

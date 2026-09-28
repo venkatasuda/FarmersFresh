@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 /**
  * Checks whether the shop delivers to a PIN, and returns the area name if it's

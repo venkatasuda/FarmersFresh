@@ -1,7 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { getProductsByIds } from "@/lib/shop";
+import { createClient } from "@/server/supabase/server";
+import { getProductsByIds } from "@/server/shop";
 import type { ShopProduct } from "@/lib/types";
 
 /** Products the logged-in customer has bought before and can re-add. */

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
-import { getReorderSuggestions } from "@/lib/forecast";
+import { requireSession } from "@/server/auth";
+import { getReorderSuggestions } from "@/server/forecast";
 import { getSuppliers } from "../purchasing/actions";
 import { ReorderClient } from "./reorder-client";
 

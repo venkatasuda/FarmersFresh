@@ -1,8 +1,9 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  * Data for the counter POS: the sellable product list with live stock.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { PosProduct } from "@/lib/types";
 

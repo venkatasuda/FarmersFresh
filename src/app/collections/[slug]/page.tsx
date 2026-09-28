@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
 import { FilterableGrid } from "@/app/(shop)/filterable-grid";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getCatalogueByCategory, getCategories } from "@/lib/shop";
+import { getCatalogueByCategory, getCategories } from "@/server/shop";
 
 type Props = { params: Promise<{ slug: string }> };
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { formatRupees } from "@/lib/format";
-import { getDebtors } from "@/lib/credit";
+import { getDebtors } from "@/server/credit";
 
 export const metadata = { title: "Credit ledger · Farmers Fresh" };
 export const dynamic = "force-dynamic";

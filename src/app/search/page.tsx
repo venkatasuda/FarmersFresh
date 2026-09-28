@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getCatalogue } from "@/lib/shop";
+import { getCatalogue } from "@/server/shop";
 import { searchItems } from "@/lib/search";
 
 export const metadata = { title: "Search · Farmers Fresh" };

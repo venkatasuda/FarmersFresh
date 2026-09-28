@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  *
@@ -5,7 +6,7 @@
  * unpublished and retired products too, because that is the point of an
  * admin screen.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { AdminProduct, Brand, Category } from "@/lib/types";
 

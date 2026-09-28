@@ -1,11 +1,11 @@
 import { StockRow } from "./stock-row";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { formatQty } from "@/lib/format";
 import {
   getRecentMovements,
   getStockLines,
   getStorefrontLocationId,
-} from "@/lib/stock";
+} from "@/server/stock";
 import { LOW_STOCK_KG, STOCK_REASON_LABELS } from "@/lib/types";
 
 export const metadata = { title: "Stock · Farmers Fresh" };

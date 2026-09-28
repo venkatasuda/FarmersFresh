@@ -3,7 +3,7 @@ import { AddToBasket } from "@/app/(shop)/add-to-basket";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { ProductImage } from "@/app/(shop)/product-image";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getOffers, getPersonalOffers } from "@/lib/shop";
+import { getOffers, getPersonalOffers } from "@/server/shop";
 import { DealCountdown } from "./deal-countdown";
 import { formatRupees } from "@/lib/format";
 import { discountPercent } from "@/lib/types";

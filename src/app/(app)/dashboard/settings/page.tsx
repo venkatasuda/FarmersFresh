@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { getAdminSettings } from "./actions";
 import { SettingsForm } from "./settings-form";
 

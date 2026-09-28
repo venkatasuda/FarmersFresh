@@ -1,8 +1,9 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  * Client Components want `lib/types.ts` for the order shapes and labels.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { OrderStatus, StaffOrder } from "@/lib/types";
 

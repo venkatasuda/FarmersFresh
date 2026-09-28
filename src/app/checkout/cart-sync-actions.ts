@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 /**
  * Remembers a logged-in customer's basket so we can remind them if they leave

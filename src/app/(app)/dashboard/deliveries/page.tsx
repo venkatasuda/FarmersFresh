@@ -1,7 +1,7 @@
 import { DeliveryCard } from "./delivery-card";
 import { DeliveryControls } from "./delivery-controls";
-import { requireSession } from "@/lib/auth";
-import { getDeliveries, getMyProfileId, getMyShift } from "@/lib/deliveries";
+import { requireSession } from "@/server/auth";
+import { getDeliveries, getMyProfileId, getMyShift } from "@/server/deliveries";
 
 export const metadata = { title: "Deliveries · Farmers Fresh" };
 export const dynamic = "force-dynamic";

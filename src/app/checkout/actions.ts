@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { toQuantity } from "@/lib/guard";
 
 export type PaymentMethod = "cod" | "upi" | "card";

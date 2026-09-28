@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 /**
  * Adds the caller to a product's back-in-stock list. The database captures the

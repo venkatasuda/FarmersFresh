@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { mapReceipt } from "./receipt-types";
 import { ReceiptView } from "./receipt-view";
 import { ReceiptGate } from "./receipt-gate";

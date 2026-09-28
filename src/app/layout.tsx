@@ -5,7 +5,7 @@ import { CartDrawer } from "@/app/(shop)/cart-drawer";
 import { CartToast } from "@/app/(shop)/cart-toast";
 import { WishlistProvider } from "@/app/(shop)/wishlist-context";
 import { ServiceWorkerRegister } from "@/app/(shop)/sw-register";
-import { getStoreSettings } from "@/lib/settings";
+import { getStoreSettings } from "@/server/settings";
 import "./globals.css";
 
 // Body: a warm, humanist grotesk — readable and distinct from the default look.

@@ -1,63 +1,50 @@
 #!/usr/bin/env node
-// Architecture boundaries (see the header of src/lib/format.ts for the "why").
+// Architecture boundaries. Pure Node, no dependencies. Exits 1 on any violation.
 //
-//  1. src/lib/format.ts and src/lib/types.ts are imported by Client Components, so they
-//     must never pull in server-only modules — doing so drags next/headers into
-//     a client bundle and breaks the production build.
-//  2. Any "use client" file must not import a server-only module either.
+//  src/server/  backend: the only code that talks to Supabase with the user's session.
+//  src/lib/     shared + client-safe: formatters, types, pure helpers, the browser client.
 //
-// Pure Node, no dependencies. Exits 1 with a list of violations.
+//  1. Nothing in src/lib/ may import src/server/ or next/headers — lib is imported by
+//     Client Components, and one server import drags next/headers into the browser
+//     bundle (this broke the production build once).
+//  2. No "use client" file may import src/server/ or next/headers.
+//  3. Every src/server/ module starts with `import "server-only"`, so the Next build
+//     itself fails if a client file reaches it. (supabase/proxy.ts is exempt: it runs
+//     in proxy.ts, outside the React Server Components layer.)
+//  4. src/lib/format.ts and src/lib/types.ts import no Supabase module at all.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
-const SERVER_ONLY = [
-  /from\s+["']@\/lib\/supabase\/server["']/,
-  /from\s+["']next\/headers["']/,
-];
-const CLIENT_SAFE_FILES = ["src/lib/format.ts", "src/lib/types.ts"];
-
+const SERVER_IMPORT = /from\s+["'](@\/server\/[^"']+|next\/headers)["']/;
 const violations = [];
 
-function check(file, isClientContext) {
-  const src = readFileSync(file, "utf8");
-  for (const re of SERVER_ONLY) {
-    if (re.test(src)) {
-      violations.push(`${relative(ROOT, file)} imports a server-only module (${re.source})`);
-    }
-  }
-  // A client-safe lib must not import ANY supabase module, server or not.
-  if (!isClientContext && /from\s+["']@\/lib\/supabase\//.test(src)) {
-    violations.push(`${relative(ROOT, file)} must not import from lib/supabase/* (client-safe file)`);
-  }
-}
-
-// Rule 1: the two client-safe libs.
-for (const rel of CLIENT_SAFE_FILES) {
-  try {
-    check(join(ROOT, rel), false);
-  } catch {
-    violations.push(`${rel} is missing`);
-  }
-}
-
-// Rule 2: every "use client" component.
-function walk(dir) {
+function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === ".next" || name.startsWith(".")) continue;
     const full = join(dir, name);
-    const st = statSync(full);
-    if (st.isDirectory()) {
-      walk(full);
-    } else if (/\.(tsx?|jsx?)$/.test(name)) {
-      const src = readFileSync(full, "utf8");
-      const firstLine = src.split("\n").find((l) => l.trim().length > 0) ?? "";
-      if (/^["']use client["']/.test(firstLine.trim())) check(full, true);
-    }
+    if (statSync(full).isDirectory()) walk(full, out);
+    else if (/\.(tsx?|jsx?)$/.test(name)) out.push(full);
+  }
+  return out;
+}
+
+for (const file of walk(join(ROOT, "src"))) {
+  const rel = relative(ROOT, file).split(sep).join("/");
+  const src = readFileSync(file, "utf8");
+  const firstLine = src.split("\n").find((l) => l.trim()) ?? "";
+  const isClient = /^["']use client["']/.test(firstLine.trim());
+
+  if ((rel.startsWith("src/lib/") || isClient) && SERVER_IMPORT.test(src)) {
+    violations.push(`${rel} imports server-only code (${src.match(SERVER_IMPORT)[1]})`);
+  }
+  if (rel.startsWith("src/server/") && rel !== "src/server/supabase/proxy.ts" && !/^import ["']server-only["'];?$/m.test(src)) {
+    violations.push(`${rel} is missing import "server-only"`);
+  }
+  if ((rel === "src/lib/format.ts" || rel === "src/lib/types.ts") && /from\s+["']@\/lib\/supabase\//.test(src)) {
+    violations.push(`${rel} must not import any Supabase module`);
   }
 }
-walk(join(ROOT, "src"));
 
 if (violations.length) {
   console.error("Architecture boundary violations:\n" + violations.map((v) => "  - " + v).join("\n"));

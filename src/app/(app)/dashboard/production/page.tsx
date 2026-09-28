@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
-import { getReorderSuggestions } from "@/lib/forecast";
+import { requireSession } from "@/server/auth";
+import { getReorderSuggestions } from "@/server/forecast";
 import { ProductionClient } from "./production-client";
 
 export const metadata = { title: "Production · Farmers Fresh" };

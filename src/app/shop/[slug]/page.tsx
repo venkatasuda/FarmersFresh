@@ -12,8 +12,8 @@ import { Stars } from "@/app/(shop)/stars";
 import { SubscribeBox } from "@/app/(shop)/subscribe-box";
 import { TrackView } from "@/app/(shop)/track-view";
 import { formatRupees } from "@/lib/format";
-import { getFrequentlyBoughtTogether, getProductBySlug } from "@/lib/shop";
-import { getSubscriptionDiscountPct } from "@/lib/settings";
+import { getFrequentlyBoughtTogether, getProductBySlug } from "@/server/shop";
+import { getSubscriptionDiscountPct } from "@/server/settings";
 import { discountPercent, packLabel, unitPrice } from "@/lib/types";
 
 // Next.js 16: params is a Promise.

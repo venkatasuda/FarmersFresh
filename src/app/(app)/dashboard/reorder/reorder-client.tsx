@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { formatQty, formatRupees } from "@/lib/format";
-import type { ForecastResult, ReorderSuggestion } from "@/lib/forecast";
+import type { ForecastResult, ReorderSuggestion } from "@/lib/types";
 import { createDraftFromSuggestions, getSuggestions } from "./actions";
 
 type Params = { lookback: number; horizon: number; lead: number };

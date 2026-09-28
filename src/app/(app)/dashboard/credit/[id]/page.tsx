@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CollectForm } from "../collect-form";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { formatRupees } from "@/lib/format";
-import { getCustomerBalance, getCustomerLedger } from "@/lib/credit";
+import { getCustomerBalance, getCustomerLedger } from "@/server/credit";
 
 type Props = { params: Promise<{ id: string }> };
 

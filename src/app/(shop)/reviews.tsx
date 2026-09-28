@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { Stars } from "./stars";
 import { ReviewForm } from "./review-form";
 

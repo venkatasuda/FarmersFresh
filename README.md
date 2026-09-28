@@ -86,22 +86,22 @@ guard, slaughter), with meat flowing farm → store on the same location model.
 ## Project structure
 
 ```
-/app
-  /login              email + password sign in
-  /(app)              protected routes — layout enforces a session
-    /dashboard        who am I, my org, my role, my locations
-  /auth/signout       sign-out route handler
-/lib
-  /supabase           client + server + proxy Supabase helpers
-  events.ts           single helper to append to the immutable event log
-/supabase/migrations
-proxy.ts              session refresh + route protection (Next.js 16)
+src/
+  app/            routes: (shop)/ storefront, (app)/dashboard back office, api/ webhooks
+  server/         backend — the only code that talks to Supabase (import "server-only")
+    supabase/     server client + session refresh used by proxy.ts
+  lib/            shared, client-safe: format, types, guard, search, browser client
+  proxy.ts        session refresh + route protection (Next.js 16)
+supabase/
+  migrations/     database schema, functions, RLS — deployed with `supabase db push`
+  functions/      edge functions (notifications)
+tests/            unit/ api/ database/ e2e/
 ```
 
 ## Conventions
 
-- Every action that changes money or records also appends to `events` — the audit
-  trail and the future-AI dataset. Use `logEvent()` everywhere.
+- Every change to money or records appends to `events` inside the database
+  functions — the audit trail and the future-AI dataset.
 - Security is enforced by the database (RLS), not just the UI.
 - Money: `numeric(12,2)`. Weight: `numeric(12,3)`.
 - **Next.js 16**: `middleware.ts` is now `proxy.ts`; `cookies()`, `params` and

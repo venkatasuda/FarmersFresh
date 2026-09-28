@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
-import { getCatalogue } from "@/lib/shop";
+import { requireSession } from "@/server/auth";
+import { getCatalogue } from "@/server/shop";
 import { getBatches, getFarms } from "./actions";
 import { TraceabilityClient } from "./traceability-client";
 

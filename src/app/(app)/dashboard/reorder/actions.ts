@@ -1,11 +1,11 @@
 "use server";
 
-import { getStorefrontLocationId } from "@/lib/stock";
+import { getStorefrontLocationId } from "@/server/stock";
 import {
   getReorderSuggestions,
   type ForecastParams,
   type ForecastResult,
-} from "@/lib/forecast";
+} from "@/server/forecast";
 import { createPurchaseOrder } from "../purchasing/actions";
 
 export async function getSuggestions(

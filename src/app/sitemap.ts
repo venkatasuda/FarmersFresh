@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://farmersfresh.store";
 

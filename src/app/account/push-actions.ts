@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 /** Stores a device's Web Push subscription against the logged-in customer. */
 export async function savePushSubscription(sub: {

@@ -1,6 +1,6 @@
 import { DeliveryAdmin } from "./delivery-admin";
-import { requireSession } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireSession } from "@/server/auth";
+import { createClient } from "@/server/supabase/server";
 
 export const metadata = { title: "Delivery & alerts · Farmers Fresh" };
 export const dynamic = "force-dynamic";

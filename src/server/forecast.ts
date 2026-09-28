@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * SERVER ONLY — demand forecast + reorder suggestions.
  *
@@ -13,27 +14,11 @@
  * Richer history for training/serving is available per product via the
  * demand_series() RPC.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 
-export type ReorderSuggestion = {
-  productId: string;
-  productName: string;
-  avgDaily: number;
-  forecast: number;
-  onHand: number;
-  incoming: number;
-  coverDays: number | null;
-  suggestedQty: number;
-  lastCost: number | null;
-  salePrice: number;
-};
-
-export type ForecastResult = {
-  suggestions: ReorderSuggestion[];
-  /** "baseline" (built-in) or "custom" (your model answered). */
-  source: "baseline" | "custom";
-};
+export type { ReorderSuggestion, ForecastResult } from "@/lib/types";
+import type { ReorderSuggestion, ForecastResult } from "@/lib/types";
 
 export type ForecastParams = { lookback?: number; horizon?: number; lead?: number };
 

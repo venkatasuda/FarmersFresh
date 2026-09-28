@@ -1,6 +1,6 @@
 import { BannerAdmin } from "./banner-admin";
-import { requireSession } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireSession } from "@/server/auth";
+import { createClient } from "@/server/supabase/server";
 
 export const metadata = { title: "Banners · Farmers Fresh" };
 export const dynamic = "force-dynamic";

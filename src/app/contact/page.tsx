@@ -1,5 +1,5 @@
 import { InfoPage } from "@/app/(shop)/info-layout";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 export const metadata = { title: "Contact · Farmers Fresh" };
 export const dynamic = "force-dynamic";

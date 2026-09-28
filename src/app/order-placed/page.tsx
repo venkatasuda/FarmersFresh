@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { formatRupees } from "@/lib/format";
-import { getPersonalizedProducts } from "@/lib/shop";
+import { getPersonalizedProducts } from "@/server/shop";
 import { Confetti } from "./confetti";
 import { AddMore } from "./add-more";
 

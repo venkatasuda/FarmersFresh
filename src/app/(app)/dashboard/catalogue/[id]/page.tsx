@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductForm } from "../product-form";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import {
   getAdminCategories,
   getAdminProduct,
   getBrands,
-} from "@/lib/catalogue";
+} from "@/server/catalogue";
 
 type Props = { params: Promise<{ id: string }> };
 

@@ -1,10 +1,11 @@
+import "server-only";
 /**
  * SERVER ONLY — store settings the shop owner configures. Customer-safe fields
  * only (fee rule, support contact, GST/business details). Falls back to the
  * built-in defaults if the shop hasn't set anything yet, so callers always get
  * usable numbers.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import {
   DELIVERY_FEE,

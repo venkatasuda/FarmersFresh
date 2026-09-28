@@ -1,9 +1,10 @@
+import "server-only";
 /**
  * SERVER ONLY — the owner's business-overview snapshot for the dashboard home.
  * One RPC (business_overview) does the aggregation in the database; this just
  * shapes it. Returns null if it can't be read, so the page degrades gracefully.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 
 export type OverviewLine = { name: string; qty: number; revenue: number };

@@ -8,6 +8,9 @@ export default defineConfig({
     alias: {
       // Match the tsconfig "@/*" -> ./src alias so tests import like the app.
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // src/server/* starts with import "server-only", which throws outside React
+      // Server Components. Tests import those modules directly, so stub it here.
+      "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)),
     },
   },
   test: {

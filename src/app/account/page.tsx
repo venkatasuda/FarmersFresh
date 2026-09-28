@@ -6,7 +6,7 @@ import { AddressBook } from "./address-book";
 import { BuyAgain } from "./buy-again";
 import { getMyWallet, getMySavings } from "./wallet-actions";
 import { SavingsCard } from "./savings-card";
-import { getStoreSettings } from "@/lib/settings";
+import { getStoreSettings } from "@/server/settings";
 import { getMyMembership } from "@/app/pass/actions";
 import { getMyScratchCards } from "./scratch-actions";
 import { ScratchCards } from "./scratch-cards";
@@ -18,7 +18,7 @@ import { ReportIssue } from "./report-issue";
 import { Subscriptions } from "./subscriptions";
 import { WalletCard } from "./wallet-card";
 import { qrSvg } from "@/lib/qr";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { formatRupees } from "@/lib/format";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/types";
 

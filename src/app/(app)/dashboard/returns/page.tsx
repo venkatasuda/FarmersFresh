@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { getReturns } from "./actions";
 import { ReturnsList } from "./returns-list";
 

@@ -2,9 +2,9 @@ import { CouponForm } from "./coupon-form";
 import { CouponToggle } from "./coupon-toggle";
 import { GrantCoupon } from "./grant-coupon";
 import { IssueGiftCard } from "./issue-gift";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { formatRupees } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 export const metadata = { title: "Coupons · Farmers Fresh" };
 export const dynamic = "force-dynamic";

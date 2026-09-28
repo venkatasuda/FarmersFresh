@@ -1,5 +1,6 @@
+import "server-only";
 /** SERVER ONLY. Active promo banners for the storefront carousel. */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import type { Banner } from "@/lib/types";
 
 export async function getActiveBanners(): Promise<Banner[]> {

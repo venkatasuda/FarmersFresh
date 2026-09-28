@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 /** Customer raises an issue on one of their delivered orders. */
 export async function requestReturn(

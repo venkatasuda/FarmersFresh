@@ -1,5 +1,6 @@
+import "server-only";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 
 export type Membership = {
   role: "owner" | "manager" | "staff" | "accountant";

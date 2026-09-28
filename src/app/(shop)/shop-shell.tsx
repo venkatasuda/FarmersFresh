@@ -9,7 +9,7 @@ import { AccountButton } from "./account-button";
 import { CategoryIcon } from "./category-icon";
 import { LocationPicker } from "./location-picker";
 import { WishlistHeaderButton } from "./wishlist-header-button";
-import { getCategories } from "@/lib/shop";
+import { getCategories } from "@/server/shop";
 import { buildCategoryTree } from "@/lib/types";
 
 /**

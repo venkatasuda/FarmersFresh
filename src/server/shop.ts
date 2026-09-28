@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * SERVER ONLY. This module imports the Supabase server client, which imports
  * `next/headers`. Importing it from a Client Component breaks the production
@@ -5,7 +6,7 @@
  *
  * Client Components want `lib/format.ts` and `lib/types.ts` instead.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { Category, ShopProduct } from "@/lib/types";
 

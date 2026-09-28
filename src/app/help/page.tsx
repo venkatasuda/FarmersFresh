@@ -1,6 +1,6 @@
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getStoreSettings } from "@/lib/settings";
-import { createClient } from "@/lib/supabase/server";
+import { getStoreSettings } from "@/server/settings";
+import { createClient } from "@/server/supabase/server";
 import { HelpForm } from "./help-form";
 
 export const metadata = { title: "Help & support · Farmers Fresh" };

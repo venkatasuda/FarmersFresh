@@ -1,8 +1,9 @@
+import "server-only";
 /**
  * SERVER ONLY — imports the Supabase server client. See `lib/shop.ts`.
  * Orders that are being fulfilled, for the rider screen.
  */
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { num } from "@/lib/format";
 import type { Delivery, OrderStatus } from "@/lib/types";
 

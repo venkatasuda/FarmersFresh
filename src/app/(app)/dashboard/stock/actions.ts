@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/server/supabase/server";
 import { sanitizeError } from "@/lib/guard";
 import { STOCK_REASONS } from "@/lib/types";
 

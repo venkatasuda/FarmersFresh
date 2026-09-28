@@ -390,3 +390,24 @@ export type StoreSettings = {
   gstin: string | null;
   businessAddress: string | null;
 };
+
+// ---------- Forecast / reorder ----------
+
+export type ReorderSuggestion = {
+  productId: string;
+  productName: string;
+  avgDaily: number;
+  forecast: number;
+  onHand: number;
+  incoming: number;
+  coverDays: number | null;
+  suggestedQty: number;
+  lastCost: number | null;
+  salePrice: number;
+};
+
+export type ForecastResult = {
+  suggestions: ReorderSuggestion[];
+  /** "baseline" (built-in) or "custom" (your model answered). */
+  source: "baseline" | "custom";
+};

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { formatQty } from "@/lib/format";
-import type { ReorderSuggestion } from "@/lib/forecast";
+import type { ReorderSuggestion } from "@/lib/types";
 import { recordProduction } from "./actions";
 
 export function ProductionClient({ initial }: { initial: ReorderSuggestion[] }) {

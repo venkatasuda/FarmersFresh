@@ -27,28 +27,27 @@ Full rules in `docs/BRAND.md`. In short:
 
 ## Module boundaries (a build failure lives here)
 
-`src/lib/supabase/server.ts` imports `next/headers`. Anything that reaches it from
-a Client Component is a **hard production build failure**, not a warning — and
-`next dev` will not catch it.
+| Folder | What lives there | May talk to Supabase? | Who may import it |
+| --- | --- | --- | --- |
+| `src/server/` | backend: data reads, auth, the server Supabase client | **yes** | Server Components, server actions, route handlers |
+| `src/lib/` | shared + client-safe: `format.ts`, `types.ts`, `guard.ts`, `search.ts`, browser client | only `lib/supabase/client.ts` | anyone |
+| `src/app/` | routes, pages, co-located UI and `actions.ts` | via `src/server/` | — |
 
-| File | May import Supabase? | Who imports it |
-| --- | --- | --- |
-| `src/lib/format.ts` | **Never** | anyone |
-| `src/lib/types.ts` | **Never** | anyone |
-| `src/lib/shop.ts` | yes | Server Components only |
-| `src/lib/orders.ts` | yes | Server Components only |
-| `src/lib/auth.ts` | yes | Server Components only |
+Every `src/server/` module starts with `import "server-only"`, so if a Client
+Component reaches it the **build fails** instead of shipping `next/headers` to
+the browser. `npm run ci:boundaries` checks the same rules in CI.
 
 If a Client Component needs a formatter or a type, it goes in `src/lib/format.ts`
-or `src/lib/types.ts`. Never re-export a server function through them.
+or `src/lib/types.ts` — never re-export a server function through them.
 
-This bit once already: `formatRupees` lived in `lib/shop.ts` (now `src/lib/`), so `app/cart/page.tsx`
+This bit once already: `formatRupees` lived in `lib/shop.ts`, so `app/cart/page.tsx`
 (a Client Component) dragged `next/headers` into the browser bundle.
 
 ## Non-negotiables
 
-- Every action that touches money or records calls `logEvent()` — the `events`
-  table is append-only and enforced by a database trigger.
+- Every change to money or records writes to the `events` table — done inside
+  the database functions (`place_order`, `mark_order_paid`, …). The table is
+  append-only, enforced by a database trigger.
 - Security is enforced by **RLS**, not the UI. If a page needs to hide data,
   the policy should already make it invisible.
 - RFID cards **identify**, they do not **authenticate**. A card UID is clonable.

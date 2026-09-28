@@ -1,5 +1,5 @@
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getStoreSettings } from "@/lib/settings";
+import { getStoreSettings } from "@/server/settings";
 import { getMyMembership } from "@/app/pass/actions";
 import { CheckoutClient } from "./checkout-client";
 

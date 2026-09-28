@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/server/auth";
 import { formatRupees } from "@/lib/format";
 import {
   getDemandInsights,
   getSalesSummary,
   methodLabel,
-} from "@/lib/analytics";
+} from "@/server/analytics";
 
 export const metadata = { title: "Sales · Farmers Fresh" };
 export const dynamic = "force-dynamic";

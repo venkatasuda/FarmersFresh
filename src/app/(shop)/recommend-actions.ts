@@ -1,6 +1,6 @@
 "use server";
 
-import { getCartRecommendations, getProductsByIds } from "@/lib/shop";
+import { getCartRecommendations, getProductsByIds } from "@/server/shop";
 import type { ShopProduct } from "@/lib/types";
 
 /**

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getStorefrontLocationId } from "@/lib/stock";
+import { createClient } from "@/server/supabase/server";
+import { getStorefrontLocationId } from "@/server/stock";
 import { sanitizeError } from "@/lib/guard";
 
 export async function recordProduction(

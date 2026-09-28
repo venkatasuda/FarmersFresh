@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth";
-import { getStockLines, getStorefrontLocationId } from "@/lib/stock";
+import { requireSession } from "@/server/auth";
+import { getStockLines, getStorefrontLocationId } from "@/server/stock";
 import {
   getOverview,
   getPurchaseOrders,

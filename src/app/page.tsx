@@ -4,13 +4,13 @@ import { CategoryIcon, categoryTint } from "@/app/(shop)/category-icon";
 import { ProductCard } from "@/app/(shop)/product-card";
 import { RecentlyViewed } from "@/app/(shop)/recently-viewed";
 import { ShopShell } from "@/app/(shop)/shop-shell";
-import { getActiveBanners } from "@/lib/banners";
+import { getActiveBanners } from "@/server/banners";
 import {
   getCatalogue,
   getCategories,
   getPersonalizedProducts,
   getRefillSuggestions,
-} from "@/lib/shop";
+} from "@/server/shop";
 import { buildCategoryTree } from "@/lib/types";
 
 export const metadata = {
