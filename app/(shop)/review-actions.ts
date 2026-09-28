@@ -12,8 +12,7 @@ export async function submitReview(
   slug: string,
   name: string,
   rating: number,
-  body: string,
-  contact: string
+  body: string
 ): Promise<ReviewResult> {
   if (rating < 1 || rating > 5) {
     return { ok: false, message: "Pick a rating." };
@@ -25,7 +24,6 @@ export async function submitReview(
     p_name: name,
     p_rating: rating,
     p_body: body || null,
-    p_contact: contact || null,
   });
 
   if (error) return { ok: false, message: "Couldn't post that. Try again." };

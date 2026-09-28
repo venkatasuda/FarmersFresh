@@ -47,7 +47,8 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
     });
   }
 
-  const cancelled = order?.status === "cancelled";
+  const refundDue = order?.status === "refund_pending";
+  const cancelled = order?.status === "cancelled" || refundDue;
   const finished = order?.status === "delivered" || cancelled;
 
   // Live updates without an account: the customer can't subscribe (anon has no
@@ -176,8 +177,9 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
 
             {cancelled ? (
               <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                This order was cancelled
-                {order.cancelledReason ? ` — ${order.cancelledReason}` : ""}.
+                {refundDue
+                  ? "Your payment arrived after this order expired, so it was cancelled. We'll refund you in full."
+                  : `This order was cancelled${order.cancelledReason ? ` — ${order.cancelledReason}` : ""}.`}
               </div>
             ) : (
               <>

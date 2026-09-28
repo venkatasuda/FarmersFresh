@@ -5,10 +5,9 @@ import { useState, useTransition } from "react";
 import { submitReview } from "./review-actions";
 
 /**
- * Write-a-review form. A star picker, name, optional text, and an optional
- * phone/email — which is used only to mark the review a "verified purchase"
- * and to stop duplicates (stored hashed, never shown). Collapsed behind a
- * button so it doesn't dominate the product page.
+ * Write-a-review form. A star picker, name and optional text. Signed-in
+ * customers only; "verified purchase" comes from their own delivered orders.
+ * Collapsed behind a button so it doesn't dominate the product page.
  */
 export function ReviewForm({ productId }: { productId: string }) {
   const router = useRouter();
@@ -17,7 +16,6 @@ export function ReviewForm({ productId }: { productId: string }) {
   const [hover, setHover] = useState(0);
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
-  const [contact, setContact] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ verified: boolean } | null>(null);
@@ -42,8 +40,7 @@ export function ReviewForm({ productId }: { productId: string }) {
         slugFromPath(),
         name,
         rating,
-        body,
-        contact
+        body
       );
       if (!r.ok) {
         setError(r.message);
@@ -113,16 +110,6 @@ export function ReviewForm({ productId }: { productId: string }) {
           placeholder="How was it? (optional)"
           className={inputClass}
         />
-        <input
-          value={contact}
-          onChange={(e) => setContact(e.target.value)}
-          placeholder="Phone or email you ordered with (optional)"
-          className={inputClass}
-        />
-        <p className="text-xs text-ink-soft">
-          Your phone/email is used only to mark a verified purchase — never
-          shown, stored securely.
-        </p>
       </div>
 
       {error ? (

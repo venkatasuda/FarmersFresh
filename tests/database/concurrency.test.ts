@@ -70,7 +70,7 @@ describe('deterministic multi-session concurrency',()=>{
       await blocker.query('begin');await blocker.query('select id from public.orders where id=$1 for update',[id]);
       await a.query('begin');await b.query('begin');const pids=[await pid(a),await pid(b)];
       const calls=[(async()=>{const result=await a.query("select public.settle_razorpay_payment($1,$2,$3,'payment.captured','{}')",['pay-'+id,'rp-'+id,Math.round(Number(order.total)*100)]);await a.query('commit');return result;})(),(async()=>{const result=await b.query('select public.cancel_stale_unpaid_orders()');await b.query('commit');return result;})()];
-      tasks=calls;const completed=Promise.allSettled(calls);await waitForBlocked(pids);await blocker.query('commit');
+      tasks=calls;const completed=Promise.allSettled(calls);/* stale cleaner uses SKIP LOCKED, so only the settle call waits */ await waitForBlocked([pids[0]]);await blocker.query('commit');
       const results=await completed;expect(results.every(result=>result.status==='fulfilled')).toBe(true);
       const state=(await seed.query('select status,is_paid from public.orders where id=$1',[id])).rows[0];
       expect(state.status==='cancelled'&&state.is_paid).toBe(false);

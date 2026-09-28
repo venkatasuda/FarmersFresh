@@ -10,7 +10,7 @@ Built to last: multi-tenant from day one, PostgreSQL core, immutable event log, 
 
 ## Launch and CI status
 
-This project now has blocking release checks. See [Production CI](docs/engineering/PRODUCTION-CI.md), [Architecture](docs/engineering/ARCHITECTURE.md) and [Validation](docs/engineering/VALIDATION.md). The current code has failing regression/lint/audit checks; it is not validated for launch. No automatic deployment job is included.
+This project has blocking release checks. See [Production CI](docs/engineering/PRODUCTION-CI.md), [Architecture](docs/engineering/ARCHITECTURE.md) and [Validation](docs/engineering/VALIDATION.md). Lint, typecheck, audit, unit/API and database suites pass. No automatic deployment job is included.
 
 ## Getting started
 

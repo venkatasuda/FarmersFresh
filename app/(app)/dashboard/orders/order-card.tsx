@@ -17,6 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
   out_for_delivery: "bg-blue-100 text-blue-800",
   delivered: "bg-zinc-100 text-ink-soft",
   cancelled: "bg-red-100 text-red-700",
+  refund_pending: "bg-red-600 text-white",
 };
 
 export function OrderCard({ order }: { order: StaffOrder }) {
@@ -28,6 +29,7 @@ export function OrderCard({ order }: { order: StaffOrder }) {
 
   const next = nextStatus(order.status);
   const finished = order.status === "delivered" || order.status === "cancelled";
+  const refundDue = order.status === "refund_pending";
 
   function run(fn: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -130,7 +132,26 @@ export function OrderCard({ order }: { order: StaffOrder }) {
         </p>
       ) : null}
 
-      {!finished ? (
+      {refundDue ? (
+        <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+          <p className="text-sm text-red-700">
+            Paid after the order expired. Refund {formatRupees(order.total)} in
+            the Razorpay dashboard, then:
+          </p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              run(() =>
+                cancelOrder(order.id, "Refunded — payment arrived after cancellation")
+              )
+            }
+            className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            Mark refunded
+          </button>
+        </footer>
+      ) : !finished ? (
         <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
           {next ? (
             <button

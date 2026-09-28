@@ -1,7 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
-const connectionString = process.env.TEST_DATABASE_URL;
-if (!connectionString) throw new Error("TEST_DATABASE_URL required: use a disposable local Supabase database.");
+const connectionString = process.env.TEST_DATABASE_URL ?? process.env.SUPABASE_DB_URL;
+if (!connectionString) throw new Error("TEST_DATABASE_URL or SUPABASE_DB_URL required: use a disposable local Supabase database.");
 const url = new URL(connectionString);
 if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) throw new Error("Refusing database tests against a remote database.");
 export const pool = new Pool({ connectionString, max: 12, statement_timeout: 15000 });

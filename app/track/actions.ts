@@ -18,7 +18,8 @@ export type TrackedOrder = {
     | "packed"
     | "out_for_delivery"
     | "delivered"
-    | "cancelled";
+    | "cancelled"
+    | "refund_pending";
   total: number;
   subtotal: number;
   deliveryFee: number;

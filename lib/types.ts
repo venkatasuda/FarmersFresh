@@ -253,7 +253,8 @@ export type OrderStatus =
   | "packed"
   | "out_for_delivery"
   | "delivered"
-  | "cancelled";
+  | "cancelled"
+  | "refund_pending";
 
 export type OrderItem = {
   id: string;
@@ -298,6 +299,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
+  refund_pending: "Refund due",
 };
 
 /** The next step in the fulfilment chain, or null if there isn't one. */

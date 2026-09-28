@@ -336,7 +336,7 @@ export function CheckoutClient({
       }
 
       // Attach the delivery pin (best-effort) so the rider can navigate to it.
-      if (coords) void attachOrderLocation(result.orderId, coords.lat, coords.lng);
+      if (coords) void attachOrderLocation(result.orderId, form.phone, coords.lat, coords.lng);
 
       // Cash on delivery: nothing to collect now — straight to confirmation.
       if (result.paymentMethod === "cod") {
