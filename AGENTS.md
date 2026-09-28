@@ -17,7 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Full rules in `docs/BRAND.md`. In short:
 
-- Palette tokens live in `app/globals.css` under `@theme`. Use `brand-600`,
+- Palette tokens live in `src/app/globals.css` under `@theme`. Use `brand-600`,
   `surface`, `canvas`, `line`, `ink`, `ink-soft` — **never raw hex** in a component.
 - Green is for identity, primary actions, and good news. Not for everything.
 - Light theme only. No `dark:` variants.
@@ -27,22 +27,22 @@ Full rules in `docs/BRAND.md`. In short:
 
 ## Module boundaries (a build failure lives here)
 
-`lib/supabase/server.ts` imports `next/headers`. Anything that reaches it from
+`src/lib/supabase/server.ts` imports `next/headers`. Anything that reaches it from
 a Client Component is a **hard production build failure**, not a warning — and
 `next dev` will not catch it.
 
 | File | May import Supabase? | Who imports it |
 | --- | --- | --- |
-| `lib/format.ts` | **Never** | anyone |
-| `lib/types.ts` | **Never** | anyone |
-| `lib/shop.ts` | yes | Server Components only |
-| `lib/orders.ts` | yes | Server Components only |
-| `lib/auth.ts` | yes | Server Components only |
+| `src/lib/format.ts` | **Never** | anyone |
+| `src/lib/types.ts` | **Never** | anyone |
+| `src/lib/shop.ts` | yes | Server Components only |
+| `src/lib/orders.ts` | yes | Server Components only |
+| `src/lib/auth.ts` | yes | Server Components only |
 
-If a Client Component needs a formatter or a type, it goes in `lib/format.ts`
-or `lib/types.ts`. Never re-export a server function through them.
+If a Client Component needs a formatter or a type, it goes in `src/lib/format.ts`
+or `src/lib/types.ts`. Never re-export a server function through them.
 
-This bit once already: `formatRupees` lived in `lib/shop.ts`, so `app/cart/page.tsx`
+This bit once already: `formatRupees` lived in `lib/shop.ts` (now `src/lib/`), so `app/cart/page.tsx`
 (a Client Component) dragged `next/headers` into the browser bundle.
 
 ## Non-negotiables

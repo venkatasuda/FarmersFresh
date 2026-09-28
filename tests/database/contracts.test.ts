@@ -7,7 +7,7 @@ function files(directory:string):string[] {return readdirSync(directory,{withFil
 describe('application/database deployment contract',()=>{
   it('every statically named application RPC exists in the deployed test schema',async()=>{
     const names=new Set<string>();
-    for(const file of [...files('app'),...files('lib')])for(const match of readFileSync(file,'utf8').matchAll(/\.rpc\(\s*["']([^"']+)["']/g))names.add(match[1]);
+    for(const file of files('src'))for(const match of readFileSync(file,'utf8').matchAll(/\.rpc\(\s*["']([^"']+)["']/g))names.add(match[1]);
     expect(names.size).toBeGreaterThan(20);
     const functions=await pool.query("select distinct proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'");
     const available=new Set(functions.rows.map(row=>row.proname));expect([...names].filter(name=>!available.has(name))).toEqual([]);

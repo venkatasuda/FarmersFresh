@@ -5,8 +5,8 @@ vi.mock('@supabase/supabase-js',()=>({createClient:()=>({from:()=>({
   select:()=>({eq:()=>({maybeSingle:db.read})}),
   update:db.update,
 })})}));
-import { POST as order } from '../../app/api/razorpay/order/route';
-import { POST as membership } from '../../app/api/razorpay/membership/route';
+import { POST as order } from '@/app/api/razorpay/order/route';
+import { POST as membership } from '@/app/api/razorpay/membership/route';
 const network=vi.fn();
 beforeEach(()=>{
   vi.stubEnv('RAZORPAY_KEY_ID','rzp_test_ci');vi.stubEnv('RAZORPAY_KEY_SECRET','ci-secret');

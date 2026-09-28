@@ -3,8 +3,8 @@ import { createHmac } from "node:crypto";
 import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), maybeSingle: vi.fn(), from: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
-import { POST as webhook } from "../../app/api/razorpay/webhook/route";
-import { POST as verify } from "../../app/api/razorpay/verify/route";
+import { POST as webhook } from "@/app/api/razorpay/webhook/route";
+import { POST as verify } from "@/app/api/razorpay/verify/route";
 const secret = "ci-only-payment-secret";
 const captured = { event: "payment.captured", payload: { payment: { entity: { id: "pay_ci", order_id: "order_ci", amount: 150000 } } } };
 function hookRequest(body: string, signature = createHmac("sha256", secret).update(body).digest("hex")) {

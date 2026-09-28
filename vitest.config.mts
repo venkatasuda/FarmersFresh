@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   resolve: {
     alias: {
-      // Match the tsconfig "@/*" -> repo root alias so tests import like the app.
-      "@": fileURLToPath(new URL(".", import.meta.url)),
+      // Match the tsconfig "@/*" -> ./src alias so tests import like the app.
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   test: {
@@ -16,8 +16,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reportsDirectory: "coverage",
-      include: ["lib/**/*.ts"],
-      exclude: ["lib/supabase/**", "**/*.d.ts", "lib/env.ts"],
+      include: ["src/lib/**/*.ts"],
+      exclude: ["src/lib/supabase/**", "**/*.d.ts", "src/lib/env.ts"],
     },
   },
 });

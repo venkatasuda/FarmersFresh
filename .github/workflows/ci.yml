@@ -79,7 +79,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - run: docker run --rm -v "$PWD:/src" semgrep/semgrep:1.130.0 semgrep scan --config /src/security/semgrep.yml --error /src/app /src/lib
+      - run: docker run --rm -v "$PWD:/src" semgrep/semgrep:1.130.0 semgrep scan --config /src/security/semgrep.yml --error /src/src
   edge-types:
     name: Notification worker typecheck
     runs-on: ubuntu-24.04

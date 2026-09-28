@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { toAmount, toQuantity, sanitizeError } from "../../lib/guard";
-import { num, formatQty, formatLineQty, formatRupees } from "../../lib/format";
+import { toAmount, toQuantity, sanitizeError } from "@/lib/guard";
+import { num, formatQty, formatLineQty, formatRupees } from "@/lib/format";
 describe("money and quantity validation", () => {
   it.each([null, undefined, "", NaN, Infinity, -Infinity, -1, 0, "12junk", "0x10", true, [], {}])("rejects malformed values: %s", value => {
     expect(toAmount(value)).toBeNull(); expect(toQuantity(value)).toBeNull();

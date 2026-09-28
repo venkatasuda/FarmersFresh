@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Architecture boundaries (see the header of lib/format.ts for the "why").
+// Architecture boundaries (see the header of src/lib/format.ts for the "why").
 //
-//  1. lib/format.ts and lib/types.ts are imported by Client Components, so they
+//  1. src/lib/format.ts and src/lib/types.ts are imported by Client Components, so they
 //     must never pull in server-only modules — doing so drags next/headers into
 //     a client bundle and breaks the production build.
 //  2. Any "use client" file must not import a server-only module either.
@@ -16,7 +16,7 @@ const SERVER_ONLY = [
   /from\s+["']@\/lib\/supabase\/server["']/,
   /from\s+["']next\/headers["']/,
 ];
-const CLIENT_SAFE_FILES = ["lib/format.ts", "lib/types.ts"];
+const CLIENT_SAFE_FILES = ["src/lib/format.ts", "src/lib/types.ts"];
 
 const violations = [];
 
@@ -57,7 +57,7 @@ function walk(dir) {
     }
   }
 }
-walk(join(ROOT, "app"));
+walk(join(ROOT, "src"));
 
 if (violations.length) {
   console.error("Architecture boundary violations:\n" + violations.map((v) => "  - " + v).join("\n"));
