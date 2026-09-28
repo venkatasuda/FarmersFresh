@@ -8,7 +8,7 @@
 // Assumes schema_snapshot.sql is a `supabase db dump` output (safe to apply on a
 // fresh local database). Regenerate it with:  supabase db dump -f supabase/schema_snapshot.sql
 
-import { mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, copyFileSync, readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
@@ -31,7 +31,11 @@ const config = readFileSync(CONFIG, "utf8").replace(
 );
 writeFileSync(join(OUT, "config.toml"), config);
 
-// The snapshot becomes the single migration `supabase start` applies.
+// The snapshot replaces the baseline; every later migration is applied on top,
+// so tests always run against the schema that production will actually have.
 copyFileSync(SNAPSHOT, join(OUT, "migrations", "00000000000000_snapshot.sql"));
+const later = readdirSync(join(ROOT, "supabase", "migrations"))
+  .filter((f) => f.endsWith(".sql") && !f.startsWith("00000000000000_"));
+for (const f of later) copyFileSync(join(ROOT, "supabase", "migrations", f), join(OUT, "migrations", f));
 
-console.log("Prepared .ci-recovery from schema_snapshot.sql");
+console.log(`Prepared .ci-recovery from schema_snapshot.sql + ${later.length} later migration(s)`);
