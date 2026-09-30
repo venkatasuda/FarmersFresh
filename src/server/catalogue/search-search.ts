@@ -1,0 +1,46 @@
+import "server-only";
+import type { Suggestion } from "@/lib/contracts/search-search";
+import { num } from "@/lib/format";
+import { searchItems } from "@/lib/search";
+import { createClient } from "@/server/supabase/server";
+
+/**
+ * Lightweight autocomplete: a few product matches for the search dropdown.
+ * A direct name search rather than the full catalogue load, so it's fast on
+ * every keystroke. RLS (prod_public_read) keeps it to published storefront
+ * products, so no extra filtering is needed.
+ */
+export async function suggestProducts(q: string): Promise<Suggestion[]> {
+  const term = q.trim();
+  if (term.length < 2) return [];
+
+  const supabase = await createClient();
+  // Fetch the light catalogue once (RLS keeps it to published storefront
+  // products), then fuzzy-match in memory so typos and regional words hit.
+  // ponytail: full-ish scan, fine for a small catalogue; swap for a pg_trgm
+  // RPC past ~1k products.
+  const { data, error } = await supabase
+    .from("products")
+    .select("slug, name, sale_price, image_path, category")
+    .limit(1000);
+
+  if (error) return [];
+
+  const rows = ((data ?? []) as {
+    slug: string | null;
+    name: string;
+    sale_price: string | number | null;
+    image_path: string | null;
+    category: string | null;
+  }[]).filter((r) => r.slug);
+
+  return searchItems(rows, term)
+    .slice(0, 6)
+    .map((r) => ({
+      slug: r.slug as string,
+      name: r.name,
+      price: num(r.sale_price),
+      imagePath: r.image_path,
+      category: r.category,
+    }));
+}

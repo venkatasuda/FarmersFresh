@@ -14,8 +14,8 @@
 //  4. src/lib/format.ts and src/lib/types.ts import no Supabase module at all.
 //  5. App code never writes money/stock/order tables directly — those changes go
 //     through database functions so the website, a mobile app and any API client
-//     share one set of rules. (src/app/api/ is exempt: payment plumbing that runs
-//     with the service role and records Razorpay ids.)
+//     share one set of rules. Only the payment-order adapter may attach a
+//     Razorpay id through a conditional update; settlement still uses RPCs.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -47,12 +47,29 @@ for (const file of walk(join(ROOT, "src"))) {
   if (rel.startsWith("src/server/") && rel !== "src/server/supabase/proxy.ts" && !/^import ["']server-only["'];?$/m.test(src)) {
     violations.push(`${rel} is missing import "server-only"`);
   }
-  const write = !rel.startsWith("src/app/api/") && src.match(DIRECT_WRITE);
+  // Keep the pre-existing payment plumbing exception narrow after moving it
+  // out of app/api: only setting the gateway id is permitted here.
+  const checkedSource = rel === "src/server/payments/order.ts"
+    ? src.replace(/\.from\("orders"\)\s*\.update\(\{ razorpay_order_id: rp\.id \}\)/g, "")
+    : src;
+  const write = checkedSource.match(DIRECT_WRITE);
   if (write) {
     violations.push(`${rel} writes "${write[1]}" directly — add or use a database function instead`);
   }
   if ((rel === "src/lib/format.ts" || rel === "src/lib/types.ts") && /from\s+["']@\/lib\/supabase\//.test(src)) {
     violations.push(`${rel} must not import any Supabase module`);
+  }
+  if ((rel.startsWith("src/lib/") || rel.startsWith("src/components/")) && /from\s+["']@\/features\//.test(src)) {
+    violations.push(`${rel} imports a feature — shared modules must not depend on features`);
+  }
+  if (rel.startsWith("src/server/") && /from\s+["']@\/features\//.test(src)) {
+    violations.push(`${rel} imports frontend code — move its shared contract into src/lib/contracts/`);
+  }
+  if (!rel.startsWith("src/server/") && /from\s+["']@supabase\/supabase-js["']/.test(src) && !/^import type .*from ["']@supabase\/supabase-js["'];?$/m.test(src)) {
+    violations.push(`${rel} imports the privileged-capable Supabase client outside src/server/`);
+  }
+  if (rel.startsWith("src/app/") && /\.rpc\(/.test(src)) {
+    violations.push(`${rel} calls a database RPC directly — use its server domain module`);
   }
 }
 

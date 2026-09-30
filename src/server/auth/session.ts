@@ -1,0 +1,87 @@
+import "server-only";
+import type { Membership, Session } from "@/lib/contracts/auth-session";
+import { createClient } from "@/server/supabase/server";
+import { redirect } from "next/navigation";
+export type { Membership, Session } from "@/lib/contracts/auth-session";
+
+/**
+ * Loads the signed-in user plus their org and location memberships.
+ *
+ * Every query below runs as the user, so RLS is doing the real work — if the
+ * policies are wrong these come back empty rather than leaking another org.
+ *
+ * Redirects to /login if there is no session. `proxy.ts` should catch that
+ * first; this is the second lock on the same door, for when a route is reached
+ * some way the matcher didn't cover.
+ */
+export async function requireSession(): Promise<Session> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, full_name, is_owner, org_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // Authenticated but no STAFF profile row. This is the common case of a
+  // *customer* account wandering into a staff page — NOT an error, and we must
+  // not destroy their customer session over it (the old code signed them out).
+  // Send them to the public storefront: "/" isn't protected, so there's no
+  // redirect loop back through /login. A genuinely mis-provisioned staff member
+  // simply lands on the shop; the owner links their account separately.
+  if (profileError || !profile) {
+    redirect("/");
+  }
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id, name")
+    .eq("id", profile.org_id)
+    .maybeSingle();
+
+  const { data: rows } = await supabase
+    .from("memberships")
+    .select("role, location_id, locations(id, name, type, code)")
+    .eq("user_id", user.id);
+
+  type MembershipRow = {
+    role: Membership["role"];
+    location_id: string;
+    locations:
+      | { id: string; name: string; type: "farm" | "store"; code: string | null }
+      | { id: string; name: string; type: "farm" | "store"; code: string | null }[]
+      | null;
+  };
+
+  const memberships: Membership[] = ((rows ?? []) as MembershipRow[])
+    .map((r) => {
+      // PostgREST returns an embedded row as an object or an array of one,
+      // depending on how it infers the relationship. Handle both.
+      const loc = Array.isArray(r.locations) ? r.locations[0] : r.locations;
+      if (!loc) return null;
+      return {
+        role: r.role,
+        locationId: loc.id,
+        locationName: loc.name,
+        locationType: loc.type,
+        locationCode: loc.code,
+      } satisfies Membership;
+    })
+    .filter((m): m is Membership => m !== null);
+
+  return {
+    userId: profile.id,
+    email: user.email ?? null,
+    fullName: profile.full_name,
+    isOwner: profile.is_owner,
+    orgId: profile.org_id,
+    orgName: org?.name ?? "Unknown organisation",
+    memberships,
+  };
+}

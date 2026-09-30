@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/server/supabase/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Email-confirmation landing. Supabase's confirmation link points here with a

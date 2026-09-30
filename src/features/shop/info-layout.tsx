@@ -1,4 +1,3 @@
-import { ShopShell } from "./shop-shell";
 
 /**
  * Shared frame for the static info pages (delivery, contact, refunds, about,
@@ -15,7 +14,7 @@ export function InfoPage({
   children: React.ReactNode;
 }) {
   return (
-    <ShopShell>
+    <>
       <article className="mx-auto max-w-2xl">
         <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
           {title}
@@ -27,6 +26,6 @@ export function InfoPage({
           {children}
         </div>
       </article>
-    </ShopShell>
+    </>
   );
 }

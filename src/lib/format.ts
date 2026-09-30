@@ -51,3 +51,15 @@ export function formatLineQty(
   if (!packLabelText) return formatQty(qty, unit);
   return qty === 1 ? packLabelText : `${qty} × ${packLabelText}`;
 }
+
+const METHOD_LABELS: Record<string, string> = {
+  cash: "Cash",
+  upi: "UPI",
+  card: "Card",
+  bank_transfer: "Bank",
+  other: "Other",
+};
+
+export function methodLabel(m: string): string {
+  return METHOD_LABELS[m] ?? m;
+}

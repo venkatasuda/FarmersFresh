@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/server/supabase/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Clears the session and returns to /login, optionally with a message.

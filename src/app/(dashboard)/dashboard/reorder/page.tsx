@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getReorderSuggestions } from "@/server/forecast";
-import { getSuppliers } from "@/features/dashboard/purchasing/actions";
+import { getSuppliers } from "@/server/procurement/staff-purchasing";
 import { ReorderClient } from "@/features/dashboard/reorder/reorder-client";
+import { requireSession } from "@/server/auth/session";
+import { getReorderSuggestions } from "@/server/procurement/forecast";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Reorder · Farmers Fresh" };
 export const dynamic = "force-dynamic";

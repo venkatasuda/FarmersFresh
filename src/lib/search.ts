@@ -10,6 +10,18 @@
  * ponytail: in-memory scan over the catalogue — right for tens–hundreds of
  * products. Past ~1k, move to a pg_trgm RPC with a GIN index.
  */
+/**
+ * Typo- and language-tolerant product search. CLIENT-SAFE (pure, no server
+ * imports) so both the results page and the autocomplete action share it.
+ *
+ * Matches on tokens with: substring, then bounded edit-distance (so "chiken"
+ * finds "chicken", "corriander" finds "coriander"), and folds each query word
+ * through the regional term-map ("dhaniya" -> "coriander"). Every query word
+ * must land, so results stay relevant.
+ *
+ * ponytail: in-memory scan over the catalogue — right for tens–hundreds of
+ * products. Past ~1k, move to a pg_trgm RPC with a GIN index.
+ */
 import { toSearchTerm } from "./grocery-terms";
 
 function norm(s: string): string {

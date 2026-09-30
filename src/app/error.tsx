@@ -1,8 +1,8 @@
 "use client";
 
+import { reportError } from "@/lib/report";
 import Link from "next/link";
 import { useEffect } from "react";
-import { reportError } from "@/lib/report";
 
 /**
  * Storefront error boundary. If any page under the app root throws while

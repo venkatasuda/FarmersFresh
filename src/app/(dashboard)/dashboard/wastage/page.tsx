@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getStockLines, getStorefrontLocationId } from "@/server/stock";
-import { getWastageList, getWastageSummary } from "@/features/dashboard/wastage/actions";
+import { getWastageList, getWastageSummary } from "@/server/inventory/staff-wastage";
 import { WastageClient } from "@/features/dashboard/wastage/wastage-client";
+import { requireSession } from "@/server/auth/session";
+import { getStockLines, getStorefrontLocationId } from "@/server/inventory/queries";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Wastage · Farmers Fresh" };
 export const dynamic = "force-dynamic";

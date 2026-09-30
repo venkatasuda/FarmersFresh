@@ -1,14 +1,7 @@
 "use server";
 
-import { createClient } from "@/server/supabase/server";
+import * as backend from "@/server/loyalty/account-gift";
 
-export async function redeemGiftCard(
-  code: string
-): Promise<{ ok: true; value: number } | { ok: false; message: string }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("redeem_gift_card", { p_code: code });
-  if (error) return { ok: false, message: "Couldn't redeem just now. Try again." };
-  const d = (data ?? {}) as { ok?: boolean; value?: number; message?: string };
-  if (!d.ok) return { ok: false, message: d.message ?? "That code isn't valid." };
-  return { ok: true, value: Number(d.value ?? 0) };
+export async function redeemGiftCard(...args: Parameters<typeof backend.redeemGiftCard>) {
+  return backend.redeemGiftCard(...args);
 }
