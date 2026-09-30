@@ -129,36 +129,21 @@ export async function createPurchaseOrder(input: {
   items: { productId: string; qty: number; unitCost: number }[];
   markOrdered: boolean;
 }): Promise<{ ok: true; poNumber: string } | { ok: false; message: string }> {
-  if (input.items.length === 0) {
+  if (!input || !Array.isArray(input.items) || input.items.length === 0 || input.items.length > 100) {
     return { ok: false, message: "Add at least one item." };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_purchase_order", {
+  const { data, error } = await supabase.rpc("create_purchase_order_with_items", {
     p_location: input.locationId,
     p_supplier: input.supplierId,
     p_notes: input.notes,
+    p_items: input.items,
+    p_mark_ordered: input.markOrdered === true,
   });
   if (error || !data) {
     return { ok: false, message: sanitizeError(error?.message ?? "Couldn't create the order.") };
   }
   const po = data as { id: string; po_number: string };
-
-  for (const it of input.items) {
-    const { error: itemErr } = await supabase.rpc("add_po_item", {
-      p_po: po.id,
-      p_product: it.productId,
-      p_qty: it.qty,
-      p_unit_cost: it.unitCost,
-    });
-    if (itemErr) {
-      return { ok: false, message: sanitizeError(itemErr.message) };
-    }
-  }
-
-  if (input.markOrdered) {
-    const { error: ordErr } = await supabase.rpc("mark_po_ordered", { p_po: po.id });
-    if (ordErr) return { ok: false, message: sanitizeError(ordErr.message) };
-  }
 
   revalidatePath("/dashboard/purchasing");
   revalidatePath("/dashboard/stock");

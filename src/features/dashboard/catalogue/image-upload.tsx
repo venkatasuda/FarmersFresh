@@ -2,19 +2,8 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
-/**
- * Uploads straight from the browser to Supabase Storage.
- *
- * Deliberately NOT routed through a Server Action: Server Actions have a
- * request body limit (1 MB by default) and a phone photo is several times
- * that. Going direct also means the file never occupies a Node process.
- *
- * The bucket's own policies do the guarding — public read, owner-only write,
- * 5 MB cap, image MIME types only. A hostile caller with the anon key still
- * cannot write here.
- */
+/** Photos are decoded and re-encoded by the authenticated server upload route. */
 export function ImageUpload({
   value,
   onChange,
@@ -29,7 +18,7 @@ export function ImageUpload({
   async function handleFile(file: File) {
     setError(null);
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
       setError("That's not an image.");
       return;
     }
@@ -40,26 +29,12 @@ export function ImageUpload({
 
     setBusy(true);
     try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      // Random name, not the original: two staff uploading "IMG_1234.jpg"
-      // would otherwise overwrite each other's photo.
-      const path = `${crypto.randomUUID()}.${ext}`;
-
-      const { error: upErr } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { cacheControl: "31536000", upsert: false });
-
-      if (upErr) {
-        setError(upErr.message);
-        return;
-      }
-
-      const { data } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(path);
-
-      onChange(data.publicUrl);
+      const response = await fetch("/api/product-images", { method: "POST", body: file });
+      if (!response.ok) { setError("Photo upload failed. Check the image and try again."); return; }
+      const data = await response.json();
+      onChange(data.url);
+    } catch {
+      setError("Photo upload failed. Please try again.");
     } finally {
       setBusy(false);
     }

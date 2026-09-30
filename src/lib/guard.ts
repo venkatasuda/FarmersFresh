@@ -60,10 +60,8 @@ const LEAKY = [
 ];
 
 /**
- * Returns a message safe to show a user. Our database functions raise plain,
- * friendly sentences ("Only 2 kg of Leg left.") — those pass through. Anything
- * that smells like a raw Postgres error is replaced with a generic line, so
- * internals never leak to a customer.
+ * Only explicitly approved business messages pass through. Unknown errors use
+ * the caller's safe fallback; a blacklist alone cannot identify every leak.
  */
 export function sanitizeError(
   message: string | undefined,
@@ -74,5 +72,20 @@ export function sanitizeError(
   if (LEAKY.some((t) => lower.includes(t))) return fallback;
   // Guard against a wall of text — a friendly message is short.
   if (message.length > 200) return fallback;
-  return message;
+  const safe = new Set([
+    "Not signed in.", "Please sign in.", "Order not found.", "Product not found.",
+    "Insufficient permission.", "You do not have access to that location.",
+    "Quantity must be greater than zero.", "A delivered order cannot be cancelled.",
+    "Add at least one item.", "Name is required.",
+  ]);
+  return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
+}
+
+export function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
+}
+
+export function safeNext(value: unknown, fallback = "/dashboard"): string {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || /[\\\x00-\x20]/.test(value)) return fallback;
+  return value;
 }

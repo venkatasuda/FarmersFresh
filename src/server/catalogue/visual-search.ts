@@ -1,4 +1,6 @@
 import "server-only";
+import { readObject } from "@/server/security/http";
+import { safeImage } from "./images";
 import { NextResponse, type NextRequest } from "next/server";
 /**
  * Visual product search: a photo in, a searchable product word out.
@@ -38,29 +40,11 @@ const PROVIDER =
 const MAX_B64_CHARS = 7_000_000;              // ~5 MB decoded image
 const ALLOWED_TYPES = /^data:image\/(jpe?g|png|webp);base64,/i;
 const B64_ONLY = /^[A-Za-z0-9+/=\s]+$/;       // reject non-base64 junk
-const RATE_MAX = 10;                          // requests…
-const RATE_WINDOW_MS = 60_000;                // …per IP per minute
-
-// ponytail: per-instance in-memory window — good enough for a single warm
-// serverless instance; move to Upstash/Redis or a DB counter if a distributed
-// limit is needed. Bounded map so it can't grow without limit.
-const hits = new Map<string, { n: number; reset: number }>();
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const h = hits.get(ip);
-  if (!h || now > h.reset) {
-    if (hits.size > 5000) hits.clear();
-    hits.set(ip, { n: 1, reset: now + RATE_WINDOW_MS });
-    return false;
-  }
-  h.n += 1;
-  return h.n > RATE_MAX;
-}
-
 async function recogniseGoogle(raw: string): Promise<string[]> {
   const key = process.env.GOOGLE_VISION_API_KEY!;
   const res = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${key}`, {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       requests: [
@@ -93,6 +77,7 @@ async function recogniseCustom(raw: string): Promise<string[]> {
   const token = process.env.VISION_ENDPOINT_TOKEN;
   const res = await fetch(url, {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -112,19 +97,9 @@ export async function searchByImage(request: NextRequest) {
     return NextResponse.json({ error: "Visual search isn't set up yet." }, { status: 503 });
   }
 
-  const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
-  if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many searches. Please wait a minute." }, { status: 429 });
-  }
-
-  let body: { image?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request." }, { status: 400 });
-  }
-
-  const input = body.image ?? "";
+  const body = await readObject(request, MAX_B64_CHARS + 100);
+  const input = body.image;
+  if (typeof input !== "string") return NextResponse.json({ error: "No image." }, { status: 400 });
   if (input.length > MAX_B64_CHARS) {
     return NextResponse.json({ error: "That image is too large (max ~5 MB)." }, { status: 413 });
   }
@@ -135,21 +110,23 @@ export async function searchByImage(request: NextRequest) {
     return NextResponse.json({ error: "Only JPEG, PNG or WebP images are supported." }, { status: 415 });
   }
 
-  const raw = input.replace(/^data:image\/\w+;base64,/, "");
+  const raw = input.replace(/^data:image\/\w+;base64,/i, "");
   if (!raw) return NextResponse.json({ error: "No image." }, { status: 400 });
   if (!B64_ONLY.test(raw)) {
     return NextResponse.json({ error: "That doesn't look like an image." }, { status: 400 });
   }
 
+  const image = (await safeImage(Buffer.from(raw, "base64"))).toString("base64");
   let candidates: string[];
   try {
-    candidates = PROVIDER === "custom" ? await recogniseCustom(raw) : await recogniseGoogle(raw);
+    candidates = PROVIDER === "custom" ? await recogniseCustom(image) : await recogniseGoogle(image);
   } catch {
     return NextResponse.json({ error: "Couldn't read the photo." }, { status: 502 });
   }
 
   const cleaned = candidates
-    .map((s) => (s ?? "").trim())
+    .filter((s) => typeof s === "string")
+    .map((s) => s.trim().slice(0, 100))
     .filter((s) => s.length > 1 && !GENERIC.has(s.toLowerCase()));
 
   return NextResponse.json({ term: cleaned[0] ?? null, candidates: cleaned.slice(0, 6) });

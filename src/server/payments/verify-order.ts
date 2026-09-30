@@ -1,4 +1,8 @@
 import "server-only";
+import { canPay, equalSignature } from "./access";
+import { readObject } from "@/server/security/http";
+import { isUuid } from "@/lib/guard";
+import { capturedPayment } from "./captured";
 import { createAdminClient } from "@/server/supabase/admin";
 import { NextResponse, type NextRequest } from "next/server";
 import { createHmac } from "node:crypto";
@@ -22,26 +26,11 @@ export async function verifyOrderPayment(request: NextRequest) {
     );
   }
 
-  let body: {
-    orderId?: string;
-    razorpay_order_id?: string;
-    razorpay_payment_id?: string;
-    razorpay_signature?: string;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request." }, { status: 400 });
-  }
+  const body = await readObject(request);
 
   const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } =
     body;
-  if (
-    !orderId ||
-    !razorpay_order_id ||
-    !razorpay_payment_id ||
-    !razorpay_signature
-  ) {
+  if (!isUuid(orderId) || typeof razorpay_order_id !== "string" || !/^order_[A-Za-z0-9]+$/.test(razorpay_order_id) || typeof razorpay_payment_id !== "string" || !/^pay_[A-Za-z0-9]+$/.test(razorpay_payment_id) || typeof razorpay_signature !== "string") {
     return NextResponse.json({ error: "Missing fields." }, { status: 400 });
   }
 
@@ -50,7 +39,7 @@ export async function verifyOrderPayment(request: NextRequest) {
     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
     .digest("hex");
 
-  if (expected !== razorpay_signature) {
+  if (!equalSignature(expected, razorpay_signature)) {
     return NextResponse.json({ error: "Signature mismatch." }, { status: 400 });
   }
 
@@ -61,7 +50,7 @@ export async function verifyOrderPayment(request: NextRequest) {
   // order could be replayed to settle an expensive one.
   const { data: order } = await admin
     .from("orders")
-    .select("razorpay_order_id")
+    .select("razorpay_order_id, user_id, total")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -69,11 +58,18 @@ export async function verifyOrderPayment(request: NextRequest) {
     return NextResponse.json({ error: "Payment does not match order." }, { status: 400 });
   }
 
-  const { error } = await admin.rpc("mark_order_paid", {
-    p_order_id: orderId,
-    p_razorpay_order: razorpay_order_id,
-    p_razorpay_payment: razorpay_payment_id,
+  if (!await canPay(orderId, order.user_id, true)) {
+    return NextResponse.json({ error: "Payment not found." }, { status: 404 });
+  }
+  const payment = await capturedPayment(razorpay_payment_id, razorpay_order_id, Number(order.total));
+  if (!payment) return NextResponse.json({ error: "Payment is not captured yet. Please retry." }, { status: 409 });
+  const { data: settled, error } = await admin.rpc("settle_razorpay_payment", {
+    p_payment_id: razorpay_payment_id, p_rp_order: razorpay_order_id, p_amount: payment.amount,
+    p_event: "payment.captured", p_raw: { source: "verified_callback" },
   });
+  if (!error && !["order_paid", "membership_activated", "duplicate"].includes(String(settled))) {
+    return NextResponse.json({ error: "Payment needs reconciliation." }, { status: 409 });
+  }
 
   if (error) {
     return NextResponse.json({ error: "Couldn't record payment." }, { status: 500 });

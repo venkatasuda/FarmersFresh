@@ -1,6 +1,7 @@
 import "server-only";
+import { grantGuestPayment } from "@/server/payments/access";
 import type { CheckoutPrefill, PaymentMethod, PlaceOrderResult, SavedAddress, SubmittedLine } from "@/lib/contracts/checkout";
-import { toQuantity } from "@/lib/guard";
+import { isUuid, sanitizeError, toQuantity } from "@/lib/guard";
 import { createClient } from "@/server/supabase/server";
 
 /** The logged-in customer's saved addresses for the checkout picker. */
@@ -173,6 +174,12 @@ export async function placeOrder(
   },
   lines: SubmittedLine[]
 ): Promise<PlaceOrderResult> {
+  if (!form || typeof form !== "object" || ["name", "phone", "email", "address", "city", "pincode", "landmark", "slot", "notes", "coupon"].some(key => typeof form[key as keyof typeof form] !== "string" || String(form[key as keyof typeof form]).length > 2000) || !/^[0-9+ ()-]{10,20}$/.test(form.phone) || !/^\d{6}$/.test(form.pincode) || !form.name.trim() || !form.address.trim()) {
+    return { ok: false, message: "Check your contact and delivery details." };
+  }
+  if (!Array.isArray(lines) || lines.length > 40 || lines.some(l => !l || !isUuid(l.productId) || toQuantity(l.quantity, 50) === null)) {
+    return { ok: false, message: "Check your basket quantities." };
+  }
   if (!Array.isArray(lines) || lines.length === 0) {
     return { ok: false, message: "Your basket is empty." };
   }
@@ -190,6 +197,7 @@ export async function placeOrder(
     return { ok: false, message: "Your basket has nothing valid to order." };
   }
 
+  if (form.paymentMethod !== "cod" && (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.RAZORPAY_KEY_SECRET || !process.env.RAZORPAY_KEY_ID)) return { ok: false, message: "Online payment is unavailable. Choose cash on delivery." };
   const supabase = await createClient();
 
   const { data: orgId, error: orgError } = await supabase.rpc(
@@ -239,7 +247,7 @@ export async function placeOrder(
     return {
       ok: false,
       message: known
-        ? error.message
+        ? sanitizeError(error.message)
         : "Something went wrong placing your order. Please try again.",
     };
   }
@@ -249,6 +257,7 @@ export async function placeOrder(
     return { ok: false, message: "Order could not be placed. Please try again." };
   }
 
+  if (method !== "cod") await grantGuestPayment(String(row.order_id));
   return {
     ok: true,
     orderId: String(row.order_id),

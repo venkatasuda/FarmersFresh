@@ -2,15 +2,7 @@ import "server-only";
 import { createClient } from "@/server/supabase/server";
 import { redirect } from "next/navigation";
 
-/**
- * Only allow redirects back into this app. `//evil.com` is a valid relative
- * URL to the browser but a valid absolute one to the network — reject it.
- */
-function safeNext(value: unknown): string {
-  const next = typeof value === "string" ? value : "";
-  if (next.startsWith("/") && !next.startsWith("//")) return next;
-  return "/dashboard";
-}
+import { safeNext } from "@/lib/guard";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "")
@@ -19,7 +11,7 @@ export async function signIn(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const next = safeNext(formData.get("next"));
 
-  if (!email || !password) {
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254 || !password || password.length > 1024) {
     redirect(
       `/login?error=${encodeURIComponent("Enter your email and password.")}&next=${encodeURIComponent(next)}`
     );

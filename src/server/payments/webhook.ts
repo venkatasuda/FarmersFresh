@@ -1,4 +1,5 @@
 import "server-only";
+import { readBody } from "@/server/security/http";
 import { createAdminClient } from "@/server/supabase/admin";
 import { NextResponse, type NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -20,7 +21,7 @@ export async function settlePaymentWebhook(request: NextRequest) {
   }
 
   // Signature is over the RAW body, so read text before parsing.
-  const raw = await request.text();
+  const raw = await readBody(request, 262_144);
   const signature = request.headers.get("x-razorpay-signature") ?? "";
   const expected = createHmac("sha256", secret).update(raw).digest("hex");
 
@@ -32,10 +33,11 @@ export async function settlePaymentWebhook(request: NextRequest) {
 
   let body: {
     event?: string;
-    payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number } } };
+    payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number; currency?: string } } };
   };
   try {
     body = JSON.parse(raw);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
   } catch {
     return NextResponse.json({ error: "Bad payload." }, { status: 400 });
   }
@@ -48,6 +50,10 @@ export async function settlePaymentWebhook(request: NextRequest) {
   const p = body.payload?.payment?.entity;
   if (!p?.id || !p.order_id) {
     return NextResponse.json({ ok: true, ignored: "no_payment_entity" });
+  }
+
+  if (typeof p.id !== "string" || !/^pay_[A-Za-z0-9]+$/.test(p.id) || typeof p.order_id !== "string" || !/^order_[A-Za-z0-9]+$/.test(p.order_id) || !Number.isSafeInteger(p.amount) || (p.amount ?? 0) <= 0 || p.currency !== "INR") {
+    return NextResponse.json({ error: "Invalid payment entity." }, { status: 400 });
   }
 
   const admin = createAdminClient(supabaseUrl, serviceRole);

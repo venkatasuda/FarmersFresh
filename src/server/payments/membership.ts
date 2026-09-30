@@ -1,4 +1,7 @@
 import "server-only";
+import { canPay } from "./access";
+import { readObject } from "@/server/security/http";
+import { isUuid } from "@/lib/guard";
 import { createAdminClient } from "@/server/supabase/admin";
 import { NextResponse, type NextRequest } from "next/server";
 /**
@@ -17,26 +20,24 @@ export async function createMembershipPayment(request: NextRequest) {
     return NextResponse.json({ error: "Online payment isn't set up yet." }, { status: 503 });
   }
 
-  let body: { membershipId?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request." }, { status: 400 });
-  }
+  const body = await readObject(request);
 
   const id = body.membershipId;
-  if (!id || typeof id !== "string") {
+  if (!isUuid(id)) {
     return NextResponse.json({ error: "Missing membership." }, { status: 400 });
   }
 
   const admin = createAdminClient(supabaseUrl, serviceRole);
   const { data: m, error } = await admin
     .from("pass_memberships")
-    .select("id, amount, status, razorpay_order_id")
+    .select("id, user_id, amount, status, razorpay_order_id")
     .eq("id", id)
     .maybeSingle();
 
   if (error || !m) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+  if (!await canPay(id, m.user_id, false)) {
+    return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+  }
   if (m.status !== "pending_payment") {
     return NextResponse.json({ error: "This pass isn't awaiting payment." }, { status: 409 });
   }
@@ -58,6 +59,7 @@ export async function createMembershipPayment(request: NextRequest) {
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
   const res = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       amount: Math.round(rupees * 100),
@@ -69,6 +71,9 @@ export async function createMembershipPayment(request: NextRequest) {
   if (!res.ok) return NextResponse.json({ error: "Couldn't start payment." }, { status: 502 });
 
   const rp = (await res.json()) as { id: string; amount: number };
+  if (typeof rp?.id !== "string" || !/^order_[A-Za-z0-9]+$/.test(rp.id) || rp.amount !== Math.round(rupees * 100)) {
+    return NextResponse.json({ error: "Invalid payment provider response." }, { status: 502 });
+  }
 
   // Race-safe + checked save (see the order route for the rationale).
   const { data: saved, error: saveErr } = await admin

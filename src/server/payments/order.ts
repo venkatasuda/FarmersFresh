@@ -1,4 +1,7 @@
 import "server-only";
+import { canPay } from "./access";
+import { readObject } from "@/server/security/http";
+import { isUuid } from "@/lib/guard";
 import { createAdminClient } from "@/server/supabase/admin";
 import { NextResponse, type NextRequest } from "next/server";
 /**
@@ -27,15 +30,10 @@ export async function createOrderPayment(request: NextRequest) {
     );
   }
 
-  let body: { orderId?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request." }, { status: 400 });
-  }
+  const body = await readObject(request);
 
   const orderId = body.orderId;
-  if (!orderId || typeof orderId !== "string") {
+  if (!isUuid(orderId)) {
     return NextResponse.json({ error: "Missing order." }, { status: 400 });
   }
 
@@ -43,11 +41,14 @@ export async function createOrderPayment(request: NextRequest) {
   const admin = createAdminClient(supabaseUrl, serviceRole);
   const { data: order, error } = await admin
     .from("orders")
-    .select("id, order_number, total, is_paid, status, razorpay_order_id")
+    .select("id, user_id, order_number, total, is_paid, status, razorpay_order_id")
     .eq("id", orderId)
     .maybeSingle();
 
   if (error || !order) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+  if (!await canPay(orderId, order.user_id, true)) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
   if (order.is_paid) {
@@ -79,6 +80,7 @@ export async function createOrderPayment(request: NextRequest) {
   const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
   const res = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: `Basic ${auth}`,
       "Content-Type": "application/json",
@@ -96,6 +98,9 @@ export async function createOrderPayment(request: NextRequest) {
   }
 
   const rp = (await res.json()) as { id: string; amount: number };
+  if (typeof rp?.id !== "string" || !/^order_[A-Za-z0-9]+$/.test(rp.id) || rp.amount !== Math.round(rupees * 100)) {
+    return NextResponse.json({ error: "Invalid payment provider response." }, { status: 502 });
+  }
 
   // Store the Razorpay order id — but ONLY if none was set meanwhile (a racing
   // request may have created one). Conditional update + row count makes this

@@ -38,15 +38,12 @@ export function SignupClient() {
         },
       });
       if (error) {
-        setError(
-          error.message.toLowerCase().includes("registered") ||
-            error.message.toLowerCase().includes("exists")
-            ? "That email already has an account — try logging in."
-            : error.message
-        );
+        setError("Could not create the account. Check your details or try signing in.");
         return;
       }
       setDone(true);
+    } catch {
+      setError("Could not connect. Please try again.");
     } finally {
       setBusy(false);
     }
