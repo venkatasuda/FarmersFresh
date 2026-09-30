@@ -8,6 +8,19 @@ beforeEach(async () => { client = await pool.connect(); await client.query("begi
 afterEach(async () => { await client.query("rollback"); client.release(); });
 afterAll(() => pool.end());
 
+it("membership settlement requires the stored amount", async () => {
+  const plan = (await client.query("insert into public.membership_plans(org_id,name,price,duration_days) values($1,'Test',100,30) returning id", [f.org])).rows[0].id;
+  const gateway = `order_${randomUUID()}`;
+  const id = (await client.query("insert into public.pass_memberships(org_id,user_id,plan_id,amount,razorpay_order_id) values($1,$2,$3,100,$4) returning id", [f.org, f.customer, plan, gateway])).rows[0].id;
+  for (const amount of [null, 1]) {
+    const result = await client.query("select public.settle_razorpay_payment($1,$2,$3,'payment.captured','{}') result", [`pay_${randomUUID()}`, gateway, amount]);
+    expect(result.rows[0].result).toBe("amount_mismatch");
+  }
+  expect((await client.query("select status from public.pass_memberships where id=$1", [id])).rows[0].status).toBe("pending_payment");
+  await client.query("select public.settle_razorpay_payment($1,$2,10000,'payment.captured','{}')", [`pay_${randomUUID()}`, gateway]);
+  expect((await client.query("select status from public.pass_memberships where id=$1", [id])).rows[0].status).toBe("active");
+});
+
 it("rolls back all purchase-order rows when a later item is invalid", async () => {
   await identity(client, f.owner);
   const items = [{ productId: f.product, qty: 1, unitCost: 50 }, { productId: randomUUID(), qty: 1, unitCost: 50 }];

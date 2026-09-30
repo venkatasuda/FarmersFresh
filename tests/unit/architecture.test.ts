@@ -2,6 +2,12 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
+it("keeps migration inputs free of PostgreSQL-invalid UTF-8 byte-order marks", () => {
+  for (const path of ["supabase/schema_snapshot.sql", ...files("supabase/migrations")]) {
+    expect(readFileSync(path, "utf8").startsWith("\uFEFF"), path).toBe(false);
+  }
+});
+
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);

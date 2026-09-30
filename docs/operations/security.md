@@ -37,6 +37,8 @@ hosted Supabase project, scheduler, or production deployment.
   both new database writes and the worker. Other push providers fail closed.
 - Cancellation locks the order before releasing stock. Purchase creation, its
   lines, and optional ordering now happen in one database transaction.
+- Next.js is pinned to 16.3.8, which includes the fix for
+  [GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
 
 ## Before release
 
@@ -68,7 +70,7 @@ uncaptured/wrong-amount payments, image decoding, scheduler authentication and
 push URL restrictions. Database tests cover transactional rollback, rate-limit
 permissions, upload-policy bypass, tenant scope, retries and concurrent cancellation.
 
-The local dependency audit reported zero known vulnerabilities. Gitleaks scanned
+The updated local dependency audit reported zero known vulnerabilities. Gitleaks scanned
 70 existing commits and current source without finding secrets. Those are bounded
 checks, not a guarantee that every credential or application vulnerability is
 absent. Hosted configuration and database execution remain separate release gates.
