@@ -44,7 +44,7 @@ try {
   await db.query("update public.organizations set storefront_location_id=$1 where id=$2", [location, org]);
   await db.query("insert into public.profiles(id,org_id,is_owner) values($1,$2,true)", [user, org]);
   for (let i = 0; i < products.length; i++) {
-    await db.query("insert into public.products(id,org_id,name,slug,sale_price,is_published) values($1,$2,'Load Product',$3,$4,true)", [products[i], org, "load-" + products[i], 100 + i]);
+    await db.query("insert into public.products(id,org_id,name,slug,sale_price,is_published) values($1,$2,$3,$4,$5,true)", [products[i], org, "Load Product " + i, "load-" + products[i], 100 + i]);
     await db.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,200,'purchase')", [org, location, products[i]]);
   }
   await db.query("commit");
