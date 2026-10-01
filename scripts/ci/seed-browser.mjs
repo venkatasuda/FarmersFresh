@@ -20,8 +20,10 @@ try {
   await client.query("update public.organizations set storefront_location_id=$1 where id=$2", [location, org]);
   await client.query("insert into public.products(id,org_id,name,slug,sale_price,is_published) values($1,$2,'CI Fresh Product','ci-fresh-product',100,true)", [product, org]);
   await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,200,'purchase')", [org, location, product]);
+  await client.query("insert into public.products(org_id,name,slug,sale_price,is_published) select $1,'CI Load Product '||i,'ci-load-'||i,50+(i%100),true from generate_series(1,249) i", [org]);
+  await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) select $1,$2,id,200,'purchase' from public.products where org_id=$1 and id<>$3", [org, location, product]);
   await client.query("commit");
-  console.log("Seeded local browser catalogue and stock.");
+  console.log("Seeded 250 local browser catalogue products and stock.");
 } catch (error) {
   await client.query("rollback");
   throw error;
