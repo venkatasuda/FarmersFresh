@@ -37,11 +37,14 @@ try {
   }
   const before = await manifest();
   if (!before["public.orders"]?.row_count || !before["public.wallet_ledger"]?.row_count) throw new Error("Recovery fixtures must include orders and wallet records.");
-  docker(["pg_dump", "-U", "postgres", "-d", "postgres", "--data-only", "--format=custom",
+  docker(["pg_dump", "-U", "supabase_admin", "-d", "postgres", "--data-only", "--format=custom",
     ...tables.map(t => `--table=${quoted(t.schema)}.${quoted(t.name)}`), `--file=${dump}`]);
   // Only the proven local fixture database is emptied; no hosted restore is allowed.
-  await client.query("truncate " + tables.map(t => `${quoted(t.schema)}.${quoted(t.name)}`).join(",") + " cascade");
-  docker(["pg_restore", "-U", "postgres", "-d", "postgres", "--data-only", "--disable-triggers", "--no-owner", "--no-acl", "--exit-on-error", dump]);
+  // The local bootstrap superuser can disable FK triggers during data restoration;
+  // the normal postgres role intentionally cannot alter managed Auth/Storage tables.
+  docker(["psql", "-U", "supabase_admin", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c",
+    "truncate " + tables.map(t => `${quoted(t.schema)}.${quoted(t.name)}`).join(",") + " cascade"]);
+  docker(["pg_restore", "-U", "supabase_admin", "-d", "postgres", "--data-only", "--disable-triggers", "--no-owner", "--no-acl", "--exit-on-error", dump]);
   const after = await manifest();
   if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error("Restored records differ from the backup.");
   const invalid = await client.query("select count(*)::int n from (select org_id,user_id from public.wallet_ledger group by org_id,user_id having sum(amount)<0 union all select location_id,product_id from public.stock_movements group by location_id,product_id having sum(delta)<0) bad");
