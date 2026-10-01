@@ -64,7 +64,9 @@ The owner confirmed that `farmersfresh.vercel.app` and Supabase project
 5. Verify staff order, delivery, return and reconciliation procedures.
 6. Measure realistic catalogue and order load before setting a capacity claim.
 
-The draft PR remains open. Do not treat green CI as completion of these gates.
+PR #9 is merged. See [the subsequent hosted rehearsal](demo-launch-rehearsal-2026-10-01.md)
+for completed COD/store-boundary, image recovery and isolated routing checks.
+Do not treat green CI as completion of the remaining provider and recovery gates.
 
 Token rotation must update both `NOTIFICATION_WORKER_SECRET` in Edge Function
 secrets and the `notification_worker_secret` Vault entry. Never paste the token
