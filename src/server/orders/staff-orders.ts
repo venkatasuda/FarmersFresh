@@ -4,6 +4,13 @@ import { sanitizeError } from "@/lib/guard";
 import type { OrderStatus } from "@/lib/types";
 import { createClient } from "@/server/supabase/server";
 import { revalidatePath } from "next/cache";
+import { refundOrder } from "@/server/payments/refund";
+
+export async function refundOriginalPayment(orderId: string): ReturnType<typeof refundOrder> {
+  const result = await refundOrder(orderId);
+  revalidatePath("/dashboard/orders");
+  return result;
+}
 
 /** Instantly credit loyalty points to a customer's balance for an order. */
 export async function instantRefund(

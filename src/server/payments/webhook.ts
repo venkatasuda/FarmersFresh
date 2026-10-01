@@ -33,13 +33,32 @@ export async function settlePaymentWebhook(request: NextRequest) {
 
   let body: {
     event?: string;
-    payload?: { payment?: { entity?: { id?: string; order_id?: string; amount?: number; currency?: string } } };
+    payload?: {
+      payment?: { entity?: { id?: string; order_id?: string; amount?: number; currency?: string } };
+      refund?: { entity?: { id?: string; payment_id?: string; amount?: number; currency?: string; status?: string } };
+    };
   };
   try {
     body = JSON.parse(raw);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
   } catch {
     return NextResponse.json({ error: "Bad payload." }, { status: 400 });
+  }
+
+  if (["refund.created", "refund.processed", "refund.failed"].includes(body.event ?? "")) {
+    const refund = body.payload?.refund?.entity;
+    if (!refund || !/^rfnd_[A-Za-z0-9]+$/.test(refund.id ?? "") || !/^pay_[A-Za-z0-9]+$/.test(refund.payment_id ?? "") ||
+      !Number.isSafeInteger(refund.amount) || (refund.amount ?? 0) < 100 || refund.currency !== "INR" ||
+      !["pending", "processed", "failed"].includes(refund.status ?? "") ||
+      (body.event === "refund.processed" && refund.status !== "processed") ||
+      (body.event === "refund.failed" && refund.status !== "failed")) {
+      return NextResponse.json({ error: "Invalid refund entity." }, { status: 400 });
+    }
+    const { data, error } = await createAdminClient(supabaseUrl, serviceRole).rpc("record_order_refund", {
+      p_refund_id: refund.id, p_payment_id: refund.payment_id, p_amount: refund.amount, p_status: refund.status,
+    });
+    if (error) return NextResponse.json({ error: "Refund could not be recorded." }, { status: 500 });
+    return NextResponse.json({ ok: true, status: data });
   }
 
   // Only captured payments move money. Anything else: acknowledge and ignore.

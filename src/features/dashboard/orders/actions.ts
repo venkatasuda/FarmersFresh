@@ -14,3 +14,7 @@ export async function advanceOrder(...args: Parameters<typeof backend.advanceOrd
 export async function cancelOrder(...args: Parameters<typeof backend.cancelOrder>) {
   return backend.cancelOrder(...args);
 }
+
+export async function refundOriginalPayment(...args: Parameters<typeof backend.refundOriginalPayment>) {
+  return backend.refundOriginalPayment(...args);
+}

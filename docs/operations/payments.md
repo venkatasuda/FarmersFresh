@@ -17,6 +17,15 @@ acceptance passes.
    `payment.captured` and calls the idempotent database settlement function.
    Retries must not credit an order or membership twice. Late payments for
    expired reservations become `refund_pending`; staff must reconcile them.
+5. Cancelling a prepaid order releases stock once and keeps it `refund_pending`.
+   Staff use **Refund original payment / check status** to request the full
+   original-payment refund. The database checks their organization, role and
+   assigned store and stores one immutable request amount. Requests use
+   [Razorpay refund idempotency](https://github.com/razorpay/markdown-docs/blob/master/api/refunds/normal-refunds-idempotent.md);
+   an ambiguous timeout can be retried with the same key. Known refunds are
+   fetched instead of submitted again. Only a validated provider response or a
+   signed refund webhook marks the order refunded. Failed refunds require review.
+   Wallet goodwill credits and partial returns remain separate workflows.
 
 ## Configure staging first
 
@@ -36,6 +45,8 @@ Only the public key ID may use `NEXT_PUBLIC_`. Keep secrets in hosting settings,
 never chat or source. Redeploy after configuration. Provider callbacks must have
 access to the test webhook endpoint while Vercel preview protection stays enabled;
 a CLI-authenticated request does not prove Razorpay can reach it.
+Subscribe to `payment.captured`, `refund.created`, `refund.processed` and
+`refund.failed` for `/api/razorpay/webhook`, using the configured webhook secret.
 
 ## Acceptance before live payments
 
@@ -44,8 +55,8 @@ a CLI-authenticated request does not prove Razorpay can reach it.
 - Reject invalid signatures, altered amounts, other customers' orders and unpaid/uncaptured payments.
 - Test dismissal, expiry, late capture and provider/network failures.
 - Exercise an original-payment refund and reconcile it against Razorpay and the order.
-  Existing wallet credits do not prove a provider refund; record the operational
-  refund procedure before accepting prepaid customer orders.
+  Check pending, failed and duplicate refund notifications. Do not mark a refund
+  complete manually or treat wallet credit as returned provider money.
 
 The current demo preview has no Razorpay keys. Provider capture, webhook reachability
 and refund acceptance remain pending. After these pass, configure live keys and

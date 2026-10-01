@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { advanceOrder, cancelOrder, instantRefund } from "./actions";
+import { advanceOrder, cancelOrder, instantRefund, refundOriginalPayment } from "./actions";
 import { formatQty, formatRupees } from "@/lib/format";
 import {
   SLOT_LABELS,
@@ -23,6 +23,7 @@ const STATUS_STYLES: Record<string, string> = {
 export function OrderCard({ order }: { order: StaffOrder }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundAmt, setRefundAmt] = useState("");
@@ -33,9 +34,11 @@ export function OrderCard({ order }: { order: StaffOrder }) {
 
   function run(fn: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
+    setNotice(null);
     startTransition(async () => {
       const r = await fn();
       if (!r.ok) setError(r.message ?? "Something went wrong.");
+      else if (r.message) setNotice(r.message);
     });
   }
 
@@ -132,23 +135,23 @@ export function OrderCard({ order }: { order: StaffOrder }) {
         </p>
       ) : null}
 
+      {notice ? <p role="status" className="mt-3 text-sm text-ink-soft">{notice}</p> : null}
       {refundDue ? (
         <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
           <p className="text-sm text-red-700">
-            Paid after the order expired. Refund {formatRupees(order.total)} in
-            the Razorpay dashboard, then:
+            Return {formatRupees(order.total)} to the customer&apos;s original payment method.
           </p>
           <button
             type="button"
             disabled={pending}
             onClick={() =>
               run(() =>
-                cancelOrder(order.id, "Refunded — payment arrived after cancellation")
+                refundOriginalPayment(order.id)
               )
             }
             className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
           >
-            Mark refunded
+            Refund original payment / check status
           </button>
         </footer>
       ) : !finished ? (
