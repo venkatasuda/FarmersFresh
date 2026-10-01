@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 /**
  * Registers the service worker after the page loads. Kept in its own tiny
- * client component, mounted once at the root, so the rest of the app stays
+ * client component, mounted once in the storefront layout, so the rest of the app stays
  * server-rendered. Failures are swallowed — a browser without service-worker
  * support (or a blocked registration) just doesn't get offline mode.
  */

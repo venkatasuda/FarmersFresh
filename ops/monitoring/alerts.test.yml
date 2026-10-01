@@ -1,0 +1,23 @@
+rule_files: [alerts.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="farmersfresh",instance="demo"}'
+        values: '0 0 0 0'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: FarmersFreshMetricsUnavailable
+        exp_alerts:
+          - exp_labels: {job: farmersfresh, instance: demo, severity: critical}
+            exp_annotations: {summary: "Business monitoring cannot reach the application"}
+  - interval: 1m
+    input_series:
+      - series: 'ff_pending_refunds{job="farmersfresh",instance="demo"}'
+        values: '1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: FarmersFreshPaymentsNeedAttention
+        exp_alerts:
+          - exp_labels: {job: farmersfresh, instance: demo, severity: critical}
+            exp_annotations: {summary: "Refunds or payment discrepancies need reconciliation"}

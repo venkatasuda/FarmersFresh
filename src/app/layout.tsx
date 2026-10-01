@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Hanken_Grotesk, Geist_Mono } from "next/font/google";
-import { CartProvider } from "@/features/cart/cart-context";
-import { CartDrawer } from "@/features/cart/cart-drawer";
-import { CartToast } from "@/features/cart/cart-toast";
-import { WishlistProvider } from "@/features/wishlist/wishlist-context";
-import { ServiceWorkerRegister } from "@/features/shop/sw-register";
-import { getStoreSettings } from "@/server/settings";
+import { Fraunces, Geist_Mono, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
 // Body: a warm, humanist grotesk — readable and distinct from the default look.
@@ -69,33 +63,18 @@ export const viewport: Viewport = {
   themeColor: "#16a34a",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // The free-delivery threshold powers the basket's "spend X more" nudge, so it
-  // must reflect the owner's setting, not a hardcoded number.
-  const settings = await getStoreSettings();
-
-  return (
+return (
     <html
       lang="en"
       data-scroll-behavior="smooth"
       className={`${sans.variable} ${display.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {/* The basket must survive navigation between product pages, so the
-            provider sits above the router outlet. It is inert on staff pages. */}
-        <WishlistProvider>
-          <CartProvider freeDeliveryThreshold={settings.freeDeliveryThreshold}>
-            {children}
-            <CartDrawer />
-            <CartToast />
-          </CartProvider>
-        </WishlistProvider>
-        <ServiceWorkerRegister />
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

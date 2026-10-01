@@ -1,0 +1,28 @@
+groups:
+  - name: farmersfresh-business
+    rules:
+      - alert: FarmersFreshMetricsUnavailable
+        expr: up{job="farmersfresh"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Business monitoring cannot reach the application"}
+      - alert: FarmersFreshOrdersNeedAttention
+        expr: ff_stuck_orders > 0 or ff_stale_unpaid_orders > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Orders exceed their processing deadline"}
+      - alert: FarmersFreshPaymentsNeedAttention
+        expr: ff_pending_refunds > 0 or ff_payment_exceptions_24h > 0
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Refunds or payment discrepancies need reconciliation"}
+      - alert: FarmersFreshNotificationsNeedAttention
+        expr: ff_failed_notifications_24h > 0 or ff_skipped_notifications_24h > 0 or ff_stuck_notifications > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Notifications failed, stalled or lack provider configuration"}
+      - alert: FarmersFreshLowStock
+        expr: ff_low_stock_products > 0
+        for: 15m
+        labels: {severity: warning}
+        annotations: {summary: "Published catalogue items have at most five units available"}

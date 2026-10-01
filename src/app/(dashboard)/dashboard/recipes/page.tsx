@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getCatalogue } from "@/server/shop";
-import { getAdminRecipes } from "@/features/dashboard/recipes/actions";
+import { getAdminRecipes } from "@/server/catalogue/staff-recipes";
 import { RecipeManager } from "@/features/dashboard/recipes/recipe-manager";
+import { requireSession } from "@/server/auth/session";
+import { getCatalogue } from "@/server/catalogue/storefront";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Recipes · Farmers Fresh" };
 export const dynamic = "force-dynamic";

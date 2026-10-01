@@ -1,10 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { createClient } from "@/server/supabase/server";
+import * as backend from "@/server/customers/account";
 
-export async function signOutCustomer() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/");
+export async function signOutCustomer(...args: Parameters<typeof backend.signOutCustomer>) {
+  return backend.signOutCustomer(...args);
 }

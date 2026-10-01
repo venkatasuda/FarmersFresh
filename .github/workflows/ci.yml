@@ -28,6 +28,18 @@ jobs:
         if: ${{ !cancelled() }}
       - run: npm run ci:boundaries
         if: ${{ !cancelled() }}
+      - name: Validate monitoring rules and exercise alerts
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/ops/monitoring:/rules:ro" -w /rules prom/prometheus:v3.15.0 check rules alerts.yml
+          docker run --rm --entrypoint promtool -v "$PWD/ops/monitoring:/rules:ro" -w /rules prom/prometheus:v3.15.0 test rules alerts.test.yml
+      - name: Verify real alert routing and synthetic delivery
+        run: node scripts/ci/verify-alert-delivery.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: alert-delivery-results
+          path: reports/alert-delivery.json
+          retention-days: 14
   unit-api:
     name: Unit, payment API and coverage
     runs-on: ubuntu-24.04
@@ -90,6 +102,8 @@ jobs:
         with:
           deno-version: v2.4.5
       - run: deno check supabase/functions/send-notifications/index.ts
+      - name: Notification transport success and failure checks without external delivery
+        run: deno test --allow-env --allow-read --deny-net supabase/functions/send-notifications/index_test.ts
   migrations:
     name: Fresh database from historical migrations
     runs-on: ubuntu-24.04
@@ -120,6 +134,10 @@ jobs:
       - run: supabase start --workdir .ci-recovery
       - run: node scripts/ci/export-local-env.mjs .ci-recovery
       - run: npm run test:database
+      - name: Concurrent checkout and staff fulfillment API baseline
+        run: node scripts/ci/checkout-load.mjs
+      - name: Restore fixture backup and verify every record
+        run: node scripts/ci/restore-drill.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -130,6 +148,10 @@ jobs:
         if: always()
   production-browser:
     name: Production build and browser tests
+    env:
+      # Synthetic local-only credentials let signature rejection tests reach validation.
+      RAZORPAY_KEY_SECRET: ci-local-payment-signature-secret
+      RAZORPAY_WEBHOOK_SECRET: ci-local-webhook-signature-secret
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:

@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getReorderSuggestions } from "@/server/forecast";
 import { ProductionClient } from "@/features/dashboard/production/production-client";
+import { requireSession } from "@/server/auth/session";
+import { getReorderSuggestions } from "@/server/procurement/forecast";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Production · Farmers Fresh" };
 export const dynamic = "force-dynamic";

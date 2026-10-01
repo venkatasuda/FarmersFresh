@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getCatalogue } from "@/server/shop";
-import { getBatches, getFarms } from "@/features/dashboard/traceability/actions";
+import { getBatches, getFarms } from "@/server/inventory/staff-traceability";
 import { TraceabilityClient } from "@/features/dashboard/traceability/traceability-client";
+import { requireSession } from "@/server/auth/session";
+import { getCatalogue } from "@/server/catalogue/storefront";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Traceability · Farmers Fresh" };
 export const dynamic = "force-dynamic";

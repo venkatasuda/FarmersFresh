@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getAdminSettings } from "@/features/dashboard/settings/actions";
+import { getAdminSettings } from "@/server/settings/staff-settings";
 import { SettingsForm } from "@/features/dashboard/settings/settings-form";
+import { requireSession } from "@/server/auth/session";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Settings · Farmers Fresh" };
 export const dynamic = "force-dynamic";

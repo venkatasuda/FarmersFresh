@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { ProductForm } from "@/features/dashboard/catalogue/product-form";
-import { requireSession } from "@/server/auth";
-import { getAdminCategories, getBrands } from "@/server/catalogue";
+import { requireSession } from "@/server/auth/session";
+import { getAdminCategories, getBrands } from "@/server/catalogue/queries";
+import Link from "next/link";
 
 export const metadata = { title: "Add product · Farmers Fresh" };
 export const dynamic = "force-dynamic";

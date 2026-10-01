@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import { supabaseAnonKey } from "./src/lib/env";
+
+// Stop the build before a privileged key can be embedded in browser assets.
+if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) supabaseAnonKey();
 
 // Derive the Supabase Storage host from the project URL so this config is
 // portable across projects/environments (no hardcoded project ref).

@@ -1,7 +1,7 @@
-import { createClient } from "@/server/supabase/server";
-import { mapReceipt } from "@/features/receipt/receipt-types";
-import { ReceiptView } from "@/features/receipt/receipt-view";
 import { ReceiptGate } from "@/features/receipt/receipt-gate";
+import { ReceiptView } from "@/features/receipt/receipt-view";
+import { mapReceipt } from "@/lib/contracts/receipt";
+import { getOrderReceipt } from "@/server/orders/queries";
 
 export const metadata = { title: "Receipt · Farmers Fresh" };
 
@@ -26,8 +26,7 @@ export default async function ReceiptPage({
   const safeNumber = ORDER_RE.test(clean) ? clean.toUpperCase() : "";
 
   if (safeNumber) {
-    const supabase = await createClient();
-    const { data } = await supabase.rpc("get_order_receipt", { p_number: safeNumber });
+    const data = await getOrderReceipt(safeNumber);
     if (data) return <ReceiptView receipt={mapReceipt(data)} />;
   }
 

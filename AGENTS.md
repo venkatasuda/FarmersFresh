@@ -43,6 +43,13 @@ A route file stays thin: fetch with `src/server/*`, render a component from
 `src/features/*`. New UI or actions for a page go in that page's feature folder,
 not next to `page.tsx`. Back-office features live in `src/features/dashboard/<name>/`.
 
+Current architecture: `docs/architecture/overview.md`. Backend modules are grouped
+by domain in `src/server/<domain>/`. Feature Server Actions are async adapters;
+their implementations live in the corresponding server domain. Shared contracts
+live in `src/lib/contracts/`. Server modules must never import frontend features.
+The `(storefront)` layout owns shop chrome, cart, wishlist and service-worker
+registration; the root layout owns only HTML, fonts and global metadata.
+
 If a Client Component needs a formatter or a type, it goes in `src/lib/format.ts`
 or `src/lib/types.ts` — never re-export a server function through them.
 

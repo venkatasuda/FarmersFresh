@@ -1,6 +1,6 @@
-import { DeliveryAdmin } from "@/features/dashboard/delivery/delivery-admin";
-import { requireSession } from "@/server/auth";
-import { createClient } from "@/server/supabase/server";
+import { DeliveryPageView } from "@/features/dashboard/delivery/delivery-view";
+import { requireSession } from "@/server/auth/session";
+import { getDeliveryConfiguration } from "@/server/delivery/queries";
 
 export const metadata = { title: "Delivery & alerts · Farmers Fresh" };
 export const dynamic = "force-dynamic";
@@ -16,18 +16,7 @@ export default async function DeliveryPage() {
     );
   }
 
-  const supabase = await createClient();
-  const [{ data: zoneRows }, { data: org }] = await Promise.all([
-    supabase
-      .from("delivery_zones")
-      .select("id, pincode, area_name")
-      .order("pincode"),
-    supabase
-      .from("organizations")
-      .select("notify_email, notify_phone")
-      .eq("id", session.orgId)
-      .maybeSingle(),
-  ]);
+  const { zoneRows, org } = await getDeliveryConfiguration(session.orgId);
 
   const zones = ((zoneRows ?? []) as {
     id: string;
@@ -39,26 +28,5 @@ export default async function DeliveryPage() {
     areaName: z.area_name,
   }));
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
-          Delivery & alerts
-        </h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Where you deliver, and how you hear about new orders.
-        </p>
-      </div>
-
-      <DeliveryAdmin
-        zones={zones}
-        notifyEmail={
-          (org as { notify_email: string | null } | null)?.notify_email ?? ""
-        }
-        notifyPhone={
-          (org as { notify_phone: string | null } | null)?.notify_phone ?? ""
-        }
-      />
-    </div>
-  );
+  return <DeliveryPageView zones={zones} org={org} />;
 }

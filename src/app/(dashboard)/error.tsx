@@ -1,8 +1,8 @@
 "use client";
 
+import { reportError } from "@/lib/report";
 import Link from "next/link";
 import { useEffect } from "react";
-import { reportError } from "@/lib/report";
 
 /**
  * Dashboard error boundary. A crash in a staff screen (a bad query, a null

@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getFinancials } from "@/features/dashboard/financials/actions";
+import { getFinancials } from "@/server/reporting/staff-financials";
 import { FinancialsClient } from "@/features/dashboard/financials/financials-client";
+import { requireSession } from "@/server/auth/session";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Financials · Farmers Fresh" };
 export const dynamic = "force-dynamic";

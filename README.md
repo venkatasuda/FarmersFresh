@@ -10,7 +10,7 @@ Built to last: multi-tenant from day one, PostgreSQL core, immutable event log, 
 
 ## Launch and CI status
 
-This project has blocking release checks. See [Production CI](docs/engineering/PRODUCTION-CI.md), [Architecture](docs/engineering/ARCHITECTURE.md) and [Validation](docs/engineering/VALIDATION.md). Lint, typecheck, audit, unit/API and database suites pass. No automatic deployment job is included.
+This project has blocking release checks. See [Production CI](docs/operations/production-ci.md), [Architecture](docs/architecture/overview.md) and [Validation](docs/engineering/VALIDATION.md). No automatic deployment job is included. Check the current CI run for release readiness.
 
 ## Getting started
 
@@ -22,7 +22,7 @@ npm ci
 
 ### 2. Set up Supabase
 
-- For isolated local testing, use Docker and the pinned Supabase CLI; follow the [CI guide](docs/engineering/PRODUCTION-CI.md).
+- For isolated local testing, use Docker and the pinned Supabase CLI; follow the [CI guide](docs/operations/production-ci.md).
 - The application depends on many migrations and RPCs. Running only migrations 0001/0002 is insufficient for the current storefront.
 - The historical chain must be repaired or intentionally re-baselined and verified from an empty database before production setup. The supplied schema snapshot supports a separate recovery-test route; it does not repair migration history.
 - Copy `.env.example` to `.env.local` for development and set the project's URL and public key. Never use production credentials in automated tests.

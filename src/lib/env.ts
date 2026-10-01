@@ -33,8 +33,16 @@ export function supabaseUrl(): string {
 }
 
 export function supabaseAnonKey(): string {
-  return required(
+  const key = required(
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
+  if (key.startsWith("sb_secret_")) throw new Error("A server secret cannot be used as a browser key.");
+  if (key.startsWith("eyJ")) {
+    try {
+      const payload = JSON.parse(atob(key.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      if (payload.role !== "anon") throw new Error();
+    } catch { throw new Error("The public Supabase key must be an anon or publishable key."); }
+  }
+  return key;
 }

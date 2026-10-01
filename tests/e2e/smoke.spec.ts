@@ -14,7 +14,7 @@ test("home page responds", async ({ page }) => {
 test("login page renders a form", async ({ page }) => {
   const res = await page.goto("/login");
   expect(res!.status()).toBeLessThan(400);
-  await expect(page.locator("input").first()).toBeVisible();
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
 });
 
 test("track page renders", async ({ page }) => {

@@ -1,0 +1,92 @@
+import "server-only";
+import { readBody } from "@/server/security/http";
+import { createAdminClient } from "@/server/supabase/admin";
+import { NextResponse, type NextRequest } from "next/server";
+import { createHmac, timingSafeEqual } from "node:crypto";
+/**
+ * Razorpay webhook — the AUTHORITATIVE payment reconciliation path. The browser
+ * /verify call is best-effort UX; this fires server-to-server even if the
+ * customer closes the tab, so a successful payment always settles the order (or
+ * membership). Idempotent: settle_razorpay_payment() dedupes on the payment id.
+ *
+ * Set the webhook in the Razorpay dashboard to POST /api/razorpay/webhook for
+ * the `payment.captured` event, with secret RAZORPAY_WEBHOOK_SECRET.
+ */
+export async function settlePaymentWebhook(request: NextRequest) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!secret || !serviceRole || !supabaseUrl) {
+    return NextResponse.json({ error: "Webhook not configured." }, { status: 503 });
+  }
+
+  // Signature is over the RAW body, so read text before parsing.
+  const raw = await readBody(request, 262_144);
+  const signature = request.headers.get("x-razorpay-signature") ?? "";
+  const expected = createHmac("sha256", secret).update(raw).digest("hex");
+
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
+  }
+
+  let body: {
+    event?: string;
+    payload?: {
+      payment?: { entity?: { id?: string; order_id?: string; amount?: number; currency?: string } };
+      refund?: { entity?: { id?: string; payment_id?: string; amount?: number; currency?: string; status?: string } };
+    };
+  };
+  try {
+    body = JSON.parse(raw);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
+  } catch {
+    return NextResponse.json({ error: "Bad payload." }, { status: 400 });
+  }
+
+  if (["refund.created", "refund.processed", "refund.failed"].includes(body.event ?? "")) {
+    const refund = body.payload?.refund?.entity;
+    if (!refund || !/^rfnd_[A-Za-z0-9]+$/.test(refund.id ?? "") || !/^pay_[A-Za-z0-9]+$/.test(refund.payment_id ?? "") ||
+      !Number.isSafeInteger(refund.amount) || (refund.amount ?? 0) < 100 || refund.currency !== "INR" ||
+      !["pending", "processed", "failed"].includes(refund.status ?? "") ||
+      (body.event === "refund.processed" && refund.status !== "processed") ||
+      (body.event === "refund.failed" && refund.status !== "failed")) {
+      return NextResponse.json({ error: "Invalid refund entity." }, { status: 400 });
+    }
+    const { data, error } = await createAdminClient(supabaseUrl, serviceRole).rpc("record_order_refund", {
+      p_refund_id: refund.id, p_payment_id: refund.payment_id, p_amount: refund.amount, p_status: refund.status,
+    });
+    if (error) return NextResponse.json({ error: "Refund could not be recorded." }, { status: 500 });
+    return NextResponse.json({ ok: true, status: data });
+  }
+
+  // Only captured payments move money. Anything else: acknowledge and ignore.
+  if (body.event !== "payment.captured") {
+    return NextResponse.json({ ok: true, ignored: body.event ?? null });
+  }
+
+  const p = body.payload?.payment?.entity;
+  if (!p?.id || !p.order_id) {
+    return NextResponse.json({ ok: true, ignored: "no_payment_entity" });
+  }
+
+  if (typeof p.id !== "string" || !/^pay_[A-Za-z0-9]+$/.test(p.id) || typeof p.order_id !== "string" || !/^order_[A-Za-z0-9]+$/.test(p.order_id) || !Number.isSafeInteger(p.amount) || (p.amount ?? 0) <= 0 || p.currency !== "INR") {
+    return NextResponse.json({ error: "Invalid payment entity." }, { status: 400 });
+  }
+
+  const admin = createAdminClient(supabaseUrl, serviceRole);
+  const { data, error } = await admin.rpc("settle_razorpay_payment", {
+    p_payment_id: p.id,
+    p_rp_order: p.order_id,
+    p_amount: p.amount ?? null,
+    p_event: body.event,
+    p_raw: body,
+  });
+
+  if (error) {
+    // 500 so Razorpay retries (the settle is idempotent, so a retry is safe).
+    return NextResponse.json({ error: "settle failed" }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, status: data });
+}

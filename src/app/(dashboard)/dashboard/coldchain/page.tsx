@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getStorefrontLocationId } from "@/server/stock";
-import { getColdChain } from "@/features/dashboard/coldchain/actions";
+import { getColdChain } from "@/server/inventory/staff-coldchain";
 import { ColdChainClient } from "@/features/dashboard/coldchain/coldchain-client";
+import { requireSession } from "@/server/auth/session";
+import { getStorefrontLocationId } from "@/server/inventory/queries";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Cold chain · Farmers Fresh" };
 export const dynamic = "force-dynamic";

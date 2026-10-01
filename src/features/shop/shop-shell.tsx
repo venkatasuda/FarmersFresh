@@ -1,23 +1,21 @@
-import Link from "next/link";
-import { Suspense } from "react";
 import { Leaf } from "@/components/brand";
-import { AnnouncementBar } from "./announcement-bar";
-import { BottomNav } from "./bottom-nav";
 import { CartButton } from "@/features/cart/cart-button";
 import { SearchBox } from "@/features/search/search-box";
+import { WishlistHeaderButton } from "@/features/wishlist/wishlist-header-button";
+import { buildCategoryTree } from "@/lib/types";
+import { getCategories } from "@/server/catalogue/storefront";
+import Link from "next/link";
+import { Suspense } from "react";
 import { AccountButton } from "./account-button";
+import { AnnouncementBar } from "./announcement-bar";
+import { BottomNav } from "./bottom-nav";
 import { CategoryIcon } from "./category-icon";
 import { LocationPicker } from "./location-picker";
-import { WishlistHeaderButton } from "@/features/wishlist/wishlist-header-button";
-import { getCategories } from "@/server/shop";
-import { buildCategoryTree } from "@/lib/types";
 
 /**
  * Public chrome for the customer-facing shop.
  *
- * A component rather than a `layout.tsx` because the catalogue lives at `/`,
- * which the root segment already owns — wrapping explicitly avoids a route
- * conflict and keeps the staff area free of shop chrome.
+ * Rendered once by the storefront layout; staff and receipt routes use their own shells.
  *
  * Layout follows the standard grocery-storefront skeleton: promise strip,
  * logo + search + basket, category rail. That shape is near-universal

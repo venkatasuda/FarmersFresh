@@ -11,8 +11,8 @@ raw hex in components.
 
 | Token | Use |
 | --- | --- |
-| `brand-600` `#16a34a` | Primary buttons, logo, active nav, key numbers |
-| `brand-700` `#15803d` | Hover on primary |
+| `brand-600` `#15803d` | Primary buttons, logo, active nav, key numbers; white text meets AA |
+| `brand-700` `#166534` | Hover on primary |
 | `brand-50` / `brand-100` | Section headers, badges, subtle fills |
 | `brand-900` | Text on a brand-50 background |
 | `surface` `#ffffff` | Cards, panels, inputs |

@@ -4,6 +4,12 @@
  * `rounded-2xl border border-line bg-surface` / button-class drift across ~15
  * screens — new screens get the house style for free.
  */
+/**
+ * Shared dashboard UI primitives. Presentational only (no server imports), so
+ * client and server screens can both use them. Extracted to stop the
+ * `rounded-2xl border border-line bg-surface` / button-class drift across ~15
+ * screens — new screens get the house style for free.
+ */
 import type { ReactNode } from "react";
 
 export function Card({

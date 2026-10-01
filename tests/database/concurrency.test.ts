@@ -14,6 +14,33 @@ async function waitForBlocked(pids: number[]) {
   throw new Error('Concurrent calls did not reach the expected lock barrier');
 }
 async function pid(client:PoolClient) { return (await client.query('select pg_backend_pid() pid')).rows[0].pid as number; }
+it('simultaneous cancellations release reserved stock exactly once', async () => {
+  const seed = await pool.connect(), blocker = await pool.connect(), a = await pool.connect(), b = await pool.connect();
+  let tasks: Promise<unknown>[] = [];
+  try {
+    const f = await fixture(seed);
+    const id = (await placeOrder(seed, f)).rows[0].order_id;
+    await blocker.query('begin');
+    await blocker.query('select id from public.orders where id=$1 for update', [id]);
+    await a.query('begin'); await b.query('begin');
+    await identity(a, f.owner); await identity(b, f.owner);
+    const pids = [await pid(a), await pid(b)];
+    tasks = [a, b].map(async client => {
+      try { await client.query('select public.cancel_order($1)', [id]); await client.query('commit'); }
+      catch (error) { await client.query('rollback'); throw error; }
+    });
+    const completed = Promise.allSettled(tasks);
+    await waitForBlocked(pids); await blocker.query('commit');
+    expect((await completed).every(result => result.status === 'fulfilled')).toBe(true);
+    const releases = await seed.query("select count(*)::int n from public.stock_movements where ref_id=$1 and reason='order_released'", [id]);
+    expect(releases.rows[0].n).toBe(1);
+    expect(Number((await seed.query('select public.stock_available($1,$2) n', [f.location, f.product])).rows[0].n)).toBe(200);
+  } finally {
+    await blocker.query('rollback'); await Promise.allSettled(tasks);
+    await a.query('rollback'); await b.query('rollback');
+    [seed, blocker, a, b].forEach(client => client.release());
+  }
+});
 describe('deterministic multi-session concurrency',()=>{
   it('simultaneous gift-card claims award exactly one credit',async()=>{
     const seed=await pool.connect(), blocker=await pool.connect(), a=await pool.connect(), b=await pool.connect();

@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
  *
  * Icon is the branded SVG (works for the manifest, theme colour, and iOS
  * add-to-home). For a full Android install prompt, add 192×192 and 512×512
- * PNG exports of the logo and list them here too — see docs/PWA.md.
+ * PNG exports of the logo and list them here too — see docs/operations/pwa.md.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {

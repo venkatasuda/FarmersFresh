@@ -1,5 +1,5 @@
+import { getPublishedProductSlugs } from "@/server/catalogue/queries";
 import type { MetadataRoute } from "next";
-import { createClient } from "@/server/supabase/server";
 
 const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://farmersfresh.store";
 
@@ -26,11 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // if the query fails, we still return the static routes.
   let products: MetadataRoute.Sitemap = [];
   try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("products")
-      .select("slug, updated_at")
-      .limit(1000);
+    const data = await getPublishedProductSlugs();
     products = ((data ?? []) as { slug: string | null; updated_at: string | null }[])
       .filter((p) => p.slug)
       .map((p) => ({

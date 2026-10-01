@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Wordmark } from "@/components/brand";
 import { signOut } from "@/features/auth/actions";
-import { requireSession } from "@/server/auth";
+import { requireSession } from "@/server/auth/session";
+import Link from "next/link";
 
 export default async function AppLayout({
   children,

@@ -1,63 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/server/supabase/server";
-import { sanitizeError } from "@/lib/guard";
+import * as backend from "@/server/catalogue/staff-banners";
+export type { BannerResult } from "@/lib/contracts/staff-banners";
 
-export type BannerResult = { ok: true } | { ok: false; message: string };
-
-export async function createBanner(input: {
-  title: string;
-  subtitle: string;
-  ctaLabel: string;
-  href: string;
-  bgFrom: string;
-  bgTo: string;
-}): Promise<BannerResult> {
-  if (!input.title.trim()) {
-    return { ok: false, message: "Give the banner a title." };
-  }
-
-  const supabase = await createClient();
-  const { data: orgId } = await supabase.rpc("current_org_id");
-  if (!orgId) return { ok: false, message: "Not signed in." };
-
-  const { error } = await supabase.from("banners").insert({
-    org_id: orgId,
-    title: input.title.trim(),
-    subtitle: input.subtitle.trim() || null,
-    cta_label: input.ctaLabel.trim() || null,
-    href: input.href.trim() || null,
-    bg_from: input.bgFrom,
-    bg_to: input.bgTo,
-  });
-
-  if (error) return { ok: false, message: sanitizeError(error.message) };
-  revalidatePath("/dashboard/banners");
-  revalidatePath("/");
-  return { ok: true };
+export async function createBanner(...args: Parameters<typeof backend.createBanner>) {
+  return backend.createBanner(...args);
 }
 
-export async function toggleBanner(
-  id: string,
-  active: boolean
-): Promise<BannerResult> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("banners")
-    .update({ is_active: active })
-    .eq("id", id);
-  if (error) return { ok: false, message: sanitizeError(error.message) };
-  revalidatePath("/dashboard/banners");
-  revalidatePath("/");
-  return { ok: true };
+export async function toggleBanner(...args: Parameters<typeof backend.toggleBanner>) {
+  return backend.toggleBanner(...args);
 }
 
-export async function deleteBanner(id: string): Promise<BannerResult> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("banners").delete().eq("id", id);
-  if (error) return { ok: false, message: sanitizeError(error.message) };
-  revalidatePath("/dashboard/banners");
-  revalidatePath("/");
-  return { ok: true };
+export async function deleteBanner(...args: Parameters<typeof backend.deleteBanner>) {
+  return backend.deleteBanner(...args);
 }

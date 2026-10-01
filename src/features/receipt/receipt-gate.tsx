@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { getReceipt } from "./actions";
-import type { Receipt } from "./receipt-types";
+import type { Receipt } from "@/lib/contracts/receipt";
 import { ReceiptView } from "./receipt-view";
 
 /**

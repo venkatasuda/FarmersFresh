@@ -30,6 +30,7 @@ for (const line of raw.split("\n")) {
 // Map Supabase's status keys to the names the app and tests expect.
 const mapped = {
   SUPABASE_DB_URL: env.DB_URL,
+  TEST_DATABASE_URL: env.DB_URL,
   NEXT_PUBLIC_SUPABASE_URL: env.API_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: env.ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: env.SERVICE_ROLE_KEY,

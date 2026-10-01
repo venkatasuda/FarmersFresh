@@ -1,6 +1,6 @@
 import { PosTerminal } from "@/features/dashboard/pos/pos-terminal";
-import { requireSession } from "@/server/auth";
-import { getPosProducts } from "@/server/pos";
+import { requireSession } from "@/server/auth/session";
+import { getPosProducts } from "@/server/orders/pos";
 
 export const metadata = { title: "Counter · Farmers Fresh" };
 export const dynamic = "force-dynamic";

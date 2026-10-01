@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { requireSession } from "@/server/auth";
-import { getExpiring } from "@/features/dashboard/expiry/actions";
+import { getExpiring } from "@/server/inventory/staff-expiry";
 import { ExpiryClient } from "@/features/dashboard/expiry/expiry-client";
+import { requireSession } from "@/server/auth/session";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Expiry · Farmers Fresh" };
 export const dynamic = "force-dynamic";

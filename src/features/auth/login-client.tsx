@@ -40,15 +40,13 @@ export function LoginClient() {
         password,
       });
       if (error) {
-        setError(
-          error.message.toLowerCase().includes("confirm")
-            ? "Please confirm your email first — check your inbox for the link."
-            : "Wrong email or password."
-        );
+        setError("Sign-in failed. Check your details and email confirmation.");
         return;
       }
       router.push("/account");
       router.refresh();
+    } catch {
+      setError("Could not connect. Please try again.");
     } finally {
       setBusy(false);
     }

@@ -3,9 +3,7 @@
 // Concurrency-safe: claims a batch via claim_notifications() (atomic
 // pending -> 'sending'), so overlapping runs never send the same row twice.
 //
-// verify_jwt is FALSE because the platform scheduler calls it, not a user. It
-// authenticates with the service-role key from the env and takes no request
-// input, so there is no user-facing attack surface.
+// Scheduler calls require a dedicated NOTIFICATION_WORKER_SECRET bearer token.
 //
 // Channels light up as provider keys are added:
 //   email    -> RESEND_API_KEY
@@ -17,7 +15,8 @@
 // with the service-role client). SMS/WhatsApp stay short — a receipt doesn't
 // belong in a text message; those carry the confirmation + a track link.
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { workerAuthorized, trustedPushEndpoint } from "./security.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -49,7 +48,9 @@ type Notif = {
   payload: Record<string, unknown>;
 };
 
-const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 function rupees(v: unknown): string {
   const n = Number(v);
@@ -227,10 +228,11 @@ async function sendEmail(n: Notif) {
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(10_000),
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key": `notification-${n.id}` },
     body: JSON.stringify(body),
   });
-  if (!res.ok) return { ok: false, err: `resend ${res.status}: ${await res.text()}` };
+  if (!res.ok) return { ok: false, err: `resend ${res.status}: provider rejected request` };
   return { ok: true };
 }
 
@@ -238,13 +240,14 @@ async function sendSms(n: Notif) {
   if (!MSG91_AUTHKEY || !MSG91_SENDER) return { ok: false, skip: true };
   const res = await fetch("https://control.msg91.com/api/v5/flow/", {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: { authkey: MSG91_AUTHKEY, "Content-Type": "application/json" },
     body: JSON.stringify({
       sender: MSG91_SENDER, short_url: "0",
       mobiles: `91${n.recipient}`, message: bodyFor(n).slice(0, 300),
     }),
   });
-  if (!res.ok) return { ok: false, err: `msg91 ${res.status}: ${await res.text()}` };
+  if (!res.ok) return { ok: false, err: `msg91 ${res.status}: provider rejected request` };
   return { ok: true };
 }
 
@@ -252,13 +255,14 @@ async function sendWhatsApp(n: Notif) {
   if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_ID) return { ok: false, skip: true };
   const res = await fetch(`https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`, {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       messaging_product: "whatsapp", to: `91${n.recipient}`,
       type: "text", text: { body: bodyFor(n) },
     }),
   });
-  if (!res.ok) return { ok: false, err: `whatsapp ${res.status}: ${await res.text()}` };
+  if (!res.ok) return { ok: false, err: `whatsapp ${res.status}: provider rejected request` };
   return { ok: true };
 }
 
@@ -281,10 +285,11 @@ async function sendPush(n: Notif) {
 
   let anyOk = false, lastErr = "";
   for (const s of subs as { endpoint: string; p256dh: string; auth: string }[]) {
+    if (!trustedPushEndpoint(s.endpoint)) { lastErr = "Untrusted push endpoint"; continue; }
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        payload
+        payload, { timeout: 10_000 }
       );
       anyOk = true;
     } catch (e) {
@@ -298,24 +303,31 @@ async function sendPush(n: Notif) {
   return anyOk ? { ok: true } : { ok: false, err: lastErr || "push failed" };
 }
 
-Deno.serve(async () => {
+Deno.serve(async (request) => {
+  if (!workerAuthorized(request, Deno.env.get("NOTIFICATION_WORKER_SECRET"))) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   // Atomically claim a batch (pending -> 'sending' under FOR UPDATE SKIP LOCKED)
   // so overlapping runs never grab the same row and send duplicates. See 0088.
   const { data: rows, error } = await admin.rpc("claim_notifications", { p_limit: 25 });
 
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  if (error) return new Response(JSON.stringify({ error: "Notification queue unavailable." }), { status: 500 });
 
   let sent = 0, skipped = 0, failed = 0;
   for (const n of (rows ?? []) as Notif[]) {
-    const r = n.channel === "email" ? await sendEmail(n)
+    let r: { ok: boolean; skip?: boolean; err?: string };
+    try {
+      r = n.channel === "email" ? await sendEmail(n)
             : n.channel === "sms" ? await sendSms(n)
             : n.channel === "push" ? await sendPush(n)
             : await sendWhatsApp(n);
+    } catch { r = { ok: false, err: "Provider request failed" }; }
     const patch: Record<string, unknown> = {};
     if (r.skip) { patch.status = "skipped"; patch.last_error = "no provider key configured"; skipped++; }
     else if (r.ok) { patch.status = "sent"; patch.sent_at = new Date().toISOString(); sent++; }
     else { patch.status = "failed"; patch.last_error = r.err ?? "unknown"; failed++; }
-    await admin.from("notifications").update(patch).eq("id", n.id);
+    const { error: saveError } = await admin.from("notifications").update(patch).eq("id", n.id);
+    if (saveError) return new Response(JSON.stringify({ error: "Delivery status could not be saved." }), { status: 500 });
   }
   return new Response(JSON.stringify({ sent, skipped, failed }), {
     headers: { "Content-Type": "application/json" },

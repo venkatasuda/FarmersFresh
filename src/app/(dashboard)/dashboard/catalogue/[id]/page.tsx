@@ -1,12 +1,7 @@
-import Link from "next/link";
+import { EditProductPageView } from "@/features/dashboard/catalogue/detail-view";
+import { requireSession } from "@/server/auth/session";
+import { getAdminCategories, getAdminProduct, getBrands, } from "@/server/catalogue/queries";
 import { notFound } from "next/navigation";
-import { ProductForm } from "@/features/dashboard/catalogue/product-form";
-import { requireSession } from "@/server/auth";
-import {
-  getAdminCategories,
-  getAdminProduct,
-  getBrands,
-} from "@/server/catalogue";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -38,31 +33,5 @@ export default async function EditProductPage({ params }: Props) {
 
   if (!product) notFound();
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <nav className="text-sm text-ink-soft">
-        <Link href="/dashboard/catalogue" className="hover:text-brand-700">
-          Catalogue
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-ink">{product.name}</span>
-      </nav>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
-          {product.name}
-        </h1>
-        {product.slug && product.isPublished ? (
-          <Link
-            href={`/shop/${product.slug}`}
-            className="text-sm text-brand-700 hover:underline"
-          >
-            View on shop →
-          </Link>
-        ) : null}
-      </div>
-
-      <ProductForm product={product} categories={categories} brands={brands} />
-    </div>
-  );
+  return <EditProductPageView product={product} categories={categories} brands={brands} />;
 }
