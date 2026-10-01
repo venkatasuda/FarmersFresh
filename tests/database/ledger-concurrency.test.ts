@@ -46,7 +46,7 @@ async function race<T>(key: string, calls: ((client: PoolClient) => Promise<T>)[
   }
 }
 
-it("checkout and subscription competing for the last unit cannot oversell", async () => {
+it("checkout, POS and subscription competing for the last unit cannot oversell", async () => {
   const seed = await pool.connect();
   try {
     const f = await fixture(seed), subscription = randomUUID();
@@ -55,9 +55,13 @@ it("checkout and subscription competing for the last unit cannot oversell", asyn
     await race(`stock:${f.location}:${f.product}`, [
       client => placeOrder(client, f),
       client => client.query("select public.run_one_subscription($1)", [subscription]),
+      async client => {
+        await identity(client, f.owner);
+        return client.query("select * from public.record_sale($1,null,array[row($2::uuid,1,100)::public.sale_line],'cash',100)", [f.location, f.product]);
+      },
     ]);
     expect(Number((await seed.query("select public.stock_available($1,$2) n", [f.location, f.product])).rows[0].n)).toBe(0);
-    expect((await seed.query("select count(*)::int n from public.orders where org_id=$1", [f.org])).rows[0].n).toBe(1);
+    expect((await seed.query("select ((select count(*) from public.orders where org_id=$1)+(select count(*) from public.sales where org_id=$1))::int n", [f.org])).rows[0].n).toBe(1);
   } finally { seed.release(); }
 });
 
