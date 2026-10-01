@@ -11,7 +11,9 @@ if (process.env.CI !== "true" || !["localhost", "127.0.0.1", "[::1]"].includes(u
 const container = "supabase_db_farmersfresh-recovery";
 const client = new Client({ connectionString });
 const dump = "/tmp/farmersfresh-restore-drill.dump";
-const docker = args => execFileSync("docker", ["exec", container, ...args], { stdio: "pipe", maxBuffer: 8_000_000 });
+const docker = args => execFileSync("docker", ["exec", "-e", "PGPASSWORD", container, ...args], {
+  env: { ...process.env, PGPASSWORD: decodeURIComponent(url.password) }, stdio: "pipe", maxBuffer: 8_000_000,
+});
 const quoted = value => '"' + value.replaceAll('"', '""') + '"';
 await client.connect();
 try {
