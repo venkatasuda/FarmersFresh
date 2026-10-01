@@ -17,7 +17,8 @@ acceptance passes.
    `payment.captured` and calls the idempotent database settlement function.
    Retries must not credit an order or membership twice. Late payments for
    expired reservations become `refund_pending`; staff must reconcile them.
-5. Cancelling a prepaid order releases stock once and keeps it `refund_pending`.
+5. Cancelling a prepaid order releases stock and restores spent wallet credit
+   once, and keeps its provider payment `refund_pending`.
    Staff use **Refund original payment / check status** to request the full
    original-payment refund. The database checks their organization, role and
    assigned store and stores one immutable request amount. Requests use

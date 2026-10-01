@@ -12,10 +12,16 @@ afterEach(async () => { await client.query("rollback"); client.release(); });
 afterAll(() => pool.end());
 async function request() { return (await client.query("select public.request_order_refund($1) refund", [order])).rows[0].refund; }
 it("paid cancellation releases stock once and cannot fake refund completion", async () => {
+  await client.query("insert into public.wallet_ledger(org_id,user_id,amount,reason) values($1,$2,50,'earned'),($1,$2,-20,'redeemed')", [f.org, f.customer]);
+  await client.query("update public.orders set user_id=$1,credit_used=20,total=total-20 where id=$2", [f.customer, order]);
+  amount -= 2000;
   await identity(client, f.owner);
   await client.query("select public.cancel_order($1)", [order]); await client.query("select public.cancel_order($1)", [order]);
   expect((await client.query("select status from public.orders where id=$1", [order])).rows[0].status).toBe("refund_pending");
   expect((await client.query("select count(*)::int n from public.stock_movements where ref_id=$1 and reason='order_released'", [order])).rows[0].n).toBe(1);
+  await client.query("reset role");
+  expect((await client.query("select sum(amount)::int amount from public.wallet_ledger where org_id=$1 and user_id=$2", [f.org, f.customer])).rows[0].amount).toBe(50);
+  await identity(client, f.owner);
   const a = await request(), b = await request(); expect(a.id).toBe(b.id); expect(a.amount).toBe(amount);
   expect((await client.query("select count(*)::int n from public.events where entity_id=$1 and event_type='order.refund_requested'", [order])).rows[0].n).toBe(1);
 });

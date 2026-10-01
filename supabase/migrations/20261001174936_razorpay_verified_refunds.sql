@@ -80,6 +80,13 @@ begin
   if not public.has_location(v_order.location_id) then raise exception 'Insufficient permissions.' using errcode='42501'; end if;
   if v_order.status in ('cancelled','refund_pending') then return; end if;
   perform public.cancel_order_before_refunds(p_order_id,p_reason);
+  if v_order.user_id is not null and v_order.credit_used>0 then
+    insert into public.wallet_ledger(org_id,user_id,amount,reason,ref)
+    values(v_order.org_id,v_order.user_id,v_order.credit_used,'refunded',v_order.order_number);
+    insert into public.events(org_id,location_id,actor_id,event_type,entity_type,entity_id,payload)
+    values(v_order.org_id,v_order.location_id,auth.uid(),'order.credit_refunded','order',p_order_id,
+      jsonb_build_object('amount',v_order.credit_used));
+  end if;
   if v_order.is_paid and v_order.razorpay_payment_id is not null then
     update public.orders set status='refund_pending' where id=p_order_id;
     insert into public.events(org_id,location_id,actor_id,event_type,entity_type,entity_id,payload)
