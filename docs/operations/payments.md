@@ -1,57 +1,52 @@
 # Online payments (Razorpay)
 
-Cash/UPI on delivery is the default and always works. Online prepayment
-(UPI, cards, netbanking) is **scaffolded and ready** — it switches on when you
-add your Razorpay keys. No code changes needed.
+The checkout UI already supports Razorpay. Without provider keys, the storefront
+uses cash on delivery. Treat configured payments as unverified until staging
+acceptance passes.
 
-## What's already built
+## Existing flow
 
-- **Order fields** — `orders.is_paid`, `razorpay_order_id`, `razorpay_payment_id`,
-  `paid_at`, and `mark_order_paid()` (callable only by the verified server).
-- **`/api/razorpay/order`** — creates a Razorpay order for the amount, returns
-  the id the checkout popup needs. No-ops with a clear message until keys exist.
-- **`/api/razorpay/verify`** — verifies the payment signature **server-side**
-  (a client can't fake a payment) and marks the order paid.
+1. Checkout reserves stock and creates a held order in the database.
+2. The browser sends its order ID to `/api/razorpay/order`. The server checks
+   caller ownership (or the signed guest checkout cookie) and reads the amount
+   from the order. The browser never supplies the authoritative total.
+3. `src/features/checkout/razorpay.ts` opens Razorpay Checkout and sends its
+   result to `/api/razorpay/verify`. The server validates the signature and fetches
+   the provider payment to check captured status, INR currency and amount.
+4. `/api/razorpay/webhook` independently verifies the raw-body signature for
+   `payment.captured` and calls the idempotent database settlement function.
+   Retries must not credit an order or membership twice. Late payments for
+   expired reservations become `refund_pending`; staff must reconcile them.
 
-## Turn it on
+## Configure staging first
 
-1. Create a [Razorpay](https://razorpay.com) account and complete KYC.
-2. Dashboard → Settings → API Keys → generate keys. You get a **Key ID**
-   (starts `rzp_...`) and a **Key Secret**.
-3. Add these environment variables (Vercel → Settings → Environment Variables,
-   and `.env.local`):
+Generate **Test Mode** keys in Razorpay Dashboard, Account & Settings → API Keys.
+See [Razorpay's sandbox setup](https://github.com/razorpay/markdown-docs/blob/master/api/sandbox-setup.md).
+Add these in Vercel project settings for Preview, restricted to the test branch:
 
-   ```
-   RAZORPAY_KEY_ID=rzp_live_xxx
-   RAZORPAY_KEY_SECRET=your-secret
-   NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_xxx
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # from Supabase API settings
-   ```
+```text
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=<test key secret>
+RAZORPAY_WEBHOOK_SECRET=<separate webhook secret>
+SUPABASE_SERVICE_ROLE_KEY=<demo project server key>
+```
 
-4. Redeploy.
+Only the public key ID may use `NEXT_PUBLIC_`. Keep secrets in hosting settings,
+never chat or source. Redeploy after configuration. Provider callbacks must have
+access to the test webhook endpoint while Vercel preview protection stays enabled;
+a CLI-authenticated request does not prove Razorpay can reach it.
 
-## The one remaining wiring step
+## Acceptance before live payments
 
-The two server routes and the database are done. The last piece is the
-**checkout button flow** on the client:
+- Capture a test payment and verify the order total, payment ID, stock and event history.
+- Replay the same captured webhook and browser verification; settlement must occur once.
+- Reject invalid signatures, altered amounts, other customers' orders and unpaid/uncaptured payments.
+- Test dismissal, expiry, late capture and provider/network failures.
+- Exercise an original-payment refund and reconcile it against Razorpay and the order.
+  Existing wallet credits do not prove a provider refund; record the operational
+  refund procedure before accepting prepaid customer orders.
 
-1. Add a "Pay online" option at checkout beside "Pay on delivery".
-2. On choosing it: call `/api/razorpay/order` with the total → get
-   `razorpayOrderId` → open the Razorpay checkout popup (their `checkout.js`
-   script + `NEXT_PUBLIC_RAZORPAY_KEY_ID`).
-3. On success, the popup returns `razorpay_payment_id` + `razorpay_signature`;
-   POST them with the order id to `/api/razorpay/verify`.
-4. On `{ ok: true }`, show the confirmation.
-
-This is intentionally left for when your keys are live, so it can be tested end
-to end against a real Razorpay account rather than shipped blind. Tell me once
-your keys are in and I'll wire the button in ~30 minutes.
-
-## Security notes
-
-- The **signature is verified server-side** with your secret key before any
-  order is marked paid — the browser is never trusted.
-- `mark_order_paid()` is revoked from `anon` and `authenticated`; only the
-  service-role server route can call it.
-- The secret key lives only in server env, never shipped to the browser (only
-  the public `NEXT_PUBLIC_RAZORPAY_KEY_ID` is).
+The current demo preview has no Razorpay keys. Provider capture, webhook reachability
+and refund acceptance remain pending. After these pass, configure live keys and
+repeat deployment/configuration checks through the release process.
