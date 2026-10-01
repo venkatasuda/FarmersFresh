@@ -1,12 +1,42 @@
 import { afterAll, afterEach, beforeEach, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
-import { pool, fixture, identity, expectDenied, type Fixture } from "./helpers";
+import { pool, fixture, identity, expectDenied, placeOrder, type Fixture } from "./helpers";
 
 let client: PoolClient, f: Fixture;
 beforeEach(async () => { client = await pool.connect(); await client.query("begin"); f = await fixture(client); });
 afterEach(async () => { await client.query("rollback"); client.release(); });
 afterAll(() => pool.end());
+
+it("order history returns matching orders in newest-first order", async () => {
+  await placeOrder(client, f);
+  await client.query("update public.orders set contact_email=$1 where org_id=$2", [`${f.customer}@ci.invalid`, f.org]);
+  await identity(client, f.customer);
+  const result = (await client.query("select public.my_orders() result")).rows[0].result;
+  expect(result).toHaveLength(1);
+  expect(result[0].item_count).toBe(1);
+  await identity(client, f.outsider);
+  expect((await client.query("select public.my_orders() result")).rows[0].result).toEqual([]);
+});
+
+it("automatic delivery assignment can run twice in one transaction", async () => {
+  await placeOrder(client, f);
+  await client.query("update public.orders set status='confirmed' where org_id=$1", [f.org]);
+  await client.query("update public.memberships set on_shift=true where user_id=$1", [f.staff]);
+  await identity(client, f.owner);
+  expect((await client.query("select public.auto_assign_deliveries() n")).rows[0].n).toBe(1);
+  expect((await client.query("select public.auto_assign_deliveries() n")).rows[0].n).toBe(0);
+  expect((await client.query("select assigned_to from public.orders where org_id=$1", [f.org])).rows[0].assigned_to).toBe(f.staff);
+});
+
+it("automatic reorder can retry with no demand and later create a draft", async () => {
+  expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(0);
+  expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(0);
+  await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,-200,'sale')", [f.org, f.location, f.product]);
+  expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(1);
+  expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(0);
+  expect((await client.query("select qty_ordered from public.purchase_order_items where org_id=$1", [f.org])).rows[0].qty_ordered).toBe("64.300");
+});
 
 it("membership settlement requires the stored amount", async () => {
   const plan = (await client.query("insert into public.membership_plans(org_id,name,price,duration_days) values($1,'Test',100,30) returning id", [f.org])).rows[0].id;

@@ -9508,6 +9508,10 @@ CREATE POLICY zone_staff_read ON public.delivery_zones FOR SELECT TO authenticat
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
 --
 
+-- Clear platform default grants before restoring the explicit dumped ACLs.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM anon, authenticated;
+
 GRANT USAGE ON SCHEMA public TO postgres;
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO authenticated;

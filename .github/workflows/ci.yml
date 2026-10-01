@@ -130,6 +130,10 @@ jobs:
         if: always()
   production-browser:
     name: Production build and browser tests
+    env:
+      # Synthetic local-only credentials let signature rejection tests reach validation.
+      RAZORPAY_KEY_SECRET: ci-local-payment-signature-secret
+      RAZORPAY_WEBHOOK_SECRET: ci-local-webhook-signature-secret
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
