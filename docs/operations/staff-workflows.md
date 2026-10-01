@@ -29,9 +29,11 @@ proof of permission: database tests separately enforce role and store boundaries
 1. Submit a return through the customer workflow; review in `/dashboard/returns`.
    Approve or reject once, with a reason. Wallet points are credit, not a gateway
    cash refund; tell the customer which remedy was issued.
-2. For Razorpay refunds, use the provider's test dashboard and verify its final
-   refund status. A `refund_pending` order stays unresolved until reconciliation;
-   do not mark a payment refunded solely because a request was submitted.
+2. For a cancelled prepaid order, use **Refund original payment / check status**
+   in `/dashboard/orders`. A pending submission is not completion; check again
+   later and compare the final status with Razorpay's test dashboard. Signed
+   refund webhooks also reconcile it. Repeated clicks reuse the request; a
+   failed refund requires provider review. Never mark it refunded manually.
 3. Compare provider captures/refunds with order totals and wallet/sale records in
    `/dashboard/financials`, `/dashboard/sales` and `/dashboard/credit`.
    Escalate unmatched payments, amount discrepancies and paid-after-cancel events.
