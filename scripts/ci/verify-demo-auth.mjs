@@ -1,7 +1,7 @@
 // Explicit demo-only check. Pipe Supabase CLI API-key JSON through stdin; never log it.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -60,7 +60,13 @@ try {
   assert(uploadedPath.startsWith(user.id + "/"));
   const downloaded = check(await admin.storage.from("product-images").download(uploadedPath));
   assert.equal((await sharp(Buffer.from(await downloaded.arrayBuffer())).metadata()).format, "jpeg", "Image re-encoding");
-  console.log("Hosted sign-in, customer account, upload permissions, invalid-image rejection and owner JPEG upload passed.");
+  const backup = Buffer.from(await downloaded.arrayBuffer());
+  check(await admin.storage.from("product-images").remove([uploadedPath]));
+  check(await admin.storage.from("product-images").upload(uploadedPath, backup, { contentType: "image/jpeg" }));
+  const restored = check(await admin.storage.from("product-images").download(uploadedPath));
+  assert.equal(createHash("sha256").update(Buffer.from(await restored.arrayBuffer())).digest("hex"),
+    createHash("sha256").update(backup).digest("hex"), "Hosted image bytes restored exactly");
+  console.log("Hosted sign-in, upload permissions, image validation and exact image-byte recovery passed.");
 } finally {
   if (uploadedPath) check(await admin.storage.from("product-images").remove([uploadedPath]));
   if (user) check(await admin.from("profiles").delete().eq("id", user.id));

@@ -41,6 +41,8 @@ key recovery or restoration of Storage object bytes.
    restore to an isolated database. Reconcile provider payments before resuming.
 5. Record elapsed recovery time and the person authorized to restore traffic.
 
-Hosted restore and rollback sign-off remain pending until hosting access and
-backup/key/storage mechanisms are available. Fresh migration replay and the
-fixture data drill are separate checks, not substitutes for those exercises.
+The [1 October demo rehearsal](demo-launch-rehearsal-2026-10-01.md) verified exact
+synthetic image-byte restoration and a temporary-alias application routing rollback.
+Full hosted database/storage/key restoration and operational sign-off remain
+pending. Fresh migration replay and the fixture data drill are separate checks,
+not substitutes for those exercises.
