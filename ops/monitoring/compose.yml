@@ -21,11 +21,24 @@ services:
       - grafana-data:/var/lib/grafana
     secrets: [grafana_password]
     restart: unless-stopped
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    profiles: [alerts]
+    ports: ["127.0.0.1:9093:9093"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager", "--cluster.listen-address="]
+    volumes:
+      - ./secrets/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    secrets: [smtp_password]
+    restart: unless-stopped
 secrets:
   monitoring_token:
     file: ./secrets/monitoring_token
   grafana_password:
     file: ./secrets/grafana_password
+  smtp_password:
+    file: ./secrets/smtp_password
 volumes:
   prometheus-data:
   grafana-data:
+  alertmanager-data:

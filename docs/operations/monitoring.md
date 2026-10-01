@@ -2,7 +2,7 @@
 
 ## Open-source business monitoring
 
-`ops/monitoring/` provisions Prometheus and Grafana, a business dashboard and
+`ops/monitoring/` provisions Prometheus, Grafana and optional Alertmanager, a business dashboard and
 alert rules. It is separate from the optional Sentry error reporter below.
 
 1. Generate two different random secrets. Set `MONITORING_TOKEN` (at least 32
@@ -22,9 +22,14 @@ alert rules. It is separate from the optional Sentry error reporter below.
    Check that a deliberately created *demo* refund-pending order is visible and
    fires the payment alert after five minutes; resolve it through the verified
    operational workflow, never by forging payment flags.
-5. Configure Grafana contact points and matching alert rules for the chosen
-   on-call destination. Prometheus evaluates the supplied rules; email/chat
-   delivery is **not configured** and must be tested before launch.
+5. Copy `alertmanager.example.yml` to `ops/monitoring/secrets/alertmanager.yml`.
+   Replace the SMTP host, sender, username and recipient with your actual settings;
+   save the SMTP password in `ops/monitoring/secrets/smtp_password`. Keep both
+   files private and out of Git. Start delivery with
+   `docker compose -f ops/monitoring/compose.yml --profile alerts up -d`.
+   Prometheus forwards the existing rules to Alertmanager; Grafana shows the data.
+   No duplicate Grafana alert rules are required. Verify both firing and resolved
+   emails reach the chosen recipient before launch. The base profile has no delivery.
 
 The metrics endpoint returns counts only and refuses missing/incorrect tokens.
 No customer information, payment payloads or exception messages are exported.
@@ -36,7 +41,10 @@ Counters covering the last day remain elevated until their window expires.
 Aggregates span organizations; add store labels when operators need store-level
 triage. Software is open source; deployment still requires a running host.
 
-CI validates rules and tests target-down and refund alerts. The stack has not
+CI validates rules, tests target-down/refund alerts, and runs a real Alertmanager
+container against a loopback receiver to verify firing/resolved delivery and
+duplicate grouping. This is not proof of your SMTP server or recipient delivery.
+The stack has not
 been started on a persistent host simply because these files exist.
 References: [Prometheus alerting rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/),
 [Grafana Docker configuration](https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/).

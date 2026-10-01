@@ -227,7 +227,7 @@ async function sendEmail(n: Notif) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     signal: AbortSignal.timeout(10_000),
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key": `notification-${n.id}` },
     body: JSON.stringify(body),
   });
   if (!res.ok) return { ok: false, err: `resend ${res.status}: provider rejected request` };
@@ -324,7 +324,8 @@ Deno.serve(async (request) => {
     if (r.skip) { patch.status = "skipped"; patch.last_error = "no provider key configured"; skipped++; }
     else if (r.ok) { patch.status = "sent"; patch.sent_at = new Date().toISOString(); sent++; }
     else { patch.status = "failed"; patch.last_error = r.err ?? "unknown"; failed++; }
-    await admin.from("notifications").update(patch).eq("id", n.id);
+    const { error: saveError } = await admin.from("notifications").update(patch).eq("id", n.id);
+    if (saveError) return new Response(JSON.stringify({ error: "Delivery status could not be saved." }), { status: 500 });
   }
   return new Response(JSON.stringify({ sent, skipped, failed }), {
     headers: { "Content-Type": "application/json" },
