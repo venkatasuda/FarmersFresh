@@ -48,7 +48,9 @@ type Notif = {
   payload: Record<string, unknown>;
 };
 
-const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 function rupees(v: unknown): string {
   const n = Number(v);
