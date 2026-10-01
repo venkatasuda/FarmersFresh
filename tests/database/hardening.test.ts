@@ -30,6 +30,8 @@ it("automatic delivery assignment can run twice in one transaction", async () =>
 });
 
 it("automatic reorder can retry with no demand and later create a draft", async () => {
+  // Concurrency tests commit other shops; isolate this scheduler's storefront selection.
+  await client.query("update public.organizations set storefront_location_id=null where id<>$1", [f.org]);
   expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(0);
   expect((await client.query("select public.auto_draft_reorder() n")).rows[0].n).toBe(0);
   await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,-200,'sale')", [f.org, f.location, f.product]);

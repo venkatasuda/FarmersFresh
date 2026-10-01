@@ -1,6 +1,6 @@
 # Security hardening and release requirements
 
-The September 30 hardening changes are local code and a database migration. They
+The security hardening changes include application code and database migrations. They
 must ship together after database and browser CI passes. They have not changed a
 hosted Supabase project, scheduler, or production deployment.
 
@@ -37,6 +37,9 @@ hosted Supabase project, scheduler, or production deployment.
   both new database writes and the worker. Other push providers fail closed.
 - Cancellation locks the order before releasing stock. Purchase creation, its
   lines, and optional ordering now happen in one database transaction.
+- Schema restores clear inherited client grants before replaying explicit ACLs.
+  The corrective migration also revokes client access to service-only functions
+  and table-level updates that bypass profile and order column restrictions.
 - Next.js is pinned to 16.3.8, which includes the fix for
   [GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
 
@@ -44,7 +47,9 @@ hosted Supabase project, scheduler, or production deployment.
 
 1. Run the existing CI database and concurrency suites against a disposable
    Supabase instance, including `tests/database/hardening.test.ts`. Apply
-   `20260930155322_security_hardening.sql` through the normal migration process.
+   all pending migrations through the normal migration process, including
+   `20260930155322_security_hardening.sql` and
+   `20261001055649_repair_restored_permissions_and_queries.sql`.
 2. Set a random `NOTIFICATION_WORKER_SECRET` of at least 32 characters in Edge
    Function secrets and in the scheduler's `Authorization: Bearer ...` header.
    Coordinate that configuration with the worker deployment; missing credentials
