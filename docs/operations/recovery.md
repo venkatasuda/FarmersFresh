@@ -5,7 +5,7 @@
 The database CI job runs `scripts/ci/restore-drill.mjs` after the real database
 tests. It checks that the connection and Docker container identify the same
 disposable local cluster, backs up public/auth/storage records, empties those
-tables, restores with triggers disabled, and compares every table's sorted
+tables (excluding platform migration metadata), restores with triggers disabled, and compares every table's sorted
 full-row hashes. It also verifies nonnegative wallet and stock balances.
 `reports/restore-drill.json` records the result without exposing backed-up data.
 The script refuses hosted URLs or non-CI execution. Never relax those guards.

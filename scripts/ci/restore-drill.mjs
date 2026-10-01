@@ -21,6 +21,7 @@ try {
   if (String(Object.values(remote.rows[0])[0]).trim() !== local.toString().trim()) throw new Error("Container/database mismatch.");
   const tables = (await client.query(`select n.nspname schema,c.relname name from pg_class c join pg_namespace n on n.oid=c.relnamespace
     where n.nspname in ('public','auth','storage') and c.relkind='r'
+      and not (n.nspname in ('auth','storage') and c.relname in ('schema_migrations','migrations'))
       and not exists(select 1 from pg_depend d where d.objid=c.oid and d.classid='pg_class'::regclass and d.deptype='e')
     order by n.nspname,c.relname`)).rows;
   async function manifest() {
@@ -36,7 +37,8 @@ try {
   }
   const before = await manifest();
   if (!before["public.orders"]?.row_count || !before["public.wallet_ledger"]?.row_count) throw new Error("Recovery fixtures must include orders and wallet records.");
-  docker(["pg_dump", "-U", "postgres", "-d", "postgres", "--data-only", "--format=custom", "--schema=public", "--schema=auth", "--schema=storage", "--exclude-table=public.spatial_ref_sys", `--file=${dump}`]);
+  docker(["pg_dump", "-U", "postgres", "-d", "postgres", "--data-only", "--format=custom",
+    ...tables.map(t => `--table=${quoted(t.schema)}.${quoted(t.name)}`), `--file=${dump}`]);
   // Only the proven local fixture database is emptied; no hosted restore is allowed.
   await client.query("truncate " + tables.map(t => `${quoted(t.schema)}.${quoted(t.name)}`).join(",") + " cascade");
   docker(["pg_restore", "-U", "postgres", "-d", "postgres", "--data-only", "--disable-triggers", "--no-owner", "--no-acl", "--exit-on-error", dump]);
