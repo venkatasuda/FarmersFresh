@@ -2,6 +2,21 @@
 
 ## Open-source business monitoring
 
+The staff portal has a **Monitoring** tab at `/dashboard/monitoring` for owners
+and store managers. It refreshes every 30 seconds while visible and shows
+delayed/unpaid orders, pending refunds, payment discrepancies, failed/skipped/
+stalled notifications, and low-stock product/store pairs. The database RPC
+derives organization and managed-store scope from the signed-in user; regular
+staff, accountants, customers and anonymous users cannot query these counts.
+Owners see their organization; managers see only stores where they are managers.
+Notifications and payment events without a matching store order are owner-only.
+Low stock means at most five available units per published product/store pair.
+Unavailable data is shown explicitly instead of being displayed as zero.
+
+The portal shows whether its current database request succeeded. It does not
+replace continuous uptime monitoring or start the monitoring server. Grafana,
+Prometheus credentials and service-role secrets are never sent to portal users.
+
 `ops/monitoring/` provisions Prometheus, Grafana and optional Alertmanager, a business dashboard and
 alert rules. It is separate from the optional Sentry error reporter below.
 

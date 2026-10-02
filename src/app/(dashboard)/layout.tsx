@@ -26,6 +26,9 @@ export default async function AppLayout({
                 Counter
               </NavLink>
               <NavLink href="/dashboard/orders">Orders</NavLink>
+              {session.isOwner || session.memberships.some(m => m.role === "manager" && m.locationType === "store") ? (
+                <NavLink href="/dashboard/monitoring">Monitoring</NavLink>
+              ) : null}
               {session.isOwner ? (
                 <>
                   <Menu

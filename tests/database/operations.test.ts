@@ -53,3 +53,33 @@ it("operations counters reflect business failures and are inaccessible to custom
     await expectDenied(client, () => client.query("select * from public.operations_metrics()"));
   }
 });
+
+it("portal monitoring counts only managed stores and rejects non-manager identities", async () => {
+  const secondStore = randomUUID();
+  const ownOrder = (await placeOrder(client, f)).rows[0];
+  await client.query("insert into public.locations(id,org_id,type,name) values($1,$2,'store','Second store')", [secondStore, f.org]);
+  await client.query("update public.organizations set storefront_location_id=$1 where id=$2", [secondStore, f.org]);
+  await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,200,'purchase')", [f.org, secondStore, f.product]);
+  const otherOrder = (await placeOrder(client, f)).rows[0];
+  await client.query("update public.orders set placed_at=now()-interval '25 hours' where id=any($1::uuid[])", [[ownOrder.order_id, otherOrder.order_id]]);
+  await client.query("update public.memberships set role='manager' where user_id=$1", [f.staff]);
+  // A second staff assignment must not expand a manager's monitoring scope.
+  await client.query("insert into public.memberships(org_id,user_id,location_id,role) values($1,$2,$3,'staff')", [f.org, f.staff, secondStore]);
+  await client.query("insert into public.notifications(org_id,channel,recipient,template,status,payload) values($1,'email','ci@ci.invalid','test','failed',jsonb_build_object('order_number',$2::text)),($1,'email','ci@ci.invalid','test','failed',jsonb_build_object('order_number',$3::text)),($1,'email','ci@ci.invalid','test','failed','{}')", [f.org, ownOrder.order_number, otherOrder.order_number]);
+  await client.query("insert into public.payment_events(org_id,razorpay_payment_id,target_type,target_id,status) values($1,$2,'order',$3,'amount_mismatch'),($1,$4,'order',$5,'amount_mismatch')", [f.org, randomUUID(), ownOrder.order_id, randomUUID(), otherOrder.order_id]);
+  const counts = async () => Object.fromEntries((await client.query("select * from public.portal_operations_metrics()")).rows.map(row => [row.metric, Number(row.value)]));
+  await identity(client, f.staff);
+  expect(await counts()).toMatchObject({ ff_stuck_orders: 1, ff_failed_notifications_24h: 1, ff_payment_exceptions_24h: 1, ff_low_stock_products: 0 });
+  await identity(client, f.owner);
+  expect(await counts()).toMatchObject({ ff_stuck_orders: 2, ff_failed_notifications_24h: 3, ff_payment_exceptions_24h: 2, ff_low_stock_products: 1 });
+  await identity(client, f.outsider);
+  await expectDenied(client, counts);
+  await identity(client, f.customer);
+  await expectDenied(client, counts);
+  await identity(client, f.customer, 'anon');
+  await expectDenied(client, counts);
+  await client.query('reset role');
+  await client.query("update public.memberships set role='staff' where user_id=$1", [f.staff]);
+  await identity(client, f.staff);
+  await expectDenied(client, counts);
+});

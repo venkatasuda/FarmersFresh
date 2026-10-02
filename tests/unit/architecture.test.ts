@@ -28,7 +28,7 @@ describe("architecture migration", () => {
       "/dashboard/catalogue/new", "/dashboard/coldchain", "/dashboard/coupons",
       "/dashboard/credit", "/dashboard/credit/[id]", "/dashboard/deliveries",
       "/dashboard/delivery", "/dashboard/expiry", "/dashboard/financials",
-      "/dashboard/orders", "/dashboard/pos", "/dashboard/production",
+      "/dashboard/monitoring", "/dashboard/orders", "/dashboard/pos", "/dashboard/production",
       "/dashboard/purchasing", "/dashboard/recipes", "/dashboard/reorder",
       "/dashboard/returns", "/dashboard/sales", "/dashboard/settings",
       "/dashboard/stock", "/dashboard/support", "/dashboard/traceability",
