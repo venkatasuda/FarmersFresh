@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
  *   VISION_PROVIDER=custom   → your own model endpoint (needs VISION_ENDPOINT_URL,
  *                              optional VISION_ENDPOINT_TOKEN for auth)
  *
- * Your custom endpoint's contract (see docs/VISUAL_SEARCH.md):
+ * Your custom endpoint's contract (see docs/features/visual-search.md):
  *   Request  (POST JSON): { "image": "<base64, no data-url prefix>" }
  *   Response (JSON):      { "term": "coriander" }   // preferred, or
  *                         { "labels": ["coriander","herb",...] } // most→least specific

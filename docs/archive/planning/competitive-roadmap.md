@@ -4,22 +4,28 @@
 
 Researched July 2026. This is a working roadmap, not a spec — priorities are a recommendation, not a rule.
 
+Historical comparison: the feature inventory below describes implementation
+ideas and code coverage, not verified production readiness. Current scope and
+remaining acceptance are in [PRD](../../product/PRD.md) and [TASKS](../../product/TASKS.md).
+
 ---
 
 ## 1. Where we already match (or beat) them
 
-Before chasing new features, it's worth seeing how much is already done. Farmers Fresh already has, live:
+The repository includes implementations for the following areas; configuration
+and workflow acceptance vary:
 
 - **Full storefront** — catalogue, departments, search with autocomplete, wishlist, reviews & ratings, promo banners, offers/deals zone.
-- **Checkout** — COD **and** prepaid (UPI / card via a payment gateway, money verified before the order is processed), coupons, loyalty-point redemption, saved addresses.
+- **Checkout** — COD, coupons, loyalty-point redemption and saved addresses. Razorpay prepaid integration code exists; provider capture and refund acceptance remain pending, so launch scope is COD.
 - **Loyalty** — a points program (1 point per ₹100), a scannable **QR loyalty card** used both online and at the counter — the same model Lidl Plus and Kaufland Card run on.
 - **Retention** — subscriptions ("subscribe & save"), buy-it-again, recommendations, back-in-stock alerts, abandoned-cart reminders, win-back for lapsed customers.
 - **Order lifecycle** — real-time order tracking, digital receipts (on-screen + emailed), returns & refunds to points.
-- **Notifications** — email + SMS + WhatsApp + web push, all through one outbox.
+- **Notifications** — an outbox supports email, SMS, WhatsApp and web push adapters. Resend email delivery has been verified; additional channels require separate provider configuration and delivery acceptance.
 - **Operations** — counter POS with credit ledger (khata), delivery/rider screen, live staff order board, stock ledger, demand insights, an owner business dashboard, and a settings screen (delivery fees, GSTIN, contacts).
 - **Platform** — installable PWA, error monitoring, row-level security throughout.
 
-That is already at or beyond feature parity with most of what these apps expose to a customer. The gaps below are the *edges* they've pushed to — plus a few places we can beat them.
+This inventory does not establish competitor feature parity. The gaps below are
+planning candidates; launch reliability and measured customer demand determine priority.
 
 ---
 

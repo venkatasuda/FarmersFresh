@@ -15,7 +15,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Brand: green and white, always
 
-Full rules in `docs/BRAND.md`. In short:
+Full rules in `docs/design/BRAND.md`. In short:
 
 - Palette tokens live in `src/app/globals.css` under `@theme`. Use `brand-600`,
   `surface`, `canvas`, `line`, `ink`, `ink-soft` — **never raw hex** in a component.

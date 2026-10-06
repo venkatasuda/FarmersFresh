@@ -41,7 +41,7 @@ key recovery or restoration of Storage object bytes.
    restore to an isolated database. Reconcile provider payments before resuming.
 5. Record elapsed recovery time and the person authorized to restore traffic.
 
-The [1 October demo rehearsal](demo-launch-rehearsal-2026-10-01.md) verified exact
+The [1 October demo rehearsal](../archive/evidence/demo-launch-rehearsal-2026-10-01.md) verified exact
 synthetic image-byte restoration and a temporary-alias application routing rollback.
 Full hosted database/storage/key restoration and operational sign-off remain
 pending. Fresh migration replay and the fixture data drill are separate checks,
@@ -49,7 +49,7 @@ not substitutes for those exercises.
 
 ## Demo export to a replacement local cluster (2 October 2026)
 
-The [2 October recovery rehearsal](recovery-rehearsal-2026-10-02.md) restored
+The [2 October recovery rehearsal](../archive/evidence/recovery-rehearsal-2026-10-02.md) restored
 the hosted demo's exported records into a separate local Supabase cluster.
 Every exported row and sequence matched; restored login, owner permissions and
 a synthetic hosted-to-local image copy passed. This is stronger evidence than
