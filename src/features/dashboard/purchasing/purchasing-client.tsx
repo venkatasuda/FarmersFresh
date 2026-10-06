@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useState, useTransition } from "react";
 import { formatRupees } from "@/lib/format";
 import {
@@ -57,13 +56,13 @@ export function PurchasingClient({
       <div className="grid gap-3 sm:grid-cols-3">
         <Kpi label="Open orders" value={String(overview.openPos)} />
         <Kpi label="Active suppliers" value={String(overview.suppliers)} />
-        <Link href="/dashboard/wastage" className="block">
+        <div>
           <Kpi
             label="Wastage (30 days)"
             value={formatRupees(overview.wastageValue30d)}
-            hint="View wastage →"
+            hint="At this store"
           />
-        </Link>
+        </div>
       </div>
 
       {!locationId ? (
@@ -154,24 +153,31 @@ function OrdersTab({
   const [creating, setCreating] = useState(false);
   const [receiving, setReceiving] = useState<PoDetail | null>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function openReceive(poId: string) {
+    setError(null);
     startTransition(async () => {
-      const detail = await getPurchaseOrder(poId);
-      if (detail) setReceiving(detail);
+      try {
+        const detail = await getPurchaseOrder(poId);
+        if (detail) setReceiving(detail);
+        else setError("This order is unavailable. Refresh the page.");
+      } catch { setError("Couldn't load the order. Please try again."); }
     });
   }
 
   function cancel(poId: string) {
     if (!confirm("Cancel this purchase order?")) return;
     startTransition(async () => {
-      await cancelPurchaseOrder(poId);
+      const result = await cancelPurchaseOrder(poId);
+      if (!result.ok) { setError(result.message); return; }
       onChanged();
     });
   }
 
   return (
     <div className="space-y-4">
+      {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
       {!creating ? (
         <button
           type="button"

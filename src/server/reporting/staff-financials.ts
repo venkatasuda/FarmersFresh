@@ -1,15 +1,27 @@
 import "server-only";
 import type { Financials, FinOverview } from "@/lib/contracts/staff-financials";
 import { createClient } from "@/server/supabase/server";
+import { hasPermission } from "@/server/auth/permissions";
 
 export async function getFinancials(days = 30): Promise<Financials> {
+  if (![7, 30, 90].includes(days)) throw new Error("Choose a supported reporting period.");
+  if (!await hasPermission("financials.read")) throw new Error("Insufficient permission.");
   const supabase = await createClient();
+  // Fail closed if a preview runs before its database scope migration is applied.
+  const scope = await supabase.rpc("financial_report_locations");
+  if (scope.error || !Array.isArray(scope.data) || !scope.data.length) {
+    throw new Error("Financial reports are temporarily unavailable.");
+  }
   const [ov, mg, pay, pc] = await Promise.all([
     supabase.rpc("financials_overview", { p_days: days }),
     supabase.rpc("margin_by_product", { p_days: days }),
     supabase.rpc("sales_by_payment", { p_days: days }),
     supabase.rpc("price_check", { p_threshold: 10 }),
   ]);
+
+  if ([ov, mg, pay, pc].some(result => result.error || result.data === null)) {
+    throw new Error("Financial reports are temporarily unavailable.");
+  }
 
   const o = (ov.data ?? {}) as Record<string, unknown>;
   const overview: FinOverview = {

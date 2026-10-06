@@ -16,8 +16,7 @@ export function StockPageView({ out, low, locationId, lines, movements }: StockP
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Stock</h1>
         <p className="mt-1 text-sm text-ink-soft">
-          What the shop can sell right now. Anything at zero disappears from the
-          storefront automatically.
+          Stock at the selected store. The online shop uses its configured dispatch store.
         </p>
       </div>
 
@@ -26,8 +25,7 @@ export function StockPageView({ out, low, locationId, lines, movements }: StockP
           {out.length > 0 ? (
             <p>
               <strong>{out.map((l) => l.name).join(", ")}</strong>{" "}
-              {out.length === 1 ? "is" : "are"} sold out and hidden from
-              customers.
+              {out.length === 1 ? "is" : "are"} out of stock at this store.
             </p>
           ) : null}
           {low.length > 0 ? (

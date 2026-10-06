@@ -260,7 +260,7 @@ function EmptyCatalogue() {
       <p className="mx-auto mt-2 max-w-md text-sm text-ink-soft">
         Nothing is published yet. Follow the seed steps in{" "}
         <code className="rounded bg-brand-50 px-1.5 py-0.5 text-brand-800">
-          docs/STOREFRONT.md
+          docs/features/storefront.md
         </code>
         .
       </p>

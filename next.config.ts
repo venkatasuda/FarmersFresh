@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
      * legal exposure, not a theoretical one.
      *
      * These are PLACEHOLDERS for building. Ship with your own photos of your
-     * own meat, served from Supabase Storage — see docs/BRAND.md.
+     * own meat, served from Supabase Storage — see docs/design/BRAND.md.
      */
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },

@@ -37,8 +37,13 @@ tests/
 scripts/
   ci/ db/
 docs/
+  product/           Requirements and current launch tasks
+  design/            Brand and UI rules
+  features/          Feature setup and integration guides
   architecture/      Overview, boundaries and recorded decisions
-  operations/        Deployment, payment setup, monitoring, PWA and CI guides
+  engineering/       CI and development verification procedures
+  operations/        Deployment, payment setup, security, monitoring and recovery
+  archive/           Historical planning and dated test evidence
 ```
 
 Route groups do not change URLs. There is one root layout. Storefront providers

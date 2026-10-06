@@ -1,5 +1,9 @@
 # Build prompt — "Farmers Fresh" grocery + own-farm meat platform
 
+Historical planning prompt. Features below are requests, not verified delivery
+or launch promises. Use [product requirements](../../product/PRD.md) for current scope and
+[launch tasks](../../product/TASKS.md) for acceptance status.
+
 *Paste everything below into the other AI builder. It describes, in plain language, the full app to build — so you can compare what it produces against what we already have.*
 
 ---

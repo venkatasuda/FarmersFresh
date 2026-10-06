@@ -8,9 +8,10 @@ type Result = { ok: true } | { ok: false; message: string };
 
 export async function getSuppliers(includeInactive = false): Promise<Supplier[]> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("list_suppliers", {
+  const { data, error } = await supabase.rpc("list_suppliers", {
     p_include_inactive: includeInactive,
   });
+  if (error) throw new Error("Suppliers are temporarily unavailable.");
   const rows = (data ?? []) as Record<string, unknown>[];
   return rows.map((s) => ({
     id: String(s.id),
@@ -24,12 +25,14 @@ export async function getSuppliers(includeInactive = false): Promise<Supplier[]>
   }));
 }
 
-export async function getPurchaseOrders(): Promise<PoSummary[]> {
+export async function getPurchaseOrders(locationId?: string): Promise<PoSummary[]> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("list_purchase_orders", {
+  const { data, error } = await supabase.rpc("list_purchase_orders", {
     p_status: null,
     p_limit: 50,
+    p_location: locationId ?? null,
   });
+  if (error) throw new Error("Purchasing is temporarily unavailable.");
   const rows = (data ?? []) as Record<string, unknown>[];
   return rows.map((p) => ({
     id: String(p.id),
@@ -45,9 +48,10 @@ export async function getPurchaseOrders(): Promise<PoSummary[]> {
   }));
 }
 
-export async function getOverview(): Promise<ProcurementOverview> {
+export async function getOverview(locationId?: string): Promise<ProcurementOverview> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("procurement_overview");
+  const { data, error } = await supabase.rpc("procurement_overview", { p_location: locationId ?? null });
+  if (error || !data) throw new Error("Purchasing is temporarily unavailable.");
   const d = (data ?? {}) as Record<string, unknown>;
   return {
     openPos: Number(d.open_pos ?? 0),

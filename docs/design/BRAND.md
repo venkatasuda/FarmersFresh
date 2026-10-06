@@ -6,7 +6,7 @@ Green is the brand. White and warm grey carry the data. **Green is used
 sparingly** — identity, primary actions, and positive money. If every panel is
 green, green stops meaning anything.
 
-Defined in `app/globals.css` under `@theme`. Use the Tailwind utilities, never
+Defined in `src/app/globals.css` under `@theme`. Use the Tailwind utilities, never
 raw hex in components.
 
 | Token | Use |

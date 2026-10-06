@@ -63,7 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: ./.github/actions/node-setup
-      - run: npm audit --audit-level=high --json > dependency-audit.json
+      - name: Verify dependency gate rejection cases
+        run: node scripts/ci/dependency-audit.mjs --self-test
+      - name: Audit dependencies with approved expiring demo exception
+        env:
+          FARMERSFRESH_RELEASE_TARGET: https://farmersfresh.vercel.app
+        run: npm run ci:audit
       - run: npm sbom --sbom-format=cyclonedx > sbom.cdx.json
         if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -72,6 +77,8 @@ jobs:
           name: dependency-audit-and-sbom
           path: |
             dependency-audit.json
+            runtime-dependency-audit.json
+            reports/lint-exposure.json
             sbom.cdx.json
           retention-days: 30
   secrets:

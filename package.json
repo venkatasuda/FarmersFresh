@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "ci:recovery": "node scripts/ci/prepare-recovery.mjs",
     "ci:boundaries": "node scripts/ci/check-boundaries.mjs",
+    "ci:audit": "node scripts/ci/dependency-audit.mjs",
     "db:types": "supabase gen types typescript --linked > src/lib/database.types.ts"
   },
   "dependencies": {
