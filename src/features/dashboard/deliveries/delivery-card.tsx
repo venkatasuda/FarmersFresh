@@ -117,7 +117,7 @@ export function DeliveryCard({
 
         {mine ? (
           <>
-            {delivery.status !== "out_for_delivery" ? (
+            {delivery.status === "packed" ? (
               <button
                 type="button"
                 disabled={pending}
@@ -128,7 +128,7 @@ export function DeliveryCard({
               >
                 Start delivery
               </button>
-            ) : (
+            ) : delivery.status === "out_for_delivery" ? (
               <button
                 type="button"
                 disabled={pending}
@@ -137,7 +137,7 @@ export function DeliveryCard({
               >
                 Mark delivered
               </button>
-            )}
+            ) : <p className="text-sm text-ink-soft">Waiting for the store to finish packing.</p>}
             <button
               type="button"
               disabled={pending}
