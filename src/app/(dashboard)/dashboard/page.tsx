@@ -3,6 +3,8 @@ import { requireSession } from "@/server/auth/session";
 import { getOrders } from "@/server/orders/queries";
 import { getDebtors } from "@/server/payments/credit";
 import { getBusinessOverview } from "@/server/reporting/overview";
+import { hasPermission } from "@/server/auth/permissions";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Dashboard · Farmers Fresh",
@@ -12,6 +14,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await requireSession();
+  if (!session.isOwner && await hasPermission("financials.read") && !await hasPermission("orders.manage")) {
+    redirect("/dashboard/financials");
+  }
   const [openOrders, debtors, overview] = await Promise.all([
     getOrders(false),
     getDebtors(),

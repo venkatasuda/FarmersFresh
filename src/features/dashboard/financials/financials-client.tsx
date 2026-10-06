@@ -27,11 +27,17 @@ export function FinancialsClient({
   const [days, setDays] = useState(initialDays);
   const [data, setData] = useState(initial);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function pick(d: number) {
-    setDays(d);
+    setError(null);
     startTransition(async () => {
-      setData(await getFinancials(d));
+      try {
+        setData(await getFinancials(d));
+        setDays(d);
+      } catch {
+        setError("Unable to refresh financial reports. Please try again.");
+      }
     });
   }
 
@@ -62,6 +68,8 @@ export function FinancialsClient({
           ))}
         </div>
       </div>
+
+      {error ? <p role="alert" className="text-sm text-ink-soft">{error}</p> : null}
 
       <div className={`grid gap-3 sm:grid-cols-4 ${pending ? "opacity-60" : ""}`}>
         <Kpi label="Revenue" value={formatRupees(overview.revenue)} />
