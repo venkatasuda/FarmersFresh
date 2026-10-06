@@ -8,7 +8,8 @@ const demo = __ENV.LOAD_PROFILE === "launch-demo";
 if (demo ? BASE !== "https://farmersfresh.vercel.app" : !/^http:\/\/(127\.0\.0\.1|localhost):3000$/.test(BASE)) throw new Error("Load target is not approved.");
 const product = demo ? __ENV.LOAD_PRODUCT_SLUG : "ci-fresh-product";
 if (!/^[a-z0-9-]+$/.test(product || "")) throw new Error("A published product slug is required.");
-const params = { headers: {} };
+// k6 does not negotiate compression by default; match browser page requests.
+const params = { headers: { "Accept-Encoding": "gzip, deflate, br" } };
 if (__ENV.LOAD_BYPASS_FILE) {
   if (!demo) throw new Error("Automation credentials are restricted to the approved demo profile.");
   const secret = open(__ENV.LOAD_BYPASS_FILE).trim();
@@ -26,6 +27,9 @@ export const options = {
     http_req_failed: ["rate<0.01"],
     http_req_duration: ["p(95)<1500"],
     checks: ["rate>0.99"],
+    ...Object.fromEntries(["/", "/search", `/shop/${product}`, "/cart"].map(route => [
+      `http_req_duration{route:${route}}`, ["p(95)<1500"],
+    ])),
   },
 };
 
@@ -34,6 +38,7 @@ export function setup() {
   for (const path of paths) {
     const response = http.get(`${BASE}${path}`, params);
     if (response.status !== 200) throw new Error(`Preflight ${path}: HTTP ${response.status}, mitigation ${response.headers["X-Vercel-Mitigated"] || "none"}. Load was not started.`);
+    if (demo) console.log(`Preflight ${path}: encoding ${response.headers["Content-Encoding"] || "identity"}.`);
   }
 }
 
