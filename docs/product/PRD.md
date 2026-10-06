@@ -10,6 +10,10 @@ shopping and store operations. Customers need dependable purchases and clear
 order status. Owners, store managers, staff, riders and accountants need access
 to the records and actions permitted by their role and location.
 
+The [staff hierarchy and permission matrix](STAFF_ACCESS.md) defines target
+responsibilities, store/company scope and approval boundaries. It distinguishes
+existing roles from access still requiring implementation.
+
 ## Initial launch
 
 Launch with cash on delivery. Enable online payments only after Razorpay

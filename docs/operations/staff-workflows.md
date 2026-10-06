@@ -4,7 +4,12 @@ Use synthetic customer accounts and Razorpay test mode. Record the order/sale
 number and corresponding audit event for each step. A visible button is not
 proof of permission: database tests separately enforce role and store boundaries.
 
-| Role | Established capabilities | Scope |
+The [staff hierarchy and permission matrix](../product/STAFF_ACCESS.md) defines
+target delegation. Existing database role labels are listed below; several
+manager/accountant routes still require the owner flag, so complete a route/RPC
+audit before claiming the intended permissions are fully available.
+
+| Existing role label | Intended responsibility | Target scope to verify |
 | --- | --- | --- |
 | Owner | Organization administration | Own organization |
 | Manager | Catalogue, stock adjustment, orders, purchasing, delivery assignment, coupons | Assigned stores |

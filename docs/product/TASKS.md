@@ -23,6 +23,14 @@ list. Recheck current CI and hosted configuration before marking any task done.
 - Local CI includes database permission/concurrency checks and a COD write-load baseline; hosted peak acceptance remains open.
 - Razorpay integration code exists; provider payment and refund acceptance remain pending.
 
+## Staff access development
+
+Follow the [staff permission matrix](STAFF_ACCESS.md). First reconcile existing
+manager/accountant database permissions with owner-only page guards. Then add
+the minimum store roles, approval workflows and scoped dashboards, with direct
+RPC and cross-store denial tests. Executive titles must not automatically grant
+the owner flag. The hierarchy document defines requirements, not completed access.
+
 ## Later activation
 
 - Create the Razorpay account, configure test credentials and complete the [payment acceptance](../operations/payments.md) checklist before enabling online payments. COD launch can proceed without it once the other launch gates pass.

@@ -25,6 +25,7 @@ docs/
 | --- | --- |
 | What are we building, and what must work before launch? | [Product requirements](product/PRD.md) |
 | What should we do next? | [Launch tasks](product/TASKS.md) |
+| Who may use each staff feature? | [Staff hierarchy and permissions](product/STAFF_ACCESS.md) |
 | How does the application work? | [Architecture overview](architecture/overview.md) |
 | Where does code belong? | [Module boundaries](architecture/boundaries.md) |
 | What rules must developers follow? | [Project rules](../AGENTS.md) |
