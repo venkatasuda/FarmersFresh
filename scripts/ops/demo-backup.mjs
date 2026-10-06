@@ -79,6 +79,19 @@ if (mode === '--verify-demo') {
     const dumpArgs = ['db', 'dump', '--project-ref', project, '--file'];
     command(supabase, [...dumpArgs, join(payload, 'schema.sql'), '--schema', 'public']);
     command(supabase, [...dumpArgs, join(payload, 'data.sql'), '--data-only', '--use-copy', '--schema', 'public,auth,storage']);
+    // The managed Storage schema is not in schema.sql; its application RLS
+    // policies must travel with the object inventory and bucket records.
+    const policies = JSON.parse(command(supabase, ['db', 'query', '--linked', '--project-ref', project, '--output-format', 'json', `
+      set search_path='';
+      select coalesce(string_agg(format('CREATE POLICY %I ON %I.%I AS %s FOR %s TO %s%s%s;',
+        policyname,schemaname,tablename,permissive,cmd,
+        (select string_agg(case when r='public' then 'PUBLIC' else quote_ident(r) end,',') from unnest(roles) r),
+        case when qual is null then '' else ' USING ('||qual||')' end,
+        case when with_check is null then '' else ' WITH CHECK ('||with_check||')' end),E'\\n' order by policyname),'') as sql
+      from pg_policies where schemaname='storage';
+    `]));
+    assert.equal(typeof policies.rows?.[0]?.sql, 'string', 'Storage policy export failed.');
+    writeFileSync(join(payload, 'storage-policies.sql'), policies.rows[0].sql);
     const exportedData = readFileSync(join(payload, 'data.sql'), 'utf8');
     assert(exportedData.includes('COPY "public"."orders"'), 'Demo order records missing from export.');
     const storageCopy = exportedData.match(/^COPY "storage"\."objects" \([^\n]+\) FROM stdin;\r?\n([\s\S]*?)^\\\.\r?$/m);
