@@ -45,6 +45,8 @@ next-env.d.ts
 # disposable CI / test output
 .ci-recovery/
 reports/
+/dependency-audit.json
+/runtime-dependency-audit.json
 playwright-report/
 test-results/
 .supabase/
