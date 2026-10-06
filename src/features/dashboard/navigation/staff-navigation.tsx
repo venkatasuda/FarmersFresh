@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Session } from "@/lib/contracts/auth-session";
 
-export function StaffNavigation({ session, canReadFinancials, canManageOrders }: {
+export function StaffNavigation({ session, canReadFinancials, canManageOrders, canAdjustInventory = false, canManagePurchasing = false }: {
   session: Session;
   canReadFinancials: boolean;
   canManageOrders: boolean;
+  canAdjustInventory?: boolean;
+  canManagePurchasing?: boolean;
 }) {
   return (<nav aria-label="Staff navigation" className="scrollbar-thin flex max-w-[70vw] items-center gap-1 overflow-x-auto text-sm">
               <NavLink href="/dashboard">Overview</NavLink>
@@ -58,11 +60,12 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders }:
                 <>
                   <NavLink href="/dashboard/deliveries">Deliveries</NavLink>
                   <NavLink href="/dashboard/credit">Credit</NavLink>
-                  <NavLink href="/dashboard/stock">Stock</NavLink>
                   <NavLink href="/dashboard/returns">Returns</NavLink>
                   <NavLink href="/dashboard/support">Support</NavLink>
                 </>
               ) : null}
+              {!session.isOwner && canAdjustInventory ? <NavLink href="/dashboard/stock">Stock</NavLink> : null}
+              {!session.isOwner && canManagePurchasing ? <NavLink href="/dashboard/purchasing">Purchasing</NavLink> : null}
               <NavLink href="/">Shop</NavLink>
             </nav>);
 }

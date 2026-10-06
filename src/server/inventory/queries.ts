@@ -17,8 +17,10 @@ import { createClient } from "@/server/supabase/server";
  * Otherwise a cut you've never stocked would silently vanish from the screen
  * instead of showing a very informative zero.
  */
-export async function getStockLines(): Promise<StockLine[]> {
+export async function getStockLines(locationId?: string): Promise<StockLine[]> {
   const supabase = await createClient();
+  const selectedLocation = locationId ?? await getStorefrontLocationId();
+  if (!selectedLocation) return [];
 
   const [products, onHand] = await Promise.all([
     supabase
@@ -26,12 +28,11 @@ export async function getStockLines(): Promise<StockLine[]> {
       .select("id, name, unit, sort_order, is_published")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
-    supabase.from("stock_on_hand").select("product_id, location_id, quantity"),
+    supabase.from("stock_on_hand").select("product_id, location_id, quantity").eq("location_id", selectedLocation),
   ]);
 
-  if (products.error) {
-    console.error("getStockLines products failed:", products.error.message);
-    return [];
+  if (products.error || onHand.error) {
+    throw new Error("Stock is temporarily unavailable.");
   }
 
   const qty = new Map<string, number>();
@@ -64,13 +65,17 @@ export async function getStockLines(): Promise<StockLine[]> {
 
 /** Recent ledger entries, so staff can see what changed and who changed it. */
 export async function getRecentMovements(
-  limit = 25
+  limit = 25,
+  locationId?: string
 ): Promise<StockMovement[]> {
   const supabase = await createClient();
+  const selectedLocation = locationId ?? await getStorefrontLocationId();
+  if (!selectedLocation) return [];
 
   const { data, error } = await supabase
     .from("stock_movements")
     .select("id, product_id, delta, reason, note, created_at, products(name)")
+    .eq("location_id", selectedLocation)
     .order("created_at", { ascending: false })
     .limit(limit);
 

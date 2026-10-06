@@ -11,8 +11,9 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
-  const [canReadFinancials, canManageOrders] = await Promise.all([
+  const [canReadFinancials, canManageOrders, canAdjustInventory, canManagePurchasing] = await Promise.all([
     hasPermission("financials.read"), hasPermission("orders.manage"),
+    hasPermission("inventory.adjust"), hasPermission("procurement.manage"),
   ]);
 
   return (
@@ -25,7 +26,7 @@ export default async function AppLayout({
             <Link href="/dashboard" aria-label="Farmers Fresh — dashboard">
               <Wordmark subdued />
             </Link>
-            <StaffNavigation session={session} canReadFinancials={canReadFinancials} canManageOrders={canManageOrders} />
+            <StaffNavigation session={session} canReadFinancials={canReadFinancials} canManageOrders={canManageOrders} canAdjustInventory={canAdjustInventory} canManagePurchasing={canManagePurchasing} />
           </div>
 
           <div className="flex items-center gap-3">

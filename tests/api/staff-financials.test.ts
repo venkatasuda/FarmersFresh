@@ -51,4 +51,9 @@ it("shows finance-only staff their reports without counter or operations navigat
   const staff = renderToStaticMarkup(createElement(StaffNavigation, { session, canReadFinancials: false, canManageOrders: true }));
   expect(staff).not.toContain('href="/dashboard/financials"');
   expect(staff).toContain('href="/dashboard/orders"');
+  expect(staff).not.toContain('href="/dashboard/stock"');
+  expect(staff).not.toContain('href="/dashboard/purchasing"');
+  const manager = renderToStaticMarkup(createElement(StaffNavigation, { session, canReadFinancials: false, canManageOrders: true, canAdjustInventory: true, canManagePurchasing: true }));
+  expect(manager).toContain('href="/dashboard/stock"');
+  expect(manager).toContain('href="/dashboard/purchasing"');
 });

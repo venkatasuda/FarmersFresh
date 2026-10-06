@@ -60,7 +60,7 @@ export function StockRow({
             </p>
             <p className="text-xs text-ink-soft">
               {out
-                ? "Sold out — hidden from the shop"
+                ? "Out of stock at this store"
                 : low
                   ? "Running low"
                   : "In stock"}

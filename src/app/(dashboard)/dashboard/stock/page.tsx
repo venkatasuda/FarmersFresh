@@ -1,22 +1,28 @@
 import { StockPageView } from "@/features/dashboard/stock/stock-view";
 import { LOW_STOCK_KG } from "@/lib/types";
 import { requireSession } from "@/server/auth/session";
-import { getRecentMovements, getStockLines, getStorefrontLocationId, } from "@/server/inventory/queries";
+import { getRecentMovements, getStockLines } from "@/server/inventory/queries";
+import { getOperationalLocations } from "@/server/auth/permissions";
+import { StoreSelector } from "@/features/dashboard/navigation/store-selector";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Stock · Farmers Fresh" };
 export const dynamic = "force-dynamic";
 
-export default async function StockPage() {
+export default async function StockPage({ searchParams }: { searchParams: Promise<{ location?: string }> }) {
   await requireSession();
+  const locations = await getOperationalLocations("inventory.adjust");
+  if (!locations.length) redirect("/dashboard");
+  const requested = (await searchParams).location;
+  const locationId = locations.find(l => l.id === requested)?.id ?? locations[0].id;
 
-  const [lines, movements, locationId] = await Promise.all([
-    getStockLines(),
-    getRecentMovements(20),
-    getStorefrontLocationId(),
+  const [lines, movements] = await Promise.all([
+    getStockLines(locationId),
+    getRecentMovements(20, locationId),
   ]);
 
   const out = lines.filter((l) => l.onHand <= 0);
   const low = lines.filter((l) => l.onHand > 0 && l.onHand < LOW_STOCK_KG);
 
-  return <StockPageView out={out} low={low} locationId={locationId} lines={lines} movements={movements} />;
+  return <><StoreSelector locations={locations} locationId={locationId} /><StockPageView key={locationId} out={out} low={low} locationId={locationId} lines={lines} movements={movements} /></>;
 }
