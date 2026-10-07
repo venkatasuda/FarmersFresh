@@ -4,9 +4,10 @@ import { sanitizeError } from "@/lib/guard";
 import { createClient } from "@/server/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function getExpiring(days = 7): Promise<ExpiringBatch[]> {
+export async function getExpiring(days = 7, location?: string): Promise<ExpiringBatch[]> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("expiring_batches", { p_days: days });
+  const { data, error } = await supabase.rpc("expiring_batches", { p_days: days, p_location: location ?? null });
+  if (error) throw new Error("Expiry information is temporarily unavailable.");
   const rows = (data ?? []) as Record<string, unknown>[];
   return rows.map((b) => ({
     id: String(b.id),

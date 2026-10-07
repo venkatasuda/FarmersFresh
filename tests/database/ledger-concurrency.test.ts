@@ -5,6 +5,40 @@ import { pool, fixture, identity, placeOrder } from "./helpers";
 
 afterAll(() => pool.end());
 
+it("concurrent transfer retries dispatch and receive stock only once", async () => {
+  const seed=await pool.connect();
+  try {
+    const f=await fixture(seed), destination=randomUUID(), transfer=randomUUID();
+    await seed.query("insert into public.locations(id,org_id,type,name) values($1,$2,'store','Transfer destination')",[destination,f.org]);
+    const dispatched=await race(`stock:${f.location}:${f.product}`,[0,1].map(()=>async client=>{
+      await identity(client,f.owner);
+      return client.query("select public.dispatch_stock_transfer($1,$2,$3,$4,5,'Concurrency test')",[transfer,f.location,destination,f.product]);
+    }));
+    expect(dispatched.every(r=>r.status==='fulfilled')).toBe(true);
+    const received=await race(`stock:${destination}:${f.product}`,[0,1].map(()=>async client=>{
+      await identity(client,f.owner); return client.query("select public.receive_stock_transfer($1)",[transfer]);
+    }));
+    expect(received.every(r=>r.status==='fulfilled')).toBe(true);
+    expect(Number((await seed.query("select public.stock_available($1,$2) n",[f.location,f.product])).rows[0].n)).toBe(195);
+    expect(Number((await seed.query("select public.stock_available($1,$2) n",[destination,f.product])).rows[0].n)).toBe(5);
+    expect((await seed.query("select count(*)::int n from public.events where entity_id=$1",[transfer])).rows[0].n).toBe(2);
+  } finally { seed.release(); }
+});
+
+it("a count cannot overwrite a concurrent checkout", async () => {
+  const seed=await pool.connect();
+  try {
+    const f=await fixture(seed);
+    const results=await race(`stock:${f.location}:${f.product}`,[
+      async client=>{ await identity(client,f.owner); return client.query("select public.count_stock($1,$2,$3,190,200,'Shelf count')",[randomUUID(),f.location,f.product]); },
+      client=>placeOrder(client,f),
+    ]);
+    expect(results[1].status).toBe('fulfilled');
+    const quantity=Number((await seed.query("select public.stock_available($1,$2) n",[f.location,f.product])).rows[0].n);
+    expect(quantity).toBe(results[0].status==='fulfilled'?189:199);
+  } finally { seed.release(); }
+});
+
 // Hold the shared ledger lock until both real sessions are waiting on it.
 async function race<T>(key: string, calls: ((client: PoolClient) => Promise<T>)[]) {
   const blocker = await pool.connect();

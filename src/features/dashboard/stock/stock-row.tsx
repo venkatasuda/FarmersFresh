@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { recordStock } from "./actions";
+import { useRef, useState, useTransition } from "react";
+import { countStock, recordStock } from "./actions";
 import { formatQty } from "@/lib/format";
 import { LOW_STOCK_KG, STOCK_REASONS, type StockLine } from "@/lib/types";
 
@@ -18,6 +18,8 @@ export function StockRow({
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const request = useRef({ key: "", id: "" });
+  const counting = reason === "count";
 
   const spec = STOCK_REASONS.find((r) => r.value === reason);
   const low = line.onHand > 0 && line.onHand < LOW_STOCK_KG;
@@ -25,10 +27,17 @@ export function StockRow({
 
   function submit() {
     setError(null);
-    const value = Number.parseFloat(amount);
+    const value = amount.trim() ? Number(amount) : NaN;
+    const key = JSON.stringify([locationId,line.productId,value,line.onHand,note]);
+    if (request.current.key !== key) request.current = { key, id: crypto.randomUUID() };
 
     startTransition(async () => {
-      const r = await recordStock(locationId, line.productId, value, reason, note);
+      let r;
+      try {
+        r = counting
+          ? await countStock(request.current.id, locationId, line.productId, value, line.onHand, note)
+          : await recordStock(locationId, line.productId, value, reason, note);
+      } catch { setError("Could not save. Please retry."); return; }
       if (!r.ok) {
         setError(r.message);
         return;
@@ -94,6 +103,7 @@ export function StockRow({
                 Reason
               </span>
               <select
+                disabled={pending}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
@@ -103,17 +113,19 @@ export function StockRow({
                     {r.label}
                   </option>
                 ))}
+                <option value="count">Count available stock</option>
               </select>
             </label>
 
             <label className="basis-28">
               <span className="block text-xs font-medium text-ink-soft">
-                Amount ({line.unit})
+                {counting ? "Counted available stock" : "Amount"} ({line.unit})
               </span>
               <input
                 type="number"
                 min="0"
-                step="0.5"
+                step={line.unit === "piece" ? "1" : "0.001"}
+                disabled={pending}
                 inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
@@ -123,10 +135,12 @@ export function StockRow({
 
             <label className="flex-1 basis-40">
               <span className="block text-xs font-medium text-ink-soft">
-                Note (optional)
+                {counting ? "Count reason (required)" : "Note (optional)"}
               </span>
               <input
                 type="text"
+                maxLength={500}
+                disabled={pending}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
@@ -145,6 +159,7 @@ export function StockRow({
             >
               {pending
                 ? "Saving…"
+                : counting ? "Save count"
                 : spec?.sign === -1
                   ? `Remove ${amount || "0"} ${line.unit}`
                   : `Add ${amount || "0"} ${line.unit}`}
@@ -158,6 +173,7 @@ export function StockRow({
           ) : null}
 
           <p className="mt-2 text-xs text-ink-soft">
+            {counting ? "Count sellable stock only; exclude stock already reserved for orders. If stock changed, refresh this page and count again. " : ""}
             Every change is written to the ledger with your name on it. There is
             no undo — a mistake is fixed by recording a correction.
           </p>

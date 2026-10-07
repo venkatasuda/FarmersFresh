@@ -1,6 +1,8 @@
 import { StockRow } from "@/features/dashboard/stock/stock-row";
 import { formatQty } from "@/lib/format";
 import { STOCK_REASON_LABELS } from "@/lib/types";
+import { Transfers } from "./transfers";
+import type { StockTransfer } from "@/lib/contracts/staff-stock";
 
 type StockPageViewProps = {
   out: import("@/lib/types").StockLine[];
@@ -8,9 +10,11 @@ type StockPageViewProps = {
   locationId: string | null;
   lines: import("@/lib/types").StockLine[];
   movements: import("@/lib/types").StockMovement[];
+  destinations: {id:string;name:string}[];
+  transfers: StockTransfer[];
 };
 
-export function StockPageView({ out, low, locationId, lines, movements }: StockPageViewProps) {
+export function StockPageView({ out, low, locationId, lines, movements, destinations, transfers }: StockPageViewProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -63,6 +67,7 @@ export function StockPageView({ out, low, locationId, lines, movements }: StockP
         </section>
       )}
 
+      {locationId ? <Transfers location={locationId} destinations={destinations} products={lines} transfers={transfers} /> : null}
       <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <h2 className="border-b border-line px-5 py-3 text-sm font-medium text-ink">
           Recent movements

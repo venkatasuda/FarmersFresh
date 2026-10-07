@@ -4,9 +4,10 @@ import { sanitizeError } from "@/lib/guard";
 import { createClient } from "@/server/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function getWastageList(days = 30): Promise<WastageRow[]> {
+export async function getWastageList(days = 30, location?: string): Promise<WastageRow[]> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("list_wastage", { p_days: days, p_limit: 100 });
+  const { data, error } = await supabase.rpc("list_wastage", { p_days: days, p_limit: 100, p_location: location ?? null });
+  if (error) throw new Error("Wastage information is temporarily unavailable.");
   const rows = (data ?? []) as Record<string, unknown>[];
   return rows.map((w) => ({
     id: String(w.id),
@@ -19,9 +20,10 @@ export async function getWastageList(days = 30): Promise<WastageRow[]> {
   }));
 }
 
-export async function getWastageSummary(days = 30): Promise<WastageSummary> {
+export async function getWastageSummary(days = 30, location?: string): Promise<WastageSummary> {
   const supabase = await createClient();
-  const { data } = await supabase.rpc("wastage_summary", { p_days: days });
+  const { data, error } = await supabase.rpc("wastage_summary", { p_days: days, p_location: location ?? null });
+  if (error) throw new Error("Wastage totals are temporarily unavailable.");
   const d = (data ?? {}) as Record<string, unknown>;
   return {
     totalValue: Number(d.total_value ?? 0),

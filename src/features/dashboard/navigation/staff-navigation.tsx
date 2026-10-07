@@ -64,7 +64,11 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                   <NavLink href="/dashboard/support">Support</NavLink>
                 </>
               ) : null}
-              {!session.isOwner && canAdjustInventory ? <NavLink href="/dashboard/stock">Stock</NavLink> : null}
+              {!session.isOwner && canAdjustInventory ? <>
+                <NavLink href="/dashboard/stock">Stock</NavLink>
+                <NavLink href="/dashboard/expiry">Expiry</NavLink>
+                <NavLink href="/dashboard/wastage">Wastage</NavLink>
+              </> : null}
               {!session.isOwner && canManagePurchasing ? <NavLink href="/dashboard/purchasing">Purchasing</NavLink> : null}
               <NavLink href="/">Shop</NavLink>
             </nav>);

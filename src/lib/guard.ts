@@ -77,6 +77,11 @@ export function sanitizeError(
     "Insufficient permission.", "You do not have access to that location.",
     "Quantity must be greater than zero.", "A delivered order cannot be cancelled.",
     "Add at least one item.", "Name is required.",
+    "Stock changed. Refresh and count again.", "Enter a valid stock quantity.",
+    "Give a count reason within 500 characters.", "Keep the note within 500 characters.",
+    "Choose another store in your organization.", "Not enough unexpired batch stock to transfer.",
+    "Enter a whole number of pieces.", "This request was already used for a different change.",
+    "Use the stock count or transfer workflow.", "Insufficient stock.",
   ]);
   return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
 }
