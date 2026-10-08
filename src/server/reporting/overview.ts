@@ -13,6 +13,16 @@ export type { Overview, OverviewLine, StockLine } from "@/lib/contracts/reportin
  */
 import { num } from "@/lib/format";
 import { createClient } from "@/server/supabase/server";
+import { isUuid } from "@/lib/guard";
+import type { ManagerDashboard } from "@/lib/contracts/staff-access";
+
+export async function getManagerDashboard(location: string | null): Promise<ManagerDashboard> {
+  if (location !== null && !isUuid(location)) throw new Error("Choose a valid store.");
+  const db = await createClient();
+  const { data, error } = await db.rpc("manager_dashboard", { p_location: location });
+  if (error || !data) throw new Error("Operations dashboard is temporarily unavailable.");
+  return data as ManagerDashboard;
+}
 
 export async function getBusinessOverview(): Promise<Overview | null> {
   try {

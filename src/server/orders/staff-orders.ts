@@ -1,6 +1,6 @@
 import "server-only";
 import type { ActionResult } from "@/lib/contracts/staff-orders";
-import { sanitizeError } from "@/lib/guard";
+import { isUuid, sanitizeError, toAmount } from "@/lib/guard";
 import type { OrderStatus } from "@/lib/types";
 import { createClient } from "@/server/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -18,6 +18,8 @@ export async function instantRefund(
   points: number,
   reason: string
 ): Promise<{ ok: boolean; message?: string }> {
+  if (!isUuid(orderId) || typeof points !== "number" || toAmount(points) !== points) return { ok: false, message: "Refund exceeds collected payment." };
+  if (typeof reason !== "string" || reason.length > 500) return { ok: false, message: "Keep the note within 500 characters." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("instant_refund", {
     p_order_id: orderId,

@@ -96,6 +96,9 @@ export function sanitizeError(
     "This order already has a wallet refund.", "This return already has a cash refund.",
     "Only collected COD returns can be refunded in cash.", "Refund exceeds collected cash.",
     "Close the active till shift first.", "This till shift is already closed.",
+    "You cannot change your own access.", "Choose a supported staff role.",
+    "Give an access reason within 500 characters.", "Reassign active deliveries before removing access.",
+    "Only paid delivered orders can receive return compensation.", "Refund exceeds collected payment.",
   ]);
   return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
 }

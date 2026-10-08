@@ -157,6 +157,7 @@ it("competing return approvals award a refund credit once", async () => {
   try {
     const f = await fixture(seed), id = randomUUID();
     const order = (await placeOrder(seed, f)).rows[0];
+    await seed.query("update public.orders set user_id=$2,is_paid=true,status='delivered' where id=$1",[order.order_id,f.customer]);
     await seed.query("insert into public.returns(id,org_id,user_id,order_id,order_number,reason) values($1,$2,$3,$4,$5,'CI return')", [id, f.org, f.customer, order.order_id, order.order_number]);
     const results = await race(`wallet:${f.org}:${f.customer}`, [0, 1].map(() => async client => {
       await identity(client, f.owner);

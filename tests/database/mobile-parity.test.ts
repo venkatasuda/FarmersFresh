@@ -46,6 +46,8 @@ describe("order status changes go through set_order_status", () => {
     await client.query("update public.memberships set role='accountant' where user_id=$1", [f.staff]);
     await identity(client, f.staff);
     await expectDenied(client, () => setStatus(id, "confirmed"));
+    expect((await client.query("select id from public.orders where id=$1",[id])).rows).toEqual([]);
+    await identity(client, f.owner);
     expect(await status(id)).toBe("placed");
   });
 

@@ -22,7 +22,7 @@ import { join, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 const SERVER_IMPORT = /from\s+["'](@\/server\/[^"']+|next\/headers)["']/;
-const RULE_TABLES = "orders|order_items|payments|payment_events|payment_refunds|cod_receipts|cash_closings|cash_refunds|cash_shifts|wallet_ledger|stock_movements|stock_transfers|events|gift_cards|sales|sale_items";
+const RULE_TABLES = "memberships|orders|order_items|payments|payment_events|payment_refunds|cod_receipts|cash_closings|cash_refunds|cash_shifts|wallet_ledger|stock_movements|stock_transfers|events|gift_cards|sales|sale_items";
 const DIRECT_WRITE = new RegExp(`\\.from\\(\\s*["'](${RULE_TABLES})["']\\s*\\)\\s*\\.\\s*(insert|update|upsert|delete)\\(`);
 const violations = [];
 

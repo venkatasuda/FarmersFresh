@@ -15,7 +15,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                 <NavLink href="/dashboard/orders">Orders</NavLink>
               </> : null}
               {session.isOwner || session.memberships.some(m => m.role === "manager" && m.locationType === "store") ? (
-                <NavLink href="/dashboard/monitoring">Monitoring</NavLink>
+                <><NavLink href="/dashboard/operations">Operations</NavLink><NavLink href="/dashboard/monitoring">Monitoring</NavLink></>
               ) : null}
               {canReadFinancials && !session.isOwner ? <NavLink href="/dashboard/financials">Financials</NavLink> : null}
               {!session.isOwner && (canReadFinancials || canManageOrders) ? <NavLink href="/dashboard/cash">Cash</NavLink> : null}
@@ -57,6 +57,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                   />
                   <NavLink href="/dashboard/support">Support</NavLink>
                   <NavLink href="/dashboard/settings">Settings</NavLink>
+                  <NavLink href="/dashboard/staff">Staff access</NavLink>
                 </>
               ) : canManageOrders ? (
                 <>

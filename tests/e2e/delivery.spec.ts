@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
 
 test("staff fulfil and collect COD, then a manager closes a completed cash day", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   const dbUrl = new URL(process.env.TEST_DATABASE_URL ?? "");
   const apiUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
   for (const url of [dbUrl, apiUrl]) {
@@ -88,6 +88,31 @@ test("staff fulfil and collect COD, then a manager closes a completed cash day",
     await page.getByRole("button", { name: "Close till shift", exact: true }).click();
     await expect(page.getByRole("button", { name: "Open till shift", exact: true })).toBeVisible();
     expect((await db.query("select expected,counted,difference from public.cash_shifts where location_id=$1",[store])).rows[0]).toMatchObject({expected:"80.00",counted:"80.00",difference:"0.00"});
+    await page.goto("/dashboard/operations");
+    await expect(page.getByRole("heading",{name:"Store operations",exact:true})).toBeVisible();
+    await expect(page.getByRole("link",{name:"Staff access",exact:true})).toHaveCount(0);
+    await page.goto("/dashboard/staff");
+    // Streamed Next.js notFound responses can use HTTP 200; verify the denial UI and absence of the protected form.
+    await expect(page.getByRole("heading",{name:"We couldn't find that",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Save staff access",exact:true})).toHaveCount(0);
+    const clerk=randomUUID();
+    await db.query("insert into auth.users(id,email) values($1,$2)",[clerk,`${clerk}@ci.invalid`]);
+    await db.query("insert into public.profiles(id,org_id,full_name) values($1,$2,'Browser Clerk')",[clerk,org]);
+    await db.query("update public.profiles set is_owner=true where id=$1",[user]);
+    await page.goto("/dashboard/staff");
+    await page.getByRole("combobox",{name:"Staff member",exact:true}).selectOption(clerk);
+    await page.getByRole("combobox",{name:"Access role",exact:true}).selectOption("manager");
+    await page.getByLabel("Reason",{exact:true}).fill("Browser assignment review");
+    page.once("dialog",dialog=>dialog.accept());
+    await page.getByRole("button",{name:"Save staff access",exact:true}).click();
+    await expect(page.getByRole("status")).toHaveText("Access updated.");
+    expect((await db.query("select role from public.memberships where user_id=$1",[clerk])).rows[0].role).toBe("manager");
+    await page.getByRole("combobox",{name:"Access role",exact:true}).selectOption("");
+    await page.getByLabel("Reason",{exact:true}).fill("Browser access revoked");
+    page.once("dialog",dialog=>dialog.accept());
+    await page.getByRole("button",{name:"Save staff access",exact:true}).click();
+    await expect(page.getByText(/none · Browser access revoked/)).toBeVisible();
+    expect((await db.query("select role from public.memberships where user_id=$1",[clerk])).rows).toEqual([]);
   } finally {
     await db.end();
   }
