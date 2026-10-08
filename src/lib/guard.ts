@@ -88,6 +88,10 @@ export function sanitizeError(
     "Invalid location or ETA.", "This delivery is not currently on the way.",
     "Give a delivery failure reason within 500 characters.", "Report the failed delivery first.",
     "Return the failed delivery to the store before retrying.",
+    "Collect the exact order total.", "Only unpaid delivered COD orders can be collected.",
+    "Choose today or a past business date.", "Close a completed business day.",
+    "Enter a valid cash amount.", "This cash day is already closed.",
+    "Cash totals changed. Refresh before closing.", "Explain the cash shortage or surplus.",
   ]);
   return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
 }

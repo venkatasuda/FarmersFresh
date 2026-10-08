@@ -17,6 +17,7 @@ it("binds every financial report to finance assignments, including mixed roles a
   await client.query("insert into public.stock_movements(org_id,location_id,product_id,delta,reason) values($1,$2,$3,200,'purchase')", [f.org, secondStore, hiddenProduct]);
   await client.query("update public.organizations set storefront_location_id=$1 where id=$2", [secondStore, f.org]);
   const hidden = (await placeOrder(client, f, [1], [hiddenProduct])).rows[0];
+  await client.query("update public.orders set is_paid=true,paid_at=now() where id=any($1::uuid[])", [[own.order_id, hidden.order_id]]);
   await client.query("update public.memberships set role='accountant' where user_id=$1", [f.staff]);
   await client.query("insert into public.memberships(org_id,user_id,location_id,role) values($1,$2,$3,'manager')", [f.org, f.staff, secondStore]);
   const paymentIds = [randomUUID(), randomUUID(), randomUUID()];

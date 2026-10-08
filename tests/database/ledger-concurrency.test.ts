@@ -160,6 +160,22 @@ it("an empty wallet cannot be debited and a stock movement cannot cross organiza
   } finally { seed.release(); }
 });
 
+it("two cash collectors produce one COD receipt and audit event", async () => {
+  const seed = await pool.connect();
+  try {
+    const f = await fixture(seed);
+    const order = (await placeOrder(seed, f)).rows[0];
+    await seed.query("update public.orders set status='delivered',delivered_at=now() where id=$1", [order.order_id]);
+    const results = await race(`cash:${f.location}`, [f.owner, f.staff].map(user => async client => {
+      await identity(client, user);
+      return client.query("select public.collect_cod($1,$2)", [order.order_id, order.total]);
+    }));
+    expect(results.every(r => r.status === "fulfilled")).toBe(true);
+    expect((await seed.query("select count(*)::int n from public.cod_receipts where order_id=$1", [order.order_id])).rows[0].n).toBe(1);
+    expect((await seed.query("select count(*)::int n from public.events where entity_id=$1 and event_type='order.cod_collected'", [order.order_id])).rows[0].n).toBe(1);
+  } finally { seed.release(); }
+});
+
 it("a subscription can produce only one order for its due cycle", async () => {
   const seed = await pool.connect();
   try {

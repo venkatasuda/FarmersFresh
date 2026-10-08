@@ -3,7 +3,8 @@ import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
 
-test("staff can report a failed delivery, receive it and complete redelivery", async ({ page }) => {
+test("staff fulfil and collect COD, then a manager closes a completed cash day", async ({ page }) => {
+  test.setTimeout(60_000);
   const dbUrl = new URL(process.env.TEST_DATABASE_URL ?? "");
   const apiUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
   for (const url of [dbUrl, apiUrl]) {
@@ -55,6 +56,20 @@ test("staff can report a failed delivery, receive it and complete redelivery", a
     const events = (await db.query(`select event_type,count(*)::int n from public.events
       where entity_id=$1 and event_type in ('delivery.failed','delivery.returned') group by event_type order by event_type`, [order])).rows;
     expect(events).toEqual([{ event_type: "delivery.failed", n: 1 }, { event_type: "delivery.returned", n: 1 }]);
+
+    await page.goto("/dashboard/cash");
+    await expect(page.getByRole("heading", { name: "Daily cash closing", exact: true })).toHaveCount(0);
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "Record cash collected", exact: true }).click();
+    await expect(page.getByText("No outstanding COD collections.", { exact: true })).toBeVisible();
+    expect((await db.query("select is_paid from public.orders where id=$1", [order])).rows[0].is_paid).toBe(true);
+    await db.query("update public.memberships set role='manager' where user_id=$1", [user]);
+    const yesterday = (await db.query("select to_char((clock_timestamp() at time zone 'Asia/Kolkata')::date-1,'YYYY-MM-DD') as business_date")).rows[0].business_date;
+    await page.goto(`/dashboard/cash?date=${yesterday}`);
+    await page.getByLabel("Counted cash receipts (₹)").fill("0");
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "Close cash day", exact: true }).click();
+    await expect(page.getByText(/Closed · Counted/)).toBeVisible();
   } finally {
     await db.end();
   }

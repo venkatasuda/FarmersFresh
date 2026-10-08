@@ -24,7 +24,7 @@ describe("architecture migration", () => {
     const expected = [
       "/", "/about", "/account", "/account/login", "/account/signup", "/cart",
       "/checkout", "/collections/[slug]", "/contact", "/dashboard",
-      "/dashboard/banners", "/dashboard/catalogue", "/dashboard/catalogue/[id]",
+      "/dashboard/banners", "/dashboard/cash", "/dashboard/catalogue", "/dashboard/catalogue/[id]",
       "/dashboard/catalogue/new", "/dashboard/coldchain", "/dashboard/coupons",
       "/dashboard/credit", "/dashboard/credit/[id]", "/dashboard/deliveries",
       "/dashboard/delivery", "/dashboard/expiry", "/dashboard/financials",

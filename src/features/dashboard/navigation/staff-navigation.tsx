@@ -18,6 +18,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                 <NavLink href="/dashboard/monitoring">Monitoring</NavLink>
               ) : null}
               {canReadFinancials && !session.isOwner ? <NavLink href="/dashboard/financials">Financials</NavLink> : null}
+              {!session.isOwner && (canReadFinancials || canManageOrders) ? <NavLink href="/dashboard/cash">Cash</NavLink> : null}
               {session.isOwner ? (
                 <>
                   <Menu
@@ -39,6 +40,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                     items={[
                       ["/dashboard/sales", "Sales"],
                       ["/dashboard/financials", "Financials"],
+                      ["/dashboard/cash", "Cash"],
                       ["/dashboard/credit", "Credit"],
                     ]}
                   />
