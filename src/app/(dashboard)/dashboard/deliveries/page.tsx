@@ -1,5 +1,6 @@
 import { DeliveriesPageView } from "@/features/dashboard/deliveries/deliveries-view";
 import { requireSession } from "@/server/auth/session";
+import { hasPermission } from "@/server/auth/permissions";
 import { getDeliveries, getMyProfileId, getMyShift } from "@/server/delivery/queries";
 
 export const metadata = { title: "Deliveries · Farmers Fresh" };
@@ -7,10 +8,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DeliveriesPage() {
   await requireSession();
-  const [deliveries, myId, onShift] = await Promise.all([
+  const [deliveries, myId, onShift, canReceive] = await Promise.all([
     getDeliveries(),
     getMyProfileId(),
     getMyShift(),
+    hasPermission("orders.manage"),
   ]);
 
   const mine = deliveries.filter((d) => d.assignedTo === myId);
@@ -19,5 +21,5 @@ export default async function DeliveriesPage() {
     (d) => d.assignedTo && d.assignedTo !== myId
   );
 
-  return <DeliveriesPageView onShift={onShift} deliveries={deliveries} mine={mine} myId={myId} unclaimed={unclaimed} others={others} />;
+  return <DeliveriesPageView onShift={onShift} deliveries={deliveries} mine={mine} myId={myId} unclaimed={unclaimed} others={others} canReceive={canReceive} />;
 }

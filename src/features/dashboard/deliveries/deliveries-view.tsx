@@ -2,6 +2,7 @@ import { DeliveryCard } from "@/features/dashboard/deliveries/delivery-card";
 import { DeliveryControls } from "@/features/dashboard/deliveries/delivery-controls";
 
 type DeliveriesPageViewProps = {
+  canReceive: boolean;
   onShift: boolean;
   deliveries: import("@/lib/types").Delivery[];
   mine: import("@/lib/types").Delivery[];
@@ -10,7 +11,7 @@ type DeliveriesPageViewProps = {
   others: import("@/lib/types").Delivery[];
 };
 
-export function DeliveriesPageView({ onShift, deliveries, mine, myId, unclaimed, others }: DeliveriesPageViewProps) {
+export function DeliveriesPageView({ onShift, deliveries, mine, myId, unclaimed, others, canReceive }: DeliveriesPageViewProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -37,7 +38,7 @@ export function DeliveriesPageView({ onShift, deliveries, mine, myId, unclaimed,
           {mine.length > 0 ? (
             <Section title="Yours" count={mine.length}>
               {mine.map((d) => (
-                <DeliveryCard key={d.id} delivery={d} myId={myId} />
+                <DeliveryCard key={d.id} delivery={d} myId={myId} canReceive={canReceive} />
               ))}
             </Section>
           ) : null}
@@ -45,7 +46,7 @@ export function DeliveriesPageView({ onShift, deliveries, mine, myId, unclaimed,
           {unclaimed.length > 0 ? (
             <Section title="Ready to take" count={unclaimed.length}>
               {unclaimed.map((d) => (
-                <DeliveryCard key={d.id} delivery={d} myId={myId} />
+                <DeliveryCard key={d.id} delivery={d} myId={myId} canReceive={canReceive} />
               ))}
             </Section>
           ) : null}
@@ -53,7 +54,7 @@ export function DeliveriesPageView({ onShift, deliveries, mine, myId, unclaimed,
           {others.length > 0 ? (
             <Section title="With other riders" count={others.length}>
               {others.map((d) => (
-                <DeliveryCard key={d.id} delivery={d} myId={myId} />
+                <DeliveryCard key={d.id} delivery={d} myId={myId} canReceive={canReceive} />
               ))}
             </Section>
           ) : null}

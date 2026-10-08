@@ -5,6 +5,8 @@ import {
   claimDelivery,
   setDeliveryStatus,
   updateRiderLocation,
+  reportDeliveryFailure,
+  receiveFailedDelivery,
 } from "./actions";
 import { formatRupees } from "@/lib/format";
 import { SLOT_LABELS, type Delivery } from "@/lib/types";
@@ -12,12 +14,15 @@ import { SLOT_LABELS, type Delivery } from "@/lib/types";
 export function DeliveryCard({
   delivery,
   myId,
+  canReceive,
 }: {
   delivery: Delivery;
   myId: string | null;
+  canReceive: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [failureReason,setFailureReason]=useState("");
 
   const mine = delivery.assignedTo && delivery.assignedTo === myId;
   const takenByOther = delivery.assignedTo && delivery.assignedTo !== myId;
@@ -36,8 +41,10 @@ export function DeliveryCard({
   function run(fn: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
     startTransition(async () => {
-      const r = await fn();
-      if (!r.ok) setError(r.message ?? "Something went wrong.");
+      try {
+        const r = await fn();
+        if (!r.ok) setError(r.message ?? "Something went wrong.");
+      } catch { setError("Could not save this change. Please retry."); }
     });
   }
 
@@ -51,7 +58,7 @@ export function DeliveryCard({
               ? SLOT_LABELS[delivery.deliverySlot] ?? delivery.deliverySlot
               : "No slot"}
             {" · "}
-            {delivery.status === "out_for_delivery"
+            {delivery.failureNote ? "Failed attempt · return to store" : delivery.status === "out_for_delivery"
               ? "On the way"
               : delivery.status === "packed"
                 ? "Packed"
@@ -115,7 +122,7 @@ export function DeliveryCard({
           </button>
         ) : null}
 
-        {mine ? (
+        {mine && !delivery.failureNote ? (
           <>
             {delivery.status === "packed" ? (
               <button
@@ -138,19 +145,36 @@ export function DeliveryCard({
                 Mark delivered
               </button>
             ) : <p className="text-sm text-ink-soft">Waiting for the store to finish packing.</p>}
-            <button
+            {delivery.status!=="out_for_delivery" ? <button
               type="button"
               disabled={pending}
               onClick={() => run(() => claimDelivery(delivery.id, false))}
               className="rounded-lg border border-line px-3.5 py-2 text-sm text-ink-soft hover:text-ink"
             >
-              Hand off
-            </button>
+              Release delivery
+            </button> : null}
           </>
         ) : null}
       </div>
 
-      {mine && delivery.status === "out_for_delivery" ? (
+      {delivery.failureNote ? <div className="mt-3 space-y-2 rounded-lg border border-line p-3">
+        <p className="text-sm text-ink">Failed delivery: {delivery.failureNote}</p>
+        <p className="text-xs text-ink-soft">Keep the goods reserved. Store staff must check their condition before another attempt.</p>
+        {canReceive ? <button type="button" disabled={pending} className="rounded-lg border border-line px-3 py-2 text-sm text-ink disabled:opacity-60"
+          onClick={()=>{if(confirm("Confirm the goods are physically back at the store and suitable for redelivery? This makes the order available for another rider.")) run(()=>receiveFailedDelivery(delivery.id));}}>
+          Confirm returned to store
+        </button> : null}
+      </div> : mine && delivery.status==="out_for_delivery" ? <form className="mt-3 space-y-2" onSubmit={event=>{
+        event.preventDefault(); if(!pending) run(()=>reportDeliveryFailure(delivery.id,failureReason));
+      }}>
+        <label className="block text-sm text-ink-soft">Delivery problem
+          <input required maxLength={500} value={failureReason} disabled={pending} onChange={event=>setFailureReason(event.target.value)}
+            placeholder="For example, customer unavailable" className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink" />
+        </label>
+        <button type="submit" disabled={pending} className="rounded-lg border border-line px-3 py-2 text-sm text-ink disabled:opacity-60">Report failed delivery</button>
+      </form> : null}
+
+      {mine && delivery.status === "out_for_delivery" && !delivery.failureNote ? (
         <LocationShare orderId={delivery.id} />
       ) : null}
     </article>
@@ -169,6 +193,18 @@ function LocationShare({ orderId }: { orderId: string }) {
   const [note, setNote] = useState<string | null>(null);
   const watchId = useRef<number | null>(null);
   const lastPos = useRef<{ lat: number; lng: number } | null>(null);
+  const etaRef=useRef<number | undefined>(undefined);
+  const sending=useRef(false);
+
+  async function send(lat:number,lng:number,minutes?:number) {
+    if (sending.current) return;
+    sending.current=true;
+    try {
+      const result=await updateRiderLocation(orderId,lat,lng,minutes);
+      setNote(result.ok?null:result.message);
+    } catch { setNote("Could not share your location. Please retry."); }
+    finally { sending.current=false; }
+  }
 
   useEffect(() => {
     return () => {
@@ -186,11 +222,10 @@ function LocationShare({ orderId }: { orderId: string }) {
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         lastPos.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        void updateRiderLocation(
-          orderId,
+        void send(
           pos.coords.latitude,
           pos.coords.longitude,
-          eta ?? undefined
+          etaRef.current
         );
       },
       () => setNote("Couldn't get your location. Allow location access."),
@@ -208,8 +243,9 @@ function LocationShare({ orderId }: { orderId: string }) {
 
   function setEtaMinutes(m: number) {
     setEta(m);
+    etaRef.current=m;
     const p = lastPos.current;
-    if (p) void updateRiderLocation(orderId, p.lat, p.lng, m);
+    if (p) void send(p.lat,p.lng,m);
     else setNote("Turn on location sharing first.");
   }
 

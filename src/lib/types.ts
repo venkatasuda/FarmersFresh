@@ -152,6 +152,7 @@ export type Banner = {
 };
 
 export type Delivery = {
+  failureNote: string | null;
   id: string;
   orderNumber: string;
   status: OrderStatus;

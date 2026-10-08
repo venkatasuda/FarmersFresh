@@ -82,6 +82,12 @@ export function sanitizeError(
     "Choose another store in your organization.", "Not enough unexpired batch stock to transfer.",
     "Enter a whole number of pieces.", "This request was already used for a different change.",
     "Use the stock count or transfer workflow.", "Insufficient stock.",
+    "Access denied.", "This delivery is assigned to another rider.",
+    "Only confirmed or packed deliveries can be claimed or released.",
+    "A delivery staff membership is required to go on shift.", "Choose a shift status.",
+    "Invalid location or ETA.", "This delivery is not currently on the way.",
+    "Give a delivery failure reason within 500 characters.", "Report the failed delivery first.",
+    "Return the failed delivery to the store before retrying.",
   ]);
   return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
 }

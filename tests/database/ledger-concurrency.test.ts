@@ -5,6 +5,24 @@ import { pool, fixture, identity, placeOrder } from "./helpers";
 
 afterAll(() => pool.end());
 
+it("automatic assignment and a rider claim cannot assign the same order twice", async () => {
+  const seed=await pool.connect();
+  try {
+    const f=await fixture(seed);
+    const order=(await placeOrder(seed,f)).rows[0].order_id;
+    await seed.query("update public.orders set status='confirmed' where id=$1",[order]);
+    await seed.query("update public.memberships set on_shift=true where user_id=$1",[f.staff]);
+    const results=await race(`delivery-assignment:${f.org}`,[
+      async client=>{await identity(client,f.owner);return client.query("select public.claim_delivery($1,true)",[order]);},
+      async client=>{await identity(client,f.staff);return client.query("select public.auto_assign_deliveries()");},
+    ]);
+    expect(results[1].status).toBe('fulfilled');
+    const assigned=(await seed.query("select assigned_to from public.orders where id=$1",[order])).rows[0].assigned_to;
+    expect([f.owner,f.staff]).toContain(assigned);
+    expect((await seed.query("select count(*)::int n from public.events where entity_id=$1 and event_type in ('delivery.claimed','order.auto_assigned')",[order])).rows[0].n).toBe(1);
+  } finally { seed.release(); }
+});
+
 it("concurrent transfer retries dispatch and receive stock only once", async () => {
   const seed=await pool.connect();
   try {
