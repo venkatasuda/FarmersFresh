@@ -15,9 +15,13 @@ const WINDOWS = [3, 7, 14, 30] as const;
 export function ExpiryClient({
   initial,
   initialDays,
+  locationId,
+  canMarkDown,
 }: {
   initial: ExpiringBatch[];
   initialDays: number;
+  locationId: string;
+  canMarkDown: boolean;
 }) {
   const [days, setDays] = useState(initialDays);
   const [rows, setRows] = useState(initial);
@@ -27,11 +31,14 @@ export function ExpiryClient({
   function pick(d: number) {
     setDays(d);
     setError(null);
-    startTransition(async () => setRows(await getExpiring(d)));
+    startTransition(async () => {
+      try { setRows(await getExpiring(d, locationId)); }
+      catch { setError("Could not load expiry information. Please retry."); }
+    });
   }
 
   function refresh() {
-    startTransition(async () => setRows(await getExpiring(days)));
+    pick(days);
   }
 
   function doMarkDown(b: ExpiringBatch) {
@@ -156,7 +163,7 @@ export function ExpiryClient({
                       <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
                         marked down
                       </span>
-                    ) : b.expiryDate && suggestPrice(b) < b.salePrice ? (
+                    ) : canMarkDown && b.expiryDate && suggestPrice(b) < b.salePrice ? (
                       <button
                         type="button"
                         disabled={pending}

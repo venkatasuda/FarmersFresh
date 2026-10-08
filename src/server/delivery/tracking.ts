@@ -71,6 +71,7 @@ export async function trackOrder(
   return {
     ok: true,
     order: {
+      deliveryFailed: d.delivery_failed === true,
       orderNumber: String(d.order_number),
       status: d.status as TrackedOrder["status"],
       total: num(d.total),

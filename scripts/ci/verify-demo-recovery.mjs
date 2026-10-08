@@ -2,13 +2,15 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 
 assert.equal(process.argv[2], "--confirmed-demo-local", "Explicit demo recovery flag required.");
 const directory = resolve(process.argv[3] || "reports/recovery-2026-10-02");
 assert(directory.startsWith(resolve("reports") + "/") || directory.startsWith(resolve("reports") + "\\"), "Use an ignored reports subdirectory.");
-const container = "supabase_db_farmersfresh-recovery";
+const recoveryProject = process.argv[4] || "farmersfresh-recovery";
+assert(["farmersfresh-recovery", "farmersfresh-offsite-restore"].includes(recoveryProject), "Only isolated demo recovery projects are allowed.");
+const container = `supabase_db_${recoveryProject}`;
 const docker = process.env.DOCKER_BIN || "docker";
 const run = (args, input) => {
   try { return execFileSync(docker, args, { input, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], maxBuffer: 16_000_000 }); }
@@ -20,9 +22,32 @@ const run = (args, input) => {
 const sql = query => run(["exec", "-i", container, "psql", "-X", "-qAt", "-U", "supabase_admin", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], query);
 const started = Date.now();
 const inspect = JSON.parse(run(["inspect", container]))[0];
-assert.equal(inspect.Config.Labels["com.supabase.cli.project"], "farmersfresh-recovery", "Wrong Docker project.");
+assert.equal(inspect.Config.Labels["com.supabase.cli.project"], recoveryProject, "Wrong Docker project.");
 assert.equal(sql("select count(*) from public.orders;").trim(), "0", "Target must be an unused recovery database.");
 assert.equal(sql("select count(*) from pg_extension where extname='pg_cron';").trim(), "0", "Recovery target must have no scheduler.");
+// Supabase's fresh-stack defaults grant every new object to API roles. A dump's
+// GRANT statements do not remove those inherited extras; replay the source ACLs.
+const schema = readFileSync(join(directory, "schema.sql"), "utf8");
+const privileges = schema.match(/^(?:GRANT|REVOKE) [^\r\n]+;\r?$/gm) || [];
+assert(privileges.length > 0, "Source privileges missing from schema backup.");
+sql(`begin;
+revoke all on all tables in schema public from anon, authenticated, service_role;
+revoke all on all sequences in schema public from anon, authenticated, service_role;
+revoke all on all functions in schema public from anon, authenticated, service_role;
+${privileges.join("\n")}
+commit;`);
+const storagePolicies = join(directory, "storage-policies.sql");
+if (recoveryProject === "farmersfresh-offsite-restore") {
+  assert(existsSync(storagePolicies), "Offsite backup must include Storage policies.");
+  sql(`begin;
+    do $$ declare p record; begin
+      for p in select schemaname,tablename,policyname from pg_policies where schemaname='storage' loop
+        execute format('drop policy %I on %I.%I',p.policyname,p.schemaname,p.tablename);
+      end loop;
+    end $$;
+    ${readFileSync(storagePolicies, "utf8")}
+    commit;`);
+}
 const dump = readFileSync(join(directory, "data.sql"), "utf8").replaceAll("\r\n", "\n");
 const blocks = [...dump.matchAll(/^COPY ("(?:public|auth|storage)"\."[a-z_][a-z0-9_]*") \(([^\n]+)\) FROM stdin;\n([\s\S]*?)^\\\.\n/gm)];
 assert(blocks.length > 0, "No COPY records found.");

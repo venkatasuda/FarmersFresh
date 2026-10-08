@@ -8,8 +8,9 @@ test('guest COD checkout ignores tampered display price and reserves inventory',
   try {
     await page.addInitScript(()=>localStorage.setItem('ff.cart.v1',JSON.stringify([{productId:'33333333-3333-4333-8333-333333333333',slug:'ci-fresh-product',name:'CI Fresh Product',unit:'kg',price:1,imagePath:null,quantity:1,packLabel:null,step:1}])));
     await page.goto('/checkout');
-    await page.locator('[name="name"]').fill('CI Guest');await page.locator('[name="phone"]').fill(phone);
-    await page.locator('[name="address"]').fill('Synthetic CI Address');await page.locator('[name="city"]').fill('CI City');await page.locator('[name="pincode"]').fill('500001');
+    // Next.js can temporarily retain hidden streamed form copies; exercise the visible customer form.
+    await page.locator('[name="name"]:visible').fill('CI Guest');await page.locator('[name="phone"]:visible').fill(phone);
+    await page.locator('[name="address"]:visible').fill('Synthetic CI Address');await page.locator('[name="city"]:visible').fill('CI City');await page.locator('[name="pincode"]:visible').fill('500001');
     await page.getByRole('button',{name:'Place order',exact:true}).click();
     await expect(page).toHaveURL(/\/order-placed/, {timeout:15000});
     const order=(await pool.query('select id,total,is_paid,status from public.orders where contact_phone=$1',[phone])).rows;

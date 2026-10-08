@@ -152,6 +152,7 @@ export type Banner = {
 };
 
 export type Delivery = {
+  failureNote: string | null;
   id: string;
   orderNumber: string;
   status: OrderStatus;
@@ -340,10 +341,7 @@ export type StockMovement = {
 export const STOCK_REASONS: { value: string; label: string; sign: 1 | -1 }[] = [
   { value: "production", label: "Cut today", sign: 1 },
   { value: "purchase", label: "Bought in", sign: 1 },
-  { value: "transfer_in", label: "From another location", sign: 1 },
   { value: "waste", label: "Wasted / spoiled", sign: -1 },
-  { value: "transfer_out", label: "Sent elsewhere", sign: -1 },
-  { value: "stock_count", label: "Correction after count", sign: 1 },
 ];
 
 export const STOCK_REASON_LABELS: Record<string, string> = {

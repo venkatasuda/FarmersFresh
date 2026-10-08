@@ -1,6 +1,6 @@
 import "server-only";
 import type { ReturnRow } from "@/lib/contracts/staff-returns";
-import { sanitizeError } from "@/lib/guard";
+import { isUuid, sanitizeError, toAmount } from "@/lib/guard";
 import { createClient } from "@/server/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -24,10 +24,12 @@ export async function approveReturn(
   refundPoints: number,
   note?: string
 ): Promise<{ ok: boolean; message?: string }> {
+  if (!isUuid(id) || typeof refundPoints !== "number" || (refundPoints !== 0 && toAmount(refundPoints) !== refundPoints)) return { ok: false, message: "Refund exceeds collected payment." };
+  if (note !== undefined && (typeof note !== "string" || note.length > 500)) return { ok: false, message: "Keep the note within 500 characters." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("approve_return", {
     p_id: id,
-    p_refund_points: Number.isFinite(refundPoints) ? Math.max(0, refundPoints) : 0,
+    p_refund_points: refundPoints,
     p_note: note || null,
   });
   if (error) return { ok: false, message: sanitizeError(error.message) };
@@ -39,6 +41,8 @@ export async function rejectReturn(
   id: string,
   note?: string
 ): Promise<{ ok: boolean; message?: string }> {
+  if (!isUuid(id)) return { ok: false, message: "Access denied." };
+  if (note !== undefined && (typeof note !== "string" || note.length > 500)) return { ok: false, message: "Keep the note within 500 characters." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("reject_return", { p_id: id, p_note: note || null });
   if (error) return { ok: false, message: sanitizeError(error.message) };

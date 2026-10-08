@@ -8,6 +8,7 @@ export type TrackedItem = {
 };
 
 export type TrackedOrder = {
+  deliveryFailed: boolean;
   orderNumber: string;
   status:
     | "placed"

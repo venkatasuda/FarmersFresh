@@ -17,8 +17,11 @@ export function DeliveryControls({ initialOnShift }: { initialOnShift: boolean }
         disabled={pending}
         onClick={() =>
           start(async () => {
-            setOn(await setShift(!on));
-            router.refresh();
+            try {
+              const result=await setShift(!on);
+              if (result.ok) { setOn(!on); setMsg(null); router.refresh(); }
+              else setMsg(result.message);
+            } catch { setMsg("Could not save your shift. Please retry."); }
           })
         }
         className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${
@@ -35,9 +38,11 @@ export function DeliveryControls({ initialOnShift }: { initialOnShift: boolean }
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await autoAssign();
-            setMsg(r.ok ? `Assigned ${r.count}` : r.message);
-            router.refresh();
+            try {
+              const r = await autoAssign();
+              setMsg(r.ok ? `Assigned ${r.count}` : r.message);
+              router.refresh();
+            } catch { setMsg("Could not assign deliveries. Please retry."); }
           })
         }
         className="rounded-lg border border-line px-4 py-2 text-sm text-ink hover:border-brand-300 disabled:opacity-50"
@@ -45,9 +50,9 @@ export function DeliveryControls({ initialOnShift }: { initialOnShift: boolean }
         Auto-assign now
       </button>
 
-      {msg ? <span className="text-sm text-ink-soft">{msg}</span> : null}
+      {msg ? <span role="status" className="text-sm text-ink-soft">{msg}</span> : null}
       <span className="ml-auto text-xs text-ink-soft">
-        Auto-assign also runs every 10 min · same area → same rider. Go on shift to receive orders.
+        Auto-assign chooses available riders at the order’s store. Go on shift to receive orders.
       </span>
     </div>
   );

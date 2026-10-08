@@ -21,3 +21,11 @@ export async function setShift(...args: Parameters<typeof backend.setShift>) {
 export async function autoAssign(...args: Parameters<typeof backend.autoAssign>) {
   return backend.autoAssign(...args);
 }
+
+export async function reportDeliveryFailure(...args: Parameters<typeof backend.reportDeliveryFailure>) {
+  return backend.reportDeliveryFailure(...args);
+}
+
+export async function receiveFailedDelivery(...args: Parameters<typeof backend.receiveFailedDelivery>) {
+  return backend.receiveFailedDelivery(...args);
+}

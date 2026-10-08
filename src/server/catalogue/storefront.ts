@@ -13,6 +13,7 @@ import "server-only";
  *
  * Client Components want `lib/format.ts` and `lib/types.ts` instead.
  */
+import { cache } from "react";
 import { num } from "@/lib/format";
 import type { Category, ShopProduct } from "@/lib/types";
 import { createClient } from "@/server/supabase/server";
@@ -44,7 +45,7 @@ type ProductRow = {
 type Rating = { avg: number; count: number };
 
 /** Average rating + count keyed by product id. */
-async function getRatingsMap(): Promise<Map<string, Rating>> {
+const getRatingsMap = cache(async (): Promise<Map<string, Rating>> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("product_ratings");
   if (error) return new Map();
@@ -60,7 +61,7 @@ async function getRatingsMap(): Promise<Map<string, Rating>> {
       { avg: num(r.avg_rating), count: num(r.review_count) },
     ])
   );
-}
+});
 
 function toProduct(
   r: ProductRow,
@@ -119,7 +120,7 @@ async function getBestsellerSet(): Promise<Set<string>> {
   return new Set(idsFromRpc(data));
 }
 
-async function getStockMap(): Promise<Map<string, Stock>> {
+const getStockMap = cache(async (): Promise<Map<string, Stock>> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("catalogue_stock");
 
@@ -135,7 +136,7 @@ async function getStockMap(): Promise<Map<string, Stock>> {
       (r) => [r.product_id, { inStock: r.in_stock === true, low: r.low === true }]
     )
   );
-}
+});
 
 /**
  * The catalogue. Read with the anon key — the RLS policy `prod_public_read` is
@@ -214,7 +215,7 @@ export async function getCatalogueByCategory(
     .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
 
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("catalogue_categories");
 
@@ -240,7 +241,7 @@ export async function getCategories(): Promise<Category[]> {
     icon: r.icon,
     productCount: num(r.product_count),
   }));
-}
+});
 
 /** Fetch specific products by id, preserving the given order. Used by the
  *  recommendation surfaces, which get an ordered list of ids from the engine. */
@@ -373,9 +374,9 @@ export async function getPersonalizedProducts(limit = 10): Promise<ShopProduct[]
   return getProductsByIds(idsFromRpc(data));
 }
 
-export async function getProductBySlug(
+export const getProductBySlug = cache(async (
   slug: string
-): Promise<ShopProduct | null> {
+): Promise<ShopProduct | null> => {
   const supabase = await createClient();
 
   const [{ data, error }, stock, ratings] = await Promise.all([
@@ -387,4 +388,4 @@ export async function getProductBySlug(
   if (error || !data) return null;
   const row = data as ProductRow;
   return toProduct(row, stock.get(row.id), ratings.get(row.id));
-}
+});

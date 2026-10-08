@@ -169,7 +169,7 @@ export function FinancialsClient({
 
         <section className="h-fit overflow-hidden rounded-2xl border border-line bg-surface">
           <h2 className="border-b border-line px-5 py-3 text-sm font-medium text-ink">
-            Money collected
+            Order payments collected
           </h2>
           {payments.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-ink-soft">Nothing yet.</p>

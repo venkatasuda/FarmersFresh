@@ -148,6 +148,9 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
               View receipt →
             </a>
 
+            {order.deliveryFailed && !finished ? <p role="status" className="mt-3 rounded-lg border border-line p-3 text-sm text-ink">
+              The delivery attempt was unsuccessful. Your order is awaiting return to the store; please contact us to arrange the next step.
+            </p> : null}
             {order.status === "delivered" ? (
               <>
                 <RateDelivery orderNumber={order.orderNumber} phone={phone} />
@@ -155,7 +158,7 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
               </>
             ) : null}
 
-            {order.tracking ? (
+            {order.tracking && !order.deliveryFailed ? (
               <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="flex items-center gap-1.5 text-sm font-medium text-brand-700">
@@ -219,7 +222,7 @@ export function TrackClient({ initialNumber }: { initialNumber?: string }) {
                           reached ? "font-medium text-ink" : "text-ink-soft"
                         }`}
                       >
-                        {step.label}
+                        {step.key === "out_for_delivery" && order.deliveryFailed ? "Delivery attempt unsuccessful" : step.label}
                         {i === currentIndex ? (
                           <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-800">
                             now

@@ -40,18 +40,18 @@ export async function getDeliveries(): Promise<Delivery[]> {
     .select(
       `id, order_number, status, contact_name, contact_phone, address_line,
        city, pincode, landmark, total, delivery_slot, assigned_to, placed_at,
-       address_lat, address_lng,
+       address_lat, address_lng, delivery_failure_note,
        assignee:profiles!orders_assigned_to_fkey(full_name)`
     )
     .in("status", ["confirmed", "packed", "out_for_delivery"])
     .order("placed_at", { ascending: true });
 
   if (error) {
-    console.error("getDeliveries failed:", error.message);
-    return [];
+    throw new Error("Deliveries are temporarily unavailable.");
   }
 
   type Row = {
+    delivery_failure_note: string | null;
     id: string;
     order_number: string;
     status: OrderStatus;
@@ -73,6 +73,7 @@ export async function getDeliveries(): Promise<Delivery[]> {
   return ((data ?? []) as Row[]).map((o) => {
     const a = Array.isArray(o.assignee) ? o.assignee[0] : o.assignee;
     return {
+      failureNote: o.delivery_failure_note,
       id: o.id,
       orderNumber: o.order_number,
       status: o.status,

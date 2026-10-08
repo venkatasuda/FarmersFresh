@@ -15,9 +15,10 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                 <NavLink href="/dashboard/orders">Orders</NavLink>
               </> : null}
               {session.isOwner || session.memberships.some(m => m.role === "manager" && m.locationType === "store") ? (
-                <NavLink href="/dashboard/monitoring">Monitoring</NavLink>
+                <><NavLink href="/dashboard/operations">Operations</NavLink><NavLink href="/dashboard/monitoring">Monitoring</NavLink></>
               ) : null}
               {canReadFinancials && !session.isOwner ? <NavLink href="/dashboard/financials">Financials</NavLink> : null}
+              {!session.isOwner && (canReadFinancials || canManageOrders) ? <NavLink href="/dashboard/cash">Cash</NavLink> : null}
               {session.isOwner ? (
                 <>
                   <Menu
@@ -39,6 +40,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                     items={[
                       ["/dashboard/sales", "Sales"],
                       ["/dashboard/financials", "Financials"],
+                      ["/dashboard/cash", "Cash"],
                       ["/dashboard/credit", "Credit"],
                     ]}
                   />
@@ -55,6 +57,7 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                   />
                   <NavLink href="/dashboard/support">Support</NavLink>
                   <NavLink href="/dashboard/settings">Settings</NavLink>
+                  <NavLink href="/dashboard/staff">Staff access</NavLink>
                 </>
               ) : canManageOrders ? (
                 <>
@@ -64,7 +67,11 @@ export function StaffNavigation({ session, canReadFinancials, canManageOrders, c
                   <NavLink href="/dashboard/support">Support</NavLink>
                 </>
               ) : null}
-              {!session.isOwner && canAdjustInventory ? <NavLink href="/dashboard/stock">Stock</NavLink> : null}
+              {!session.isOwner && canAdjustInventory ? <>
+                <NavLink href="/dashboard/stock">Stock</NavLink>
+                <NavLink href="/dashboard/expiry">Expiry</NavLink>
+                <NavLink href="/dashboard/wastage">Wastage</NavLink>
+              </> : null}
               {!session.isOwner && canManagePurchasing ? <NavLink href="/dashboard/purchasing">Purchasing</NavLink> : null}
               <NavLink href="/">Shop</NavLink>
             </nav>);
