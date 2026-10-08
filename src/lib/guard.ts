@@ -92,6 +92,10 @@ export function sanitizeError(
     "Choose today or a past business date.", "Close a completed business day.",
     "Enter a valid cash amount.", "This cash day is already closed.",
     "Cash totals changed. Refresh before closing.", "Explain the cash shortage or surplus.",
+    "Give a refund reason within 500 characters.", "This order already has a cash refund.",
+    "This order already has a wallet refund.", "This return already has a cash refund.",
+    "Only collected COD returns can be refunded in cash.", "Refund exceeds collected cash.",
+    "Close the active till shift first.", "This till shift is already closed.",
   ]);
   return safe.has(message) || /^Only \d+(?:\.\d+)? (?:kg|g|items?|pieces?) left\.$/.test(message) ? message : fallback;
 }

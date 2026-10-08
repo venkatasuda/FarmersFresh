@@ -70,6 +70,24 @@ test("staff fulfil and collect COD, then a manager closes a completed cash day",
     page.once("dialog", dialog => dialog.accept());
     await page.getByRole("button", { name: "Close cash day", exact: true }).click();
     await expect(page.getByText(/Closed · Counted/)).toBeVisible();
+    await page.getByLabel("Opening till cash (₹)").fill("100");
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "Open till shift", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Close till shift", exact: true })).toBeVisible();
+    const ret = randomUUID();
+    await db.query("insert into public.returns(id,org_id,order_id,order_number,reason) select $1,org_id,id,order_number,'Browser damage' from public.orders where id=$2",[ret,order]);
+    await page.reload();
+    await page.getByLabel("Cash refund (₹)").fill("20");
+    await page.getByLabel("Refund reason", { exact: true }).fill("Damaged goods returned");
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "Record cash refund", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Record cash refund", exact: true })).toHaveCount(0);
+    await expect(page.getByText(/expected ₹80/)).toBeVisible();
+    await page.getByLabel("Counted till cash (₹)").fill("80");
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "Close till shift", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Open till shift", exact: true })).toBeVisible();
+    expect((await db.query("select expected,counted,difference from public.cash_shifts where location_id=$1",[store])).rows[0]).toMatchObject({expected:"80.00",counted:"80.00",difference:"0.00"});
   } finally {
     await db.end();
   }

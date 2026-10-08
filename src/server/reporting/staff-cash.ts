@@ -2,7 +2,7 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/server/supabase/server";
 import { isUuid, sanitizeError, toAmount } from "@/lib/guard";
-import type { CashSummary } from "@/lib/contracts/staff-cash";
+import type { CashSummary, CashShifts } from "@/lib/contracts/staff-cash";
 
 export function isBusinessDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -42,4 +42,35 @@ export async function closeCashDay(location: string, date: string, expected: num
   if (error) return { ok: false, message: sanitizeError(error.message) };
   revalidatePath("/dashboard/cash");
   return { ok: true };
+}
+export async function getCashShifts(location: string): Promise<CashShifts> {
+  if (!isUuid(location)) throw new Error("Choose a valid store.");
+  const db = await createClient();
+  const { data, error } = await db.rpc("cash_shift_summary", { p_location: location });
+  if (error || !data) throw new Error("Cash reconciliation is temporarily unavailable.");
+  return data as CashShifts;
+}
+export async function refundReturnCash(id: string, amount: number, note: string) {
+  if (!isUuid(id) || !validMoney(amount, 10_000_000) || amount <= 0) return { ok: false, message: "Enter a valid cash amount." };
+  if (typeof note !== "string" || !note.trim() || note.length > 500) return { ok: false, message: "Give a refund reason within 500 characters." };
+  const db = await createClient();
+  const { error } = await db.rpc("refund_return_cash", { p_return: id, p_amount: amount, p_note: note.trim() });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  revalidatePath("/dashboard/cash"); revalidatePath("/dashboard/returns");
+  return { ok: true };
+}
+export async function openCashShift(id: string, location: string, opening: number) {
+  if (!isUuid(id) || !isUuid(location) || !validMoney(opening, 100_000_000)) return { ok: false, message: "Enter a valid cash amount." };
+  const db = await createClient();
+  const { error } = await db.rpc("open_cash_shift", { p_id: id, p_location: location, p_opening: opening });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  revalidatePath("/dashboard/cash"); return { ok: true };
+}
+export async function closeCashShift(id: string, expected: number, counted: number, note: string) {
+  if (!isUuid(id) || !Number.isFinite(expected) || !validMoney(Math.abs(expected), 100_000_000) || !validMoney(counted, 100_000_000)) return { ok: false, message: "Enter a valid cash amount." };
+  if (typeof note !== "string" || note.length > 500) return { ok: false, message: "Keep the note within 500 characters." };
+  const db = await createClient();
+  const { error } = await db.rpc("close_cash_shift", { p_id: id, p_expected: expected, p_counted: counted, p_note: note.trim() || null });
+  if (error) return { ok: false, message: sanitizeError(error.message) };
+  revalidatePath("/dashboard/cash"); return { ok: true };
 }

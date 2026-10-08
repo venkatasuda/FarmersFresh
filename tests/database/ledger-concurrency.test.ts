@@ -5,6 +5,24 @@ import { pool, fixture, identity, placeOrder } from "./helpers";
 
 afterAll(() => pool.end());
 
+it("concurrent cash refund retries pay and audit once", async () => {
+  const seed=await pool.connect();
+  try {
+    const f=await fixture(seed), ret=randomUUID();
+    const order=(await placeOrder(seed,f)).rows[0];
+    await seed.query("update public.orders set status='delivered' where id=$1",[order.order_id]);
+    await seed.query("insert into public.cod_receipts(order_id,org_id,location_id,amount,collected_by) values($1,$2,$3,$4,$5)",[order.order_id,f.org,f.location,order.total,f.owner]);
+    await seed.query("update public.orders set is_paid=true where id=$1",[order.order_id]);
+    await seed.query("insert into public.returns(id,org_id,order_id,order_number,reason) values($1,$2,$3,$4,'Concurrency refund')",[ret,f.org,order.order_id,order.order_number]);
+    const results=await race(`cash:${f.location}`,[0,1].map(()=>async client=>{
+      await identity(client,f.owner); return client.query("select public.refund_return_cash($1,20,'Cash returned')",[ret]);
+    }));
+    expect(results.every(r=>r.status==='fulfilled')).toBe(true);
+    expect((await seed.query("select count(*)::int n,sum(amount) amount from public.cash_refunds where return_id=$1",[ret])).rows[0]).toEqual({n:1,amount:"20.00"});
+    expect((await seed.query("select count(*)::int n from public.events where entity_id=$1 and event_type='return.cash_refunded'",[ret])).rows[0].n).toBe(1);
+  } finally {seed.release();}
+});
+
 it("automatic assignment and a rider claim cannot assign the same order twice", async () => {
   const seed=await pool.connect();
   try {

@@ -92,8 +92,7 @@ function ReturnCard({ row }: { row: ReturnRow }) {
             </div>
           ) : (
             <p className="text-xs text-ink-soft">
-              No account on this order — refund cash at the counter; points can&apos;t be
-              credited.
+              No account on this order — points cannot be credited. A manager or accountant can record a collected COD refund in Cash reconciliation.
             </p>
           )}
           <input
